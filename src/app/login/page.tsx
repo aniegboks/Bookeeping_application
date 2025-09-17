@@ -9,9 +9,11 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false); 
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
+        setLoading(true); 
 
         try {
             const res = await fetch("/api/login", {
@@ -21,14 +23,19 @@ export default function LoginPage() {
             });
 
             if (res.ok) {
-                toast.success("Login successful!");
-                window.location.href = "/dashboard";
+                toast.success("Login successful!", { duration: 2000 }); 
+                // Wait 2 seconds before routing
+                setTimeout(() => {
+                    window.location.href = "/dashboard";
+                }, 2000);
             } else {
                 const error = await res.json().catch(() => null);
                 toast.error(error?.message || "Login failed. Please try again.");
             }
         } catch (err) {
             toast.error("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false); // Stop loading
         }
     }
 
@@ -36,7 +43,6 @@ export default function LoginPage() {
         <div className="h-[100dvh] flex items-center justify-center bg-[#171D26]">
             <Container>
                 <div className="grid grid-cols-1 md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-lg">
-
                     {/* Left Side - Image */}
                     <div className="relative bg-gray-100 flex flex-col items-center justify-center">
                         <img
@@ -78,6 +84,7 @@ export default function LoginPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="border border-[#495C79] rounded-lg p-2 block w-full bg-[#F3F4F7] text-[#171D26] text-sm"
                                     required
+                                    disabled={loading} // Disable during login
                                 />
 
                                 {/* Password Input with Toggle */}
@@ -89,11 +96,13 @@ export default function LoginPage() {
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="border border-[#495C79] rounded-lg p-2 block w-full bg-[#F3F4F7] text-[#171D26] text-sm pr-10"
                                         required
+                                        disabled={loading} // Disable during login
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+                                        disabled={loading} // Disable toggle during login
                                     >
                                         {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                                     </button>
@@ -101,9 +110,12 @@ export default function LoginPage() {
 
                                 <button
                                     type="submit"
-                                    className="bg-[#3D4C63] text-white px-4 py-2 rounded-lg w-full tracking-tighter hover:bg-[#495C79] transition-colors duration-200"
+                                    className={`bg-[#3D4C63] text-white px-4 py-2 rounded-lg w-full tracking-tighter transition-colors duration-200 ${
+                                        loading ? "opacity-50 cursor-not-allowed" : "hover:bg-[#495C79]"
+                                    }`}
+                                    disabled={loading} // Disable button while loading
                                 >
-                                    Login
+                                    {loading ? "Logging in..." : "Login"} {/* Change text */}
                                 </button>
                             </form>
                         </div>

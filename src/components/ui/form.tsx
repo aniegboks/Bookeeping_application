@@ -31,11 +31,17 @@ export default function LoginForm() {
         toast.error(error?.message || "Login failed. Please try again.");
       }
     } catch (err) {
-      toast.error("Something went wrong. Please try again.");
+      console.error("Login error:", err);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   }
+
 
   return (
     <form onSubmit={handleLogin} className="space-y-4 w-full">
@@ -71,9 +77,8 @@ export default function LoginForm() {
 
       <button
         type="submit"
-        className={`bg-[#3D4C63] text-white px-4 py-2 rounded-lg w-full tracking-tighter transition-colors duration-200 ${
-          loading ? "opacity-50 cursor-not-allowed" : "hover:bg-[#495C79]"
-        }`}
+        className={`bg-[#3D4C63] text-white px-4 py-2 rounded-lg w-full tracking-tighter transition-colors duration-200 ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-[#495C79]"
+          }`}
         disabled={loading}
       >
         {loading ? "Logging in..." : "Login"}

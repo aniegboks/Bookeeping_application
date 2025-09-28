@@ -23,6 +23,12 @@ interface Category {
     updated_at: string;
 }
 
+// Helper to extract error messages
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message;
+    return String(error);
+}
+
 export default function CategoriesManagement() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
@@ -33,29 +39,27 @@ export default function CategoriesManagement() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
-    // DELETEROUTE
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
-    function openDeleteModal(id: string, name: string) {
+    const openDeleteModal = (id: string, name: string) => {
         setSelectedCategory({ id, name } as Category);
         setShowDeleteModal(true);
-    }
+    };
 
-    async function confirmDelete() {
+    const confirmDelete = async () => {
         if (!selectedCategory) return;
-
         try {
             await deleteCategory(selectedCategory.id);
             setCategories(categories.filter(c => c.id !== selectedCategory.id));
             toast.success(`${selectedCategory.name} deleted successfully`);
-        } catch {
-            toast.error("Failed to delete category");
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error));
         } finally {
             setShowDeleteModal(false);
             setSelectedCategory(null);
         }
-    }
+    };
 
     const filteredCategories = categories.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -68,8 +72,8 @@ export default function CategoriesManagement() {
             setLoading(true);
             const data = await fetchCategories();
             setCategories(data);
-        } catch (error: any) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -86,8 +90,8 @@ export default function CategoriesManagement() {
             setShowModal(false);
             resetForm();
             toast.success('Category created successfully!');
-        } catch (error: any) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error));
         } finally { setIsSubmitting(false); }
     };
 
@@ -101,8 +105,8 @@ export default function CategoriesManagement() {
             setEditingCategory(null);
             resetForm();
             toast.success('Category updated successfully!');
-        } catch (error: any) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error));
         } finally { setIsSubmitting(false); }
     };
 
@@ -117,6 +121,7 @@ export default function CategoriesManagement() {
         resetForm();
         setShowModal(true);
     };
+
     const exportCategoriesToExcel = () => {
         if (categories.length === 0) return toast.error("No categories to export");
 
@@ -139,16 +144,17 @@ export default function CategoriesManagement() {
         toast.success("Categories exported successfully!");
     };
 
-
     const formatDate = (date: string) =>
-        new Date(date).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        new Date(date).toLocaleString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
 
     if (loading) return <LoadingSpinner />;
 
     return (
         <div className="p-6 bg-[#F3F4F7] min-h-screen">
             <Container>
-
                 {/* HEADER */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold mb-2 text-[#171D26]">Categories Management</h1>
@@ -193,7 +199,7 @@ export default function CategoriesManagement() {
                             <CategoriesTable
                                 categories={filteredCategories}
                                 openEditModal={openEditModal}
-                                handleDelete={openDeleteModal} // use modal for deletion
+                                handleDelete={openDeleteModal}
                                 formatDate={formatDate}
                             />
                         )}
@@ -220,17 +226,17 @@ export default function CategoriesManagement() {
                     confirmDelete={confirmDelete}
                 />
             )}
+
             <Container>
                 <div className="flex gap-2 mt-4">
                     <button
                         onClick={exportCategoriesToExcel}
-                        className="flex items-center gap-2 bg-[#3D4C63] hover:bg-[#495C79 text-white px-4 py-2 rounded-lg bg-[] transition-colors"
+                        className="flex items-center gap-2 bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-lg transition-colors"
                     >
                         <Download className="w-5 h-5" />
                         Export
                     </button>
                 </div>
-
             </Container>
         </div>
     );

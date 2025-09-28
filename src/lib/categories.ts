@@ -1,4 +1,3 @@
-// lib/categories.ts
 import { NextRequest } from "next/server";
 
 export class CategoriesApiError extends Error {
@@ -16,26 +15,32 @@ export const getTokenFromRequest = (req: NextRequest): string => {
   return token;
 };
 
-// Standardized success response
-export const successResponse = (data: any, status = 200) => {
-  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
+// Standardized success response (generic, no "any")
+export const successResponse = <T>(data: T, status = 200) => {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 };
 
 // Standardized error response
 export const errorResponse = (message: string, status = 500) => {
-  return new Response(JSON.stringify({ error: message }), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 };
 
-// Generic API request to backend
-export const categoriesApiRequest = async (
+// Generic API request to backend (typed with <T>)
+export const categoriesApiRequest = async <T>(
   endpoint: string,
   { method = "GET", token, body }: { method?: string; token: string; body?: string }
-) => {
+): Promise<T> => {
   const baseUrl = "https://inventory-backend-hm7r.onrender.com/api/v1";
   const res = await fetch(`${baseUrl}${endpoint}`, {
     method,
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body,
@@ -43,10 +48,13 @@ export const categoriesApiRequest = async (
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => null);
-    throw new CategoriesApiError(errorData?.message || `HTTP ${res.status}`, res.status);
+    throw new CategoriesApiError(
+      (errorData as { message?: string })?.message || `HTTP ${res.status}`,
+      res.status
+    );
   }
 
   // Return empty object for 204 DELETE
-  if (res.status === 204) return {};
-  return res.json();
+  if (res.status === 204) return {} as T;
+  return (await res.json()) as T;
 };

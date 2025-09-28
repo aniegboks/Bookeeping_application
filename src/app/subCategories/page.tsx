@@ -46,8 +46,12 @@ export default function SubCategoriesPage() {
     const loadData = async () => {
       try {
         await Promise.all([loadCategories(), loadSubCategories()]);
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          toast.error(err.message);
+        } else {
+          toast.error("An unexpected error occurred");
+        }
       } finally {
         setInitialLoading(false);
       }
@@ -91,8 +95,12 @@ export default function SubCategoriesPage() {
 
       // Refresh AFTER action completes
       await Promise.all([loadCategories(), loadSubCategories()]);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     } finally {
       // Only stop loading once everything is done
       setLoading(false);
@@ -117,8 +125,12 @@ export default function SubCategoriesPage() {
 
       // Refresh AFTER deletion
       await Promise.all([loadCategories(), loadSubCategories()]);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     } finally {
       // Stop loading once re-fetch is done
       setLoading(false);

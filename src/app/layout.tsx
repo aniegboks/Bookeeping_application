@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Jost } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
-import Nav from "@/components/ui/nav";
 
 const jost = Jost({
   variable: "--font-jost",

@@ -31,12 +31,13 @@ export default function Dashboard() {
       if (!res.ok) throw new Error("Failed to fetch academic sessions");
       const data = await res.json();
       setSessions(data);
-    } catch (err) {
+    } catch {
       toast.error("Failed to load academic sessions");
     } finally {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchSessions();

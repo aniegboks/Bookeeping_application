@@ -2,6 +2,7 @@
 
 import Container from "@/components/ui/container";
 import LoginForm from "@/components/ui/form";
+import Image from "next/image";
 
 export default function LoginPage() {
   return (
@@ -10,10 +11,12 @@ export default function LoginPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-lg">
           {/* Left Side - Image */}
           <div className="hidden md:block md:relative bg-gray-100 flex flex-col items-center justify-center">
-            <img
+            <Image
               src="/images/img3.png"
               alt="login_img1"
               className="w-full h-[25vh] md:h-full object-cover"
+              width={500}
+              height={500}
             />
           </div>
 
@@ -22,7 +25,7 @@ export default function LoginPage() {
             <div className="w-full max-w-sm">
               {/* Logo */}
               <div className="flex items-center gap-2 mb-8">
-                <img src="/images/logo.png" alt="logo" className="h-5 w-5 object-cover" />
+                <Image src="/images/logo.png" alt="logo" className="h-5 w-5 object-cover" width={50} height={50}/>
                 <h4 className="text-md font-bold text-[#171D26] tracking-tighter">Kayron</h4>
               </div>
 

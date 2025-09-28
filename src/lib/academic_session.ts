@@ -1,5 +1,3 @@
-// api/academicSessions.ts
-
 export class ApiError extends Error {
   status: number;
 
@@ -27,7 +25,12 @@ export interface CreateAcademicSessionData {
   status: 'active' | 'inactive';
 }
 
-// Get base URL from .env
+// Optional: define API error shape
+interface ApiErrorResponse {
+  message?: string;
+}
+
+// Base URL from .env
 const BASE_URL = process.env.API_BASE_URL;
 if (!BASE_URL) {
   throw new Error("Environment variable API_BASE_URL is not defined in .env");
@@ -50,9 +53,9 @@ const apiCall = async <T>(
 
   const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
 
-  let data: any;
+  let data: T | ApiErrorResponse;
   try {
-    data = await response.json();
+    data = (await response.json()) as T | ApiErrorResponse;
   } catch {
     const text = await response.text();
     throw new ApiError(
@@ -62,10 +65,13 @@ const apiCall = async <T>(
   }
 
   if (!response.ok) {
-    throw new ApiError(data?.message || `HTTP ${response.status}`, response.status);
+    throw new ApiError(
+      (data as ApiErrorResponse)?.message || `HTTP ${response.status}`,
+      response.status
+    );
   }
 
-  return data;
+  return data as T;
 };
 
 // Academic Sessions API

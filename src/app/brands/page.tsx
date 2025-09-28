@@ -14,184 +14,193 @@ import { Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
+// safe error message extractor
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 export default function BrandsManagement() {
-    const [brands, setBrands] = useState<Brand[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
-    const [formData, setFormData] = useState<CreateBrandData>({ name: "" });
-    const [searchTerm, setSearchTerm] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [formData, setFormData] = useState<CreateBrandData>({ name: "" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [brandToDelete, setBrandToDelete] = useState<{ id: string; name: string } | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [brandToDelete, setBrandToDelete] =
+    useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-    const filteredBrands = brands.filter((brand) =>
-        brand.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const filteredBrands = brands.filter((brand) =>
+    brand.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    const fetchBrands = async () => {
-        try {
-            setLoading(true);
-            const data = await brandsApi.getAll();
-            setBrands(data);
-        } catch (error: any) {
-            toast.error(error.message || "Failed to load brands");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchBrands = async () => {
+    try {
+      setLoading(true);
+      const data = await brandsApi.getAll();
+      setBrands(data);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Failed to load brands");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        fetchBrands();
-    }, []);
+  useEffect(() => {
+    fetchBrands();
+  }, []);
 
-    const resetForm = () => setFormData({ name: "" });
+  const resetForm = () => setFormData({ name: "" });
 
-    const openCreateModal = () => {
-        setEditingBrand(null);
-        resetForm();
-        setShowModal(true);
-    };
+  const openCreateModal = () => {
+    setEditingBrand(null);
+    resetForm();
+    setShowModal(true);
+  };
 
-    const openEditModal = (brand: Brand) => {
-        setEditingBrand(brand);
-        setFormData({ name: brand.name });
-        setShowModal(true);
-    };
+  const openEditModal = (brand: Brand) => {
+    setEditingBrand(brand);
+    setFormData({ name: brand.name });
+    setShowModal(true);
+  };
 
-    const handleSubmit = async () => {
-        if (!formData.name.trim()) return toast.error("Brand name is required");
-        setIsSubmitting(true);
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) return toast.error("Brand name is required");
+    setIsSubmitting(true);
 
-        try {
-            if (editingBrand) {
-                const updated = await brandsApi.update(editingBrand.id, {
-                    name: formData.name.trim(),
-                });
-                setBrands(brands.map((b) => (b.id === editingBrand.id ? updated : b)));
-                toast.success("Brand updated successfully!");
-            } else {
-                const created = await brandsApi.create({ name: formData.name.trim() });
-                setBrands([...brands, created]);
-                toast.success("Brand created successfully!");
-            }
-            setShowModal(false);
-            setEditingBrand(null);
-            resetForm();
-        } catch (error: any) {
-            toast.error(error.message);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // Open delete modal
-    const openDeleteModal = (id: string, name: string) => {
-        setBrandToDelete({ id, name });
-        setShowDeleteModal(true);
-    };
-
-    // Confirm delete
-    const confirmDelete = async () => {
-        if (!brandToDelete) return;
-        setIsDeleting(true);
-        try {
-            await brandsApi.delete(brandToDelete.id);
-            setBrands(brands.filter(b => b.id !== brandToDelete.id));
-            toast.success("Brand deleted successfully!");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to delete brand");
-        } finally {
-            setIsDeleting(false);
-            setShowDeleteModal(false);
-            setBrandToDelete(null);
-        }
-    };
-
-    // Export to Excel
-    const exportToExcel = () => {
-        if (brands.length === 0) {
-            toast.error("No brands to export");
-            return;
-        }
-
-        const worksheet = XLSX.utils.json_to_sheet(
-            brands.map((b) => ({
-                ID: b.id,
-                Name: b.name,
-                "Created At": b.created_at,
-                "Updated At": b.updated_at,
-            }))
-        );
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Brands");
-
-        const excelBuffer = XLSX.write(workbook, {
-            bookType: "xlsx",
-            type: "array",
+    try {
+      if (editingBrand) {
+        const updated = await brandsApi.update(editingBrand.id, {
+          name: formData.name.trim(),
         });
-        const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "brands.xlsx");
-    };
+        setBrands(brands.map((b) => (b.id === editingBrand.id ? updated : b)));
+        toast.success("Brand updated successfully!");
+      } else {
+        const created = await brandsApi.create({ name: formData.name.trim() });
+        setBrands([...brands, created]);
+        toast.success("Brand created successfully!");
+      }
+      setShowModal(false);
+      setEditingBrand(null);
+      resetForm();
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    if (loading) return <LoadingSpinner />;
+  // Open delete modal
+  const openDeleteModal = (id: string, name: string) => {
+    setBrandToDelete({ id, name });
+    setShowDeleteModal(true);
+  };
 
-    return (
-        <div className="min-h-screen p-6 bg-[#F3F4F7]">
-            <Container>
-                <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-[#171D26] mb-2">Brands Management</h1>
-                        <p className="text-gray-600">
-                            Manage product brands in your inventory system
-                        </p>
-                    </div>
-                </div>
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (!brandToDelete) return;
+    setIsDeleting(true);
+    try {
+      await brandsApi.delete(brandToDelete.id);
+      setBrands(brands.filter((b) => b.id !== brandToDelete.id));
+      toast.success("Brand deleted successfully!");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Failed to delete brand");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      setBrandToDelete(null);
+    }
+  };
 
-                <StatsCards brands={brands} filteredBrands={filteredBrands} />
+  // Export to Excel
+  const exportToExcel = () => {
+    if (brands.length === 0) {
+      toast.error("No brands to export");
+      return;
+    }
 
-                <BrandsTable
-                    brands={filteredBrands}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    openCreateModal={openCreateModal}
-                    openEditModal={openEditModal}
-                    handleDelete={openDeleteModal} // now opens modal
-                />
-
-                {showModal && (
-                    <BrandModal
-                        editingBrand={editingBrand}
-                        formData={formData}
-                        setFormData={setFormData}
-                        handleSubmit={handleSubmit}
-                        setShowModal={setShowModal}
-                        isSubmitting={isSubmitting}
-                        resetForm={resetForm}
-                    />
-                )}
-
-                {showDeleteModal && brandToDelete && (
-                    <DeleteBrandModal
-                        brandName={brandToDelete.name}
-                        onCancel={() => setShowDeleteModal(false)}
-                        onConfirm={confirmDelete}
-                        isDeleting={isDeleting}
-                    />
-                )}
-
-                <div className="flex items-center justify-start mt-4">
-                    <button
-                        onClick={exportToExcel}
-                        className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
-                    >
-                        <Download className="w-5 h-5" />
-                        <span>Export</span>
-                    </button>
-                </div>
-            </Container>
-        </div>
+    const worksheet = XLSX.utils.json_to_sheet(
+      brands.map((b) => ({
+        ID: b.id,
+        Name: b.name,
+        "Created At": b.created_at,
+        "Updated At": b.updated_at,
+      }))
     );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Brands");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, "brands.xlsx");
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <div className="min-h-screen p-6 bg-[#F3F4F7]">
+      <Container>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-[#171D26] mb-2">
+              Brands Management
+            </h1>
+            <p className="text-gray-600">
+              Manage product brands in your inventory system
+            </p>
+          </div>
+        </div>
+
+        <StatsCards brands={brands} filteredBrands={filteredBrands} />
+
+        <BrandsTable
+          brands={filteredBrands}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          openCreateModal={openCreateModal}
+          openEditModal={openEditModal}
+          handleDelete={openDeleteModal} // now opens modal
+        />
+
+        {showModal && (
+          <BrandModal
+            editingBrand={editingBrand}
+            formData={formData}
+            setFormData={setFormData}
+            handleSubmit={handleSubmit}
+            setShowModal={setShowModal}
+            isSubmitting={isSubmitting}
+            resetForm={resetForm}
+          />
+        )}
+
+        {showDeleteModal && brandToDelete && (
+          <DeleteBrandModal
+            brandName={brandToDelete.name}
+            onCancel={() => setShowDeleteModal(false)}
+            onConfirm={confirmDelete}
+            isDeleting={isDeleting}
+          />
+        )}
+
+        <div className="flex items-center justify-start mt-4">
+          <button
+            onClick={exportToExcel}
+            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+          >
+            <Download className="w-5 h-5" />
+            <span>Export</span>
+          </button>
+        </div>
+      </Container>
+    </div>
+  );
 }

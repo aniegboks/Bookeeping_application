@@ -4,6 +4,7 @@ import { AcademicSession, CreateAcademicSessionData } from "@/lib/types/academic
 import SmallLoader from "../ui/small_loader";
 import toast from "react-hot-toast";
 import { useState } from "react";
+import { getErrorMessage } from "@/lib/utils/errors";
 
 export default function SessionModal({
   formData,
@@ -44,7 +45,7 @@ export default function SessionModal({
           body: JSON.stringify(formData),
         });
         if (!res.ok) throw new Error("Failed to update session");
-        const updated = await res.json();
+        const updated: AcademicSession = await res.json();
         setSessions(sessions.map((s) => (s.id === editingSession.id ? updated : s)));
         toast.success("Session updated!");
       } else {
@@ -54,15 +55,15 @@ export default function SessionModal({
           body: JSON.stringify(formData),
         });
         if (!res.ok) throw new Error("Failed to create session");
-        const created = await res.json();
+        const created: AcademicSession = await res.json();
         setSessions([...sessions, created]);
         toast.success("Session created!");
       }
       setShowModal(false);
       setEditingSession(null);
       resetForm();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

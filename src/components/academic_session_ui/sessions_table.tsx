@@ -91,9 +91,14 @@ export default function SessionsTable({
 
       setSessions((prev) => prev.filter((s) => s.id !== id));
       toast.success("Academic session deleted successfully!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete academic session");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Failed to delete academic session");
+      }
     }
+
   };
 
   const formatDate = (dateStr: string) =>
@@ -149,11 +154,10 @@ export default function SessionsTable({
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        session.status === "active"
+                      className={`px-2 py-1 text-xs font-semibold rounded-full ${session.status === "active"
                           ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
-                      }`}
+                        }`}
                     >
                       {session.status}
                     </span>

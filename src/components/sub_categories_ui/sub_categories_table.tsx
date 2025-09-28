@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { FolderOpen, PenSquare, Trash2 } from "lucide-react";
 import { SubCategory, Category } from "@/lib/types/sub_categories";
-import SmallLoader from "../ui/small_loader";
 import DeleteSubCategoryModal from "./sub_categories_delete";
 
 interface TableProps {
@@ -17,7 +16,6 @@ interface TableProps {
 export default function SubCategoriesTable({
     subCategories,
     categories,
-    loading,
     onEdit,
     onDelete,
 }: TableProps) {

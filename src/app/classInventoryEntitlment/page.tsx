@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -50,13 +50,13 @@ export default function ClassInventoryDashboard() {
     sessionTerms: [] as { id: string; name: string }[],
   });
 
-  useEffect(() => {
-    loadLookups();
-    loadEntitlements();
+  const showNotification = useCallback((message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
   }, []);
 
   // Fetch lookup data
-  const loadLookups = async () => {
+  const loadLookups = useCallback(async () => {
     const token = getToken();
     try {
       const [classesRes, itemsRes, termsRes] = await Promise.all([
@@ -72,14 +72,9 @@ export default function ClassInventoryDashboard() {
     } catch {
       showNotification("Failed to load lookup data", "error");
     }
-  };
+  }, [showNotification]);
 
-  const showNotification = (message: string, type: "success" | "error") => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const loadEntitlements = async () => {
+  const loadEntitlements = useCallback(async () => {
     setLoading(true);
     const token = getToken();
     try {
@@ -89,7 +84,12 @@ export default function ClassInventoryDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
+
+  useEffect(() => {
+    loadLookups();
+    loadEntitlements();
+  }, [loadLookups, loadEntitlements]);
 
   const openModal = (entitlement?: ClassInventoryEntitlement) => {
     if (entitlement) {
@@ -205,9 +205,8 @@ export default function ClassInventoryDashboard() {
       {/* Notification */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-2 ${
-            notification.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
-          }`}
+          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-2 ${notification.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
+            }`}
         >
           {notification.type === "success" ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
           {notification.message}

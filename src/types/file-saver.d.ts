@@ -1,4 +1,5 @@
-declare module "file-saver" {
-    export function saveAs(data: Blob, filename: string, options?: any): void;
-  }
-  
+import { saveAs } from "file-saver";
+
+// Example usage
+const blob = new Blob(["Hello world!"], { type: "text/plain;charset=utf-8" });
+saveAs(blob, "hello.txt", { autoBom: true });

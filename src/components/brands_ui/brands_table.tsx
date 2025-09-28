@@ -17,7 +17,7 @@ export default function BrandsTable({ brands, searchTerm, setSearchTerm, openCre
         new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+        <div className="bg-white rounded-lg  border border-gray-200 overflow-x-auto">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-[#171D26]">All Brands</h2>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
@@ -58,10 +58,10 @@ export default function BrandsTable({ brands, searchTerm, setSearchTerm, openCre
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(brand.updated_at)}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
                                 <button onClick={() => openEditModal(brand)} className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50">
-                                    <PenSquare size={16} />
+                                    <PenSquare className="h-4 w-4" />
                                 </button>
                                 <button onClick={() => handleDelete(brand.id, brand.name)} className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50">
-                                    <Trash2 size={16} />
+                                    <Trash2 className="h-4 w-4" />
                                 </button>
                             </td>
                         </tr>

@@ -1,4 +1,3 @@
-// CORRECTED MIDDLEWARE (middleware.ts)
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -13,22 +12,20 @@ export async function middleware(request: NextRequest) {
 
     try {
         const verify = await fetch(`${book_keeping_test_url}`, {
-            method: "GET", // ✅ ADD: Explicitly specify GET method
+            method: "GET",
             headers: {
                 Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json", // ✅ ADD: Content-Type header
+                "Content-Type": "application/json",
             },
         });
 
         if (!verify.ok) {
-            // ✅ IMPROVE: Clear invalid token before redirecting
             const response = NextResponse.redirect(new URL("/login", request.url));
             response.cookies.delete("token");
             return response;
         }
     } catch (err) {
         console.error("Authentication error:", err);
-        // ✅ IMPROVE: Clear token on network errors too
         const response = NextResponse.redirect(new URL("/login", request.url));
         response.cookies.delete("token");
         return response;
@@ -37,11 +34,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
 }
 
-// ✅ IMPROVE: Better matcher to avoid redirect loops
 export const config = {
     matcher: [
-        // Exclude: API routes, Next.js internals, static files, login page
         '/((?!api/|_next/static|_next/image|favicon.ico|images/|login$).*)'
     ],
 };
-

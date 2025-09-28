@@ -29,7 +29,7 @@ export default function CategoriesControls({ searchTerm, setSearchTerm, viewMode
           <button onClick={() => setViewMode('grid')} className={`px-3 py-1 rounded-md text-sm font-medium ${viewMode==='grid'?'bg-white shadow-sm':'text-gray-600 hover:text-gray-900'}`}>Grid</button>
         </div>
 
-        <button onClick={onAdd} className="bg-[#3D4C63] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap">
+        <button onClick={onAdd} className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap">
           <Plus size={16} /> Add Category
         </button>
       </div>

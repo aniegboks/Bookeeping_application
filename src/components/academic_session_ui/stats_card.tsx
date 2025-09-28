@@ -54,7 +54,7 @@ function Card({
   bg: string;
 }) {
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <div className="bg-white rounded-lg p-6 border border-gray-200">
       {/* Vertical on sm+md, horizontal on lg+ */}
       <div className="flex flex-col lg:flex-row items-center lg:items-center text-center lg:text-left">
         <div className={`p-3 rounded-full ${bg} mb-3 lg:mb-0 lg:mr-4`}>

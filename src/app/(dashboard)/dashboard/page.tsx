@@ -9,6 +9,7 @@ import SessionsTable from "@/components/academic_session_ui/sessions_table";
 import SessionModal from "@/components/academic_session_ui/session_modal";
 import Loader from "@/components/ui/loading_spinner";
 import Container from "@/components/ui/container";
+import { Download } from "lucide-react";
 
 export default function Dashboard() {
   const [sessions, setSessions] = useState<AcademicSession[]>([]);
@@ -107,9 +108,10 @@ export default function Dashboard() {
         <div className="flex items-center justify-start mt-4">
           <button
             onClick={downloadSpreadsheet}
-            className="bg-[#687EA2] text-white px-4 py-2 rounded hover:bg-[#687EA2] transition mt-4"
+            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
           >
-            Download Spreadsheet
+            <Download className="w-5 h-5" />
+            <span>Export</span>
           </button>
         </div>
       </Container>

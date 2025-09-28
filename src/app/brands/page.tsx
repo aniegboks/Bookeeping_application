@@ -9,6 +9,7 @@ import BrandModal from "@/components/brands_ui/brands_modal";
 import DeleteBrandModal from "@/components/brands_ui/delete_brand_modal";
 import Container from "@/components/ui/container";
 import LoadingSpinner from "@/components/ui/loading_spinner";
+import { Download } from "lucide-react";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -184,9 +185,10 @@ export default function BrandsManagement() {
                 <div className="flex items-center justify-start mt-4">
                     <button
                         onClick={exportToExcel}
-                        className="bg-[#687EA2] text-white px-4 py-2 rounded hover:bg-[#687EA2] transition mt-4"
+                        className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
                     >
-                        Download Spreadsheet
+                        <Download className="w-5 h-5" />
+                        <span>Export</span>
                     </button>
                 </div>
             </Container>

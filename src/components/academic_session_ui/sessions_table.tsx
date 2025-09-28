@@ -105,7 +105,7 @@ export default function SessionsTable({
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white rounded-lg border border-gray-200 px-6 py-4">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-[#171D26]">
             Academic Sessions
@@ -120,7 +120,7 @@ export default function SessionsTable({
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 py-4">
               <tr>
                 {["Session", "Name", "Start Date", "End Date", "Status", "Actions"].map(
                   (h) => (
@@ -136,15 +136,15 @@ export default function SessionsTable({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sessions.map((session) => (
-                <tr key={session.id} className="hover:bg-gray-50">
+                <tr key={session.id} className="hover:bg-gray-50 py-4">
                   <td className="px-6 py-4 text-sm font-medium text-[#171D26]">
                     {session.session}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{session.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-6 py-6 text-sm text-gray-900">{session.name}</td>
+                  <td className="px-6 py-6 text-sm text-gray-500">
                     {formatDate(session.start_date)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-6 py-6 text-sm text-gray-500">
                     {formatDate(session.end_date)}
                   </td>
                   <td className="px-6 py-4">
@@ -163,13 +163,13 @@ export default function SessionsTable({
                       onClick={() => openEditModal(session)}
                       className="text-[#3D4C63] hover:text-[#495C79] p-1 rounded hover:bg-blue-50"
                     >
-                      <PenSquare size={16} />
+                      <PenSquare className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setDeleteId(session.id)}
                       className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>

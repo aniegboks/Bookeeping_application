@@ -1,16 +1,18 @@
+"use client";
+
 import { FolderOpen, Plus, Search, Grid } from "lucide-react";
 
 interface StatsCardsProps {
   total: number;
   addedToday: number;
   searchResults: number;
-  viewMode: 'grid' | 'list';
+  viewMode: "grid" | "list";
 }
 
 export default function StatsCards({ total, addedToday, searchResults, viewMode }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      {/** Total Categories */}
+      {/* Total Categories */}
       <div className="bg-white rounded-lg p-6 border border-gray-200">
         <div className="flex items-center">
           <div className="p-3 rounded-full bg-purple-100 mr-4">
@@ -23,7 +25,7 @@ export default function StatsCards({ total, addedToday, searchResults, viewMode 
         </div>
       </div>
 
-      {/** Added Today */}
+      {/* Added Today */}
       <div className="bg-white rounded-lg p-6 border border-gray-200">
         <div className="flex items-center">
           <div className="p-3 rounded-full bg-green-100 mr-4">
@@ -36,7 +38,7 @@ export default function StatsCards({ total, addedToday, searchResults, viewMode 
         </div>
       </div>
 
-      {/** Search Results */}
+      {/* Search Results */}
       <div className="bg-white rounded-lg p-6 border border-gray-200">
         <div className="flex items-center">
           <div className="p-3 rounded-full bg-blue-100 mr-4">
@@ -49,7 +51,7 @@ export default function StatsCards({ total, addedToday, searchResults, viewMode 
         </div>
       </div>
 
-      {/** View Mode */}
+      {/* View Mode */}
       <div className="bg-white rounded-lg p-6 border border-gray-200">
         <div className="flex items-center">
           <div className="p-3 rounded-full bg-orange-100 mr-4">

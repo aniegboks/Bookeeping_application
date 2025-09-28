@@ -9,6 +9,7 @@ const DeleteCategoriesModal = ({
   setShowDeleteModal: (show: boolean) => void;
   confirmDelete: () => void;
 }) => {
+    
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center">
     {/* Overlay */}
@@ -45,4 +46,4 @@ const DeleteCategoriesModal = ({
   </div>  )
 }
 
-export default DeleteCategoriesModal
+export default DeleteCategoriesModal    

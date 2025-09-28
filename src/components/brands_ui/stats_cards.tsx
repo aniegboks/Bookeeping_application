@@ -25,7 +25,7 @@ export default function StatsCards({ brands, filteredBrands }: StatsCardsProps) 
 
 function Card({ icon, title, value, color }: { icon: React.ReactNode; title: string; value: number; color: string }) {
   return (
-    <div className={`bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4`}>
+    <div className={`bg-white p-6 rounded-lg border border-gray-200 flex items-center gap-4`}>
       <div className={`p-3 rounded-full bg-${color}-100`}>{icon}</div>
       <div>
         <p className="text-sm text-gray-600">{title}</p>

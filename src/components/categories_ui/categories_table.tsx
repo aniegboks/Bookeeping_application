@@ -76,13 +76,13 @@ export default function CategoriesTable({
                                     onClick={() => openEditModal(c)}
                                     className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50 transition-colors"
                                 >
-                                    <PenSquare size={16} />
+                                    <PenSquare className="h-4 w-4" />
                                 </button>
                                 <button
                                     onClick={() => openDeleteModal(c)}
                                     className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50 transition-colors"
                                 >
-                                    <Trash2 size={16} />
+                                    <Trash2 className="h-4 w-4" />
                                 </button>
                             </td>
                         </tr>

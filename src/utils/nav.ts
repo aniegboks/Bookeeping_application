@@ -9,7 +9,7 @@ export const AcademicSessionTerms: NavItem[] = [
   { label: "Academic Session", link: "/dashboard" },
   { label: "Brands", link: "/brands" },
   { label: "Categories", link: "/categories" },
-  { label: "Sub Categories", link: "/subcategories" },
+  { label: "Sub Categories", link: "/subCategories" },
   { label: "UOM", link: "/uom" },
   { label: "InventoryItems", link: "/inventoryItem" },
 ];

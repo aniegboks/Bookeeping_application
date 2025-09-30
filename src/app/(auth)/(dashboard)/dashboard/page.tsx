@@ -69,7 +69,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#F3F4F7] p-6">
       <Container>
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-8 flex justify-between items-center mt-12">
           <div>
             <h1 className="text-3xl font-bold text-[#171D26] mb-2">
               Academic Sessions Dashboard

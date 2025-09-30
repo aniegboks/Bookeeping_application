@@ -1,4 +1,7 @@
 import { NextRequest } from "next/server";
+import { Category } from "./types/categories";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://inventory-backend-hm7r.onrender.com/api/v1";
 
 export class CategoriesApiError extends Error {
   status: number;
@@ -8,36 +11,35 @@ export class CategoriesApiError extends Error {
   }
 }
 
-// Extract token from NextRequest cookies
 export const getTokenFromRequest = (req: NextRequest): string => {
   const token = req.cookies.get("token")?.value;
   if (!token) throw new CategoriesApiError("Unauthorized", 401);
   return token;
 };
 
-// Standardized success response (generic, no "any")
-export const successResponse = <T>(data: T, status = 200) => {
+export const successResponse = <T>(data: T, status = 200): Response => {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json" },
   });
 };
 
-// Standardized error response
-export const errorResponse = (message: string, status = 500) => {
+export const errorResponse = (message: string, status = 500): Response => {
   return new Response(JSON.stringify({ error: message }), {
     status,
     headers: { "Content-Type": "application/json" },
   });
 };
 
-// Generic API request to backend (typed with <T>)
 export const categoriesApiRequest = async <T>(
   endpoint: string,
-  { method = "GET", token, body }: { method?: string; token: string; body?: string }
+  {
+    method = "GET",
+    token,
+    body,
+  }: { method?: string; token: string; body?: string }
 ): Promise<T> => {
-  const baseUrl = "https://inventory-backend-hm7r.onrender.com/api/v1";
-  const res = await fetch(`${baseUrl}${endpoint}`, {
+  const res = await fetch(`${BASE_URL}${endpoint}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -54,7 +56,48 @@ export const categoriesApiRequest = async <T>(
     );
   }
 
-  // Return empty object for 204 DELETE
-  if (res.status === 204) return {} as T;
-  return (await res.json()) as T;
+  return res.status === 204 ? ({} as T) : (await res.json()) as T;
+};
+
+async function fetchWithAuth(url: string, options: RequestInit = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new CategoriesApiError(
+      errorData?.message || response.statusText,
+      response.status
+    );
+  }
+
+  return response.json();
+}
+
+export async function getAll(): Promise<Category[]> {
+  return fetchWithAuth(`${BASE_URL}/categories`, {
+    method: "GET",
+    credentials: "include",
+  });
+}
+
+export async function getAllWithToken(token: string): Promise<Category[]> {
+  return categoriesApiRequest<Category[]>("/categories", { token });
+}
+export const categoriesApi = {
+  getTokenFromRequest,
+  successResponse,
+  errorResponse,
+  request: categoriesApiRequest,
+  getAll,
+  getAllWithToken,
 };

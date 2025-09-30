@@ -1,4 +1,11 @@
 // lib/categories-client.ts
+export interface Category {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function fetchCategories() {
     const res = await fetch('/api/categories');
     if (!res.ok) throw new Error('Failed to fetch categories');

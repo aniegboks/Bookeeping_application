@@ -66,4 +66,11 @@ export interface SubCategory {
     });
     if (!res.ok) throw new Error("Failed to delete sub-category");
   }
+  export const subCategoryApi = {
+    getAll: fetchAllSubCategories,
+    fetchById: fetchSubCategoryById,
+    create: createSubCategory,
+    update: updateSubCategory,
+    delete: deleteSubCategory,
+  };
   

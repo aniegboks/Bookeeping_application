@@ -1,15 +1,22 @@
-import { NextRequest } from "next/server";
-import { Category } from "./types/categories";
+// src/lib/categories.ts (Final Corrected Code)
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://inventory-backend-hm7r.onrender.com/api/v1";
+import { NextRequest, NextResponse } from "next/server";
+import { Category } from "./types/categories"; // Ensure this path is correct
 
+// Define the custom error class
 export class CategoriesApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
     super(message);
     this.status = status;
+    this.name = 'CategoriesApiError';
   }
 }
+
+// Ensure environment variable is read correctly
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://inventory-backend-hm7r.onrender.com/api/v1";
+
+// --- Token and Response Helpers ---
 
 export const getTokenFromRequest = (req: NextRequest): string => {
   const token = req.cookies.get("token")?.value;
@@ -31,6 +38,10 @@ export const errorResponse = (message: string, status = 500): Response => {
   });
 };
 
+// ----------------------------------------------------------------------
+// CORE API REQUEST FUNCTION (ROBUST AND FINAL)
+// ----------------------------------------------------------------------
+
 export const categoriesApiRequest = async <T>(
   endpoint: string,
   {
@@ -39,60 +50,68 @@ export const categoriesApiRequest = async <T>(
     body,
   }: { method?: string; token: string; body?: string }
 ): Promise<T> => {
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
+  // Full URL construction
+  const fullUrl = `${BASE_URL}${endpoint}`;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body,
+    // Add cache control to ensure fresh data
+    cache: 'no-store'
   });
 
+  // 1. Read the body ONCE as text
+  const responseText = await res.text();
+
   if (!res.ok) {
-    const errorData = await res.json().catch(() => null);
+    let errorData = null;
+
+    // Attempt JSON parsing only if the text is present
+    if (responseText) {
+      try {
+        errorData = JSON.parse(responseText);
+      } catch (e) {
+        // Parsing failed, use raw text as fallback error message.
+      }
+    }
+
+    // Use message from JSON or the first 100 chars of raw text as a fallback
     throw new CategoriesApiError(
-      (errorData as { message?: string })?.message || `HTTP ${res.status}`,
+      (errorData as { message?: string })?.message || `HTTP ${res.status}: ${responseText.slice(0, 100)}`,
       res.status
     );
   }
 
-  return res.status === 204 ? ({} as T) : (await res.json()) as T;
-};
-
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const headers = {
-    "Content-Type": "application/json",
-    ...options.headers,
-  };
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: "include",
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new CategoriesApiError(
-      errorData?.message || response.statusText,
-      response.status
-    );
+  // 2. Check for empty body (204 No Content or zero length body)
+  if (res.status === 204 || responseText.length === 0) {
+    // Correctly handle 204 by returning a type that resolves the Promise without parsing
+    return {} as T; 
   }
 
-  return response.json();
-}
+  // 3. Return the parsed JSON from the text
+  try {
+      return JSON.parse(responseText) as T;
+  } catch (e) {
+      // Catch unexpected JSON errors on otherwise successful responses
+      throw new CategoriesApiError("Successful status, but response body is not valid JSON.", 500);
+  }
+};
 
-export async function getAll(): Promise<Category[]> {
-  return fetchWithAuth(`${BASE_URL}/categories`, {
-    method: "GET",
-    credentials: "include",
-  });
+// --- Exported API Call Functions ---
+
+export async function getAll(token: string): Promise<Category[]> {
+  return categoriesApiRequest<Category[]>("/categories", { method: "GET", token });
 }
 
 export async function getAllWithToken(token: string): Promise<Category[]> {
+  // This is redundant but kept for completeness if used elsewhere
   return categoriesApiRequest<Category[]>("/categories", { token });
 }
+
 export const categoriesApi = {
   getTokenFromRequest,
   successResponse,

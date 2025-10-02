@@ -96,7 +96,7 @@ export default function CategoriesTable({
       </table>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && selectedCategory && (
+      {showDeleteModal && (
         <DeleteCategoriesModal
           selectedCategory={selectedCategory}
           setShowDeleteModal={setShowDeleteModal}

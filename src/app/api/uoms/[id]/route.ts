@@ -3,12 +3,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/uoms";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+/**
+ * Type for the route handler context parameter
+ * In Next.js 15, params is a Promise
+ */
+interface Context {
+  params: Promise<{ id: string }>;
+}
+
+export async function GET(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const res = await fetch(`${BASE_URL}/${params.id}`, {
+    const { id } = await params;
+    const res = await fetch(`${BASE_URL}/${id}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -24,13 +33,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const { id } = await params;
     const body = await req.json();
-    const res = await fetch(`${BASE_URL}/${params.id}`, {
+    const res = await fetch(`${BASE_URL}/${id}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -48,12 +58,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const res = await fetch(`${BASE_URL}/${params.id}`, {
+    const { id } = await params;
+    const res = await fetch(`${BASE_URL}/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -61,7 +72,27 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       },
     });
 
-    return NextResponse.json({ message: "Deleted" }, { status: res.status });
+    // If backend returns 204 No Content, convert to 200 with JSON
+    // NextResponse.json() cannot use status 204
+    if (res.status === 204) {
+      return NextResponse.json({ success: true, message: "Deleted" }, { status: 200 });
+    }
+
+    // For other status codes, try to get response data
+    if (res.ok) {
+      try {
+        const data = await res.json();
+        return NextResponse.json({ success: true, ...data }, { status: 200 });
+      } catch {
+        // If no JSON body, return simple success
+        return NextResponse.json({ success: true, message: "Deleted" }, { status: 200 });
+      }
+    }
+
+    // Handle error responses
+    const errorData = await res.json().catch(() => ({ error: "Delete failed" }));
+    return NextResponse.json(errorData, { status: res.status });
+    
   } catch (err) {
     console.error("Error deleting UOM:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

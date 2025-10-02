@@ -27,21 +27,18 @@ export default function SubCategoriesPage() {
 
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  /** Load categories */
   const loadCategories = async () => {
     const res = await fetch("/api/categories");
     if (!res.ok) throw new Error("Failed to load categories");
     setCategories(await res.json());
   };
 
-  /** Load sub-categories */
   const loadSubCategories = async () => {
     const res = await fetch("/api/sub_categories");
     if (!res.ok) throw new Error("Failed to load sub-categories");
     setSubCategories(await res.json());
   };
 
-  /** Initial load */
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -66,7 +63,7 @@ export default function SubCategoriesPage() {
       return;
     }
 
-    setLoading(true);
+    setLoading(true); // Keep loader for *modal submission*
     try {
       if (editingItem) {
         const res = await fetch(`/api/sub_categories/${editingItem.id}`, {
@@ -75,6 +72,12 @@ export default function SubCategoriesPage() {
           body: JSON.stringify(formData),
         });
         if (!res.ok) throw new Error("Failed to update sub-category");
+
+        const updatedItem: SubCategory = await res.json();
+
+        setSubCategories(prev =>
+          prev.map(item => item.id === updatedItem.id ? updatedItem : item)
+        );
 
         toast.success("Sub-category updated successfully!");
       } else {
@@ -85,6 +88,9 @@ export default function SubCategoriesPage() {
         });
         if (!res.ok) throw new Error("Failed to create sub-category");
 
+        const newItem: SubCategory = await res.json();
+
+        setSubCategories(prev => [...prev, newItem]);
         toast.success("Sub-category created successfully!");
       }
 
@@ -93,8 +99,6 @@ export default function SubCategoriesPage() {
       setEditingItem(null);
       setIsModalOpen(false);
 
-      // Refresh AFTER action completes
-      await Promise.all([loadCategories(), loadSubCategories()]);
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
@@ -102,7 +106,6 @@ export default function SubCategoriesPage() {
         toast.error("An unexpected error occurred");
       }
     } finally {
-      // Only stop loading once everything is done
       setLoading(false);
     }
   };
@@ -115,25 +118,30 @@ export default function SubCategoriesPage() {
   };
 
   /** Delete handler */
-  const handleDelete = async (id: string) => {
-    setLoading(true);
+  /** Delete handler */
+  const handleDelete = async (id: string): Promise<void> => {
     try {
-      const res = await fetch(`/api/sub_categories/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete sub-category");
+      const res = await fetch(`/api/sub_categories/${id}`, {
+        method: "DELETE"
+      });
 
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete sub-category");
+      }
+
+      // Remove from state immediately
+      setSubCategories(prev => prev.filter(item => item.id !== id));
+
+      // Show success message
       toast.success("Sub-category deleted successfully!");
 
-      // Refresh AFTER deletion
-      await Promise.all([loadCategories(), loadSubCategories()]);
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
         toast.error("An unexpected error occurred");
       }
-    } finally {
-      // Stop loading once re-fetch is done
-      setLoading(false);
     }
   };
 
@@ -147,7 +155,7 @@ export default function SubCategoriesPage() {
     return matchesSearch && matchesFilter;
   });
 
-  /** Export */
+  /** Export (unchanged) */
   const exportSubCategoriesToExcel = () => {
     if (subCategories.length === 0)
       return toast.error("No sub-categories to export");
@@ -183,8 +191,9 @@ export default function SubCategoriesPage() {
 
   return (
     <div className="h-screen bg-[#F3F4F7]">
+      <div className="mx-6">
       <Container>
-        <div className="bg">
+        <div className="bg mt-24">
           <h1 className="text-3xl font-bold mb-2 my-4 text-[#171D26]">
             Sub-Categories Management
           </h1>
@@ -269,20 +278,14 @@ export default function SubCategoriesPage() {
         <div className="flex gap-2 mt-4">
           <button
             onClick={exportSubCategoriesToExcel}
-            className="flex items-center gap-2  bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:bg-[#495C79] transition-colors"
+            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:bg-[#495C79] transition-colors btn-color"
           >
             <Download className="w-5 h-5" />
             Export
           </button>
         </div>
       </Container>
-
-      {/* Full-page overlay loader during CRUD */}
-      {loading && (
-        <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-[#F3F4F7] bg-opacity-40 z-50">
-          <Loader />
-        </div>
-      )}
+      </div>
     </div>
   );
 }

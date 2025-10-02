@@ -12,4 +12,8 @@ export const AcademicSessionTerms: NavItem[] = [
   { label: "Sub Categories", link: "/subCategories" },
   { label: "UOM", link: "/uom" },
   { label: "InventoryItems", link: "/inventoryItem" },
+  { label: "Class Inventory Entitlement", link: "/classInventoryEntitlment" },
+  { label: "Suppliers", link: "/suppliers" },
+  { label: "Users", link: "/user" },
+  { label: "Classes", link: "/classes" },
 ];

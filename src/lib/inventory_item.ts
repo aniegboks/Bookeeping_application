@@ -1,4 +1,3 @@
-// lib/inventory-item-api.ts
 import {
   InventoryItem,
   CreateInventoryItemInput,
@@ -6,77 +5,73 @@ import {
   InventoryItemFilters,
 } from "@/lib/types/inventory_item";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://inventory-backend-hm7r.onrender.com/api/v1";
+const BASE_URL = "/api/proxy/inventory_items";
 
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("token"); // Or cookies if SSR
-  console.log("Fetching URL:", url);
-  console.log("Token:", token);
-  console.log("Options before headers:", options);
-
-  const headers = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
-  };
-
-  console.log("Final headers:", headers);
-
+async function fetchProxy(url: string, options: RequestInit = {}) {
   try {
-    console.log("this is the options", options, url);
-    const response = await fetch(url, { ...options, headers, cache: "no-store" });
-    console.log("Response status:", response.status);
+      const response = await fetch(url, {
+          ...options,
+          headers: {
+              "Content-Type": "application/json",
+              ...(options.headers || {}),
+          },
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error("Error response data:", errorData);
-      throw new Error(errorData?.message || response.statusText);
-    }
+      if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          
+          // 401 check, handled by the server proxy response
+          if (response.status === 401) {
+              window.location.href = "/login";
+          }
 
-    const data = await response.json();
-    console.log("Response data:", data);
-    return data;
+          throw new Error(errorData?.message || response.statusText);
+      }
+
+      // Handle 204 No Content - don't try to parse JSON
+      if (response.status === 204) {
+          return null;
+      }
+
+      // For all other successful responses, parse JSON
+      return response.json();
   } catch (err) {
-    console.error("Fetch failed:", err);
-    throw err;
+      console.error("Fetch failed:", err);
+      throw err;
   }
 }
 
 export const inventoryItemApi = {
   async getAll(filters?: InventoryItemFilters): Promise<InventoryItem[]> {
-    const query = new URLSearchParams(filters as Record<string, string>).toString();
-    const url = `${BASE_URL}/inventory-items${query ? `?${query}` : ""}`;
-    console.log("getAll URL:", url);
-    return fetchWithAuth(url);
+      const query = new URLSearchParams(filters as Record<string, string>).toString();
+      const url = `${BASE_URL}${query ? `?${query}` : ""}`;
+      return fetchProxy(url);
   },
 
   async getById(id: string): Promise<InventoryItem> {
-    const url = `${BASE_URL}/inventory-items/${id}`;
-    console.log("getById URL:", url);
-    return fetchWithAuth(url);
+      const url = `${BASE_URL}/${id}`;
+      return fetchProxy(url);
   },
 
   async create(data: CreateInventoryItemInput): Promise<InventoryItem> {
-    console.log("Creating inventory item:", data);
-    const url = `${BASE_URL}/inventory-items`;
-    return fetchWithAuth(url, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+      return fetchProxy(BASE_URL, {
+          method: "POST",
+          body: JSON.stringify(data),
+      });
   },
 
   async update(id: string, data: UpdateInventoryItemInput): Promise<InventoryItem> {
-    console.log("Updating inventory item:", id, data);
-    const url = `${BASE_URL}/inventory-items/${id}`;
-    return fetchWithAuth(url, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
+      const url = `${BASE_URL}/${id}`;
+      return fetchProxy(url, {
+          method: "PUT",
+          body: JSON.stringify(data),
+      });
   },
 
   async delete(id: string): Promise<void> {
-    console.log("Deleting inventory item:", id);
-    const url = `${BASE_URL}/inventory-items/${id}`;
-    await fetchWithAuth(url, { method: "DELETE" });
+      const url = `${BASE_URL}/${id}`;
+      await fetchProxy(url, {
+          method: "DELETE",
+      });
   },
 };

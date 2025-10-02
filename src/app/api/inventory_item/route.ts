@@ -1,55 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-const BASE_URL = 'https://inventory-backend-hm7r.onrender.com/api/v1/inventory_items';
+const BACKEND_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/inventory_items";
 
-/**
- * GET /api/inventory_items
- */
 export async function GET(req: NextRequest) {
-  try {
-    const url = new URL(req.url);
-    const query = url.search; // preserve filters
-    console.log('GET request URL:', req.url);
-    console.log('Forwarding query to backend:', query);
+  const token = req.cookies.get("token")?.value;
+  if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const res = await fetch(`${BASE_URL}${query}`, {
-      headers: { 'Content-Type': 'application/json' },
+  const url = new URL(BACKEND_URL);
+  // Forward query params
+  req.nextUrl.searchParams.forEach((value, key) => url.searchParams.append(key, value));
+
+  try {
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });
 
-    console.log('Backend response status:', res.status);
-
     const data = await res.json();
-    console.log('Backend response data:', data);
-
     return NextResponse.json(data, { status: res.status });
-  } catch (error) {
-    console.error('GET error:', error);
-    return NextResponse.json({ message: 'Failed to fetch inventory items' }, { status: 500 });
+  } catch (err) {
+    console.error("Proxy GET error:", err);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
 
-/**
- * POST /api/inventory_items
- */
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    console.log('POST request body:', body);
+  const token = req.cookies.get("token")?.value;
+  if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const res = await fetch(BASE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+  const body = await req.json();
+
+  try {
+    const res = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    console.log('Backend response status:', res.status);
-
     const data = await res.json();
-    console.log('Backend response data:', data);
-
     return NextResponse.json(data, { status: res.status });
-  } catch (error) {
-    console.error('POST error:', error);
-    return NextResponse.json({ message: 'Failed to create inventory item' }, { status: 500 });
+  } catch (err) {
+    console.error("Proxy POST error:", err);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

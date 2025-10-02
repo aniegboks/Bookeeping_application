@@ -156,7 +156,7 @@ export default function CategoriesManagement() {
         <div className="p-6 bg-[#F3F4F7] min-h-screen">
             <Container>
                 {/* HEADER */}
-                <div className="mb-8">
+                <div className="mb-8 mt-24">
                     <h1 className="text-3xl font-bold mb-2 text-[#171D26]">Categories Management</h1>
                     <p className="text-gray-600">Organize your inventory with product categories</p>
                 </div>
@@ -219,7 +219,7 @@ export default function CategoriesManagement() {
             />
 
             {/* DELETE MODAL */}
-            {showDeleteModal && selectedCategory && (
+            {showDeleteModal && (
                 <DeleteCategoriesModal
                     selectedCategory={selectedCategory}
                     setShowDeleteModal={setShowDeleteModal}

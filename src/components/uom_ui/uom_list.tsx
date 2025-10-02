@@ -1,28 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, Plus } from "lucide-react";
 import { UOM } from "@/lib/types/uom";
-import { uomApi } from "@/lib/uom";
 import UOMListItem from "./uom_list_item";
+import SmallLoader from "../ui/small_loader";
 
 interface UOMListProps {
+  uoms: UOM[];
+  loading?: boolean;
   onEdit: (uom: UOM) => void;
   onDelete: (id: string, name: string) => void;
   openCreateModal: () => void;
 }
 
-export default function UOMList({ onEdit, onDelete, openCreateModal }: UOMListProps) {
-  const [uoms, setUoms] = useState<UOM[]>([]);
+export default function UOMList({ 
+  uoms, 
+  loading = false,
+  onEdit, 
+  onDelete, 
+  openCreateModal 
+}: UOMListProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUOMs = async () => {
-      const data = await uomApi.getAll();
-      setUoms(data);
-      setLoading(false);
-    };
-    fetchUOMs();
-  }, []);
 
   const filteredUOMs = uoms.filter(u =>
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,13 +60,21 @@ export default function UOMList({ onEdit, onDelete, openCreateModal }: UOMListPr
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {filteredUOMs.length > 0 ? (
+          {loading ? (
+            <tr>
+              <td colSpan={4} className="text-center py-12 text-gray-500">
+                <SmallLoader />
+              </td>
+            </tr>
+          ) : filteredUOMs.length > 0 ? (
             filteredUOMs.map(uom => (
               <UOMListItem key={uom.id} uom={uom} onEdit={onEdit} onDelete={onDelete} />
             ))
           ) : (
             <tr>
-              <td colSpan={4} className="text-center py-12 text-gray-500">No UOMs found</td>
+              <td colSpan={4} className="text-center py-12 text-gray-500">
+                {searchTerm ? "No UOMs found matching your search" : "No UOMs found"}
+              </td>
             </tr>
           )}
         </tbody>

@@ -18,7 +18,6 @@ const DeleteCategoriesModal = ({
   setShowDeleteModal,
   confirmDelete,
 }: DeleteCategoriesModalProps) => {
-  if (!selectedCategory) return null;
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center">
@@ -33,7 +32,7 @@ const DeleteCategoriesModal = ({
         <h2 className="text-lg font-semibold text-gray-800">Delete Category</h2>
         <p className="text-sm text-gray-600 mt-2">
           Are you sure you want to delete{" "}
-          <span className="font-medium">{selectedCategory.name}</span>? This
+          <span className="font-medium">{selectedCategory?.name}</span>? This
           action cannot be undone.
         </p>
         <div className="flex justify-end gap-3 mt-6">

@@ -7,6 +7,8 @@ import { Category } from "@/lib/types/categories";
 import { SubCategory } from "@/lib/types/sub_categories";
 import { UOM } from "@/lib/types/uom";
 import { InventoryItem } from "@/lib/types/inventory_item";
+import { inventoryItemApi } from "@/lib/inventory_item";
+import { referenceDataApi } from "@/lib/refrence_data_api";
 import InventoryItemForm from "@/components/inventory_items_ui/inventory_item_form";
 import InventoryItemList from "@/components/inventory_items_ui/inventory_item_list";
 import StatsCards from "@/components/inventory_items_ui/stats_card";
@@ -28,40 +30,15 @@ export default function InventoryPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  /** Fetch functions */
-  const fetchCategories = async () => {
-    const res = await fetch("/api/categories");
-    if (!res.ok) throw new Error("Failed to fetch categories");
-    return res.json() as Promise<Category[]>;
-  };
-
-  const fetchBrands = async () => {
-    const res = await fetch("/api/brands");
-    if (!res.ok) throw new Error("Failed to fetch brands");
-    return res.json() as Promise<Brand[]>;
-  };
-
-  const fetchSubCategories = async () => {
-    const res = await fetch("/api/sub_categories");
-    if (!res.ok) throw new Error("Failed to fetch sub-categories");
-    return res.json() as Promise<SubCategory[]>;
-  };
-
-  const fetchUOMs = async () => {
-    const res = await fetch("/api/uoms");
-    if (!res.ok) throw new Error("Failed to fetch UOMs");
-    return res.json() as Promise<UOM[]>;
-  };
-
-  /** Load all reference data from API */
+  /** Load all reference data from API using the secure proxy */
   const loadReferenceData = async () => {
     try {
       const [categoryData, brandData, subCategoryData, uomData] =
         await Promise.all([
-          fetchCategories(),
-          fetchBrands(),
-          fetchSubCategories(),
-          fetchUOMs(),
+          referenceDataApi.fetchCategories(),
+          referenceDataApi.fetchBrands(),
+          referenceDataApi.fetchSubCategories(),
+          referenceDataApi.fetchUOMs(),
         ]);
 
       setCategories(categoryData);
@@ -69,15 +46,23 @@ export default function InventoryPage() {
       setSubCategories(subCategoryData);
       setUOMs(uomData);
 
-      if (categoryData.length === 0)
-        toast.error("No categories found. Please add categories first.");
-      if (brandData.length === 0)
-        toast.error("No brands found. Please add brands first.");
-      if (subCategoryData.length === 0)
-        toast.error("No sub-categories found. Please add sub-categories first.");
-      if (uomData.length === 0)
-        toast.error("No units of measure found. Please add UOMs first.");
+      // Only show warnings on initial load
+      if (initialLoading) {
+        if (categoryData.length === 0) {
+          toast.error("No categories found. Please add categories first.");
+        }
+        if (brandData.length === 0) {
+          toast.error("No brands found. Please add brands first.");
+        }
+        if (subCategoryData.length === 0) {
+          toast.error("No sub-categories found. Please add sub-categories first.");
+        }
+        if (uomData.length === 0) {
+          toast.error("No units of measure found. Please add UOMs first.");
+        }
+      }
     } catch (err: any) {
+      console.error("Failed to load reference data:", err);
       toast.error("Failed to load reference data: " + err.message);
     } finally {
       setInitialLoading(false);
@@ -90,30 +75,73 @@ export default function InventoryPage() {
   }, []);
 
   /** Success handler (after form submit) */
-  const handleSuccess = async () => {
+  const handleSuccess = async (isEdit: boolean) => {
+    // Show appropriate success message
+    if (isEdit) {
+      toast.success("Inventory item updated successfully!");
+    } else {
+      toast.success("Inventory item created successfully!");
+    }
+
     setShowForm(false);
     setEditingItem(null);
     setRefreshKey((prev) => prev + 1);
-    await loadReferenceData(); // refresh dropdowns
+    await loadReferenceData();
   };
 
   /** Delete handler */
   const confirmDelete = async () => {
     if (!itemToDelete) return;
-    try {
-      const res = await fetch(`/api/inventory_items/${itemToDelete.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete item");
 
-      toast.success("Item deleted successfully");
+    const loadingToast = toast.loading("Deleting item...");
+
+    try {
+      await inventoryItemApi.delete(itemToDelete.id);
+
+      toast.dismiss(loadingToast);
+      toast.success("Inventory item deleted successfully!");
+
       setShowDeleteModal(false);
       setItemToDelete(null);
       setRefreshKey((prev) => prev + 1);
-      await loadReferenceData();
     } catch (error: any) {
+      toast.dismiss(loadingToast);
+      console.error("Failed to delete item:", error);
       toast.error("Failed to delete item: " + error.message);
     }
+  };
+
+  /** Handle opening edit form */
+  const handleEdit = (item: InventoryItem) => {
+    if (canShowForm()) {
+      setEditingItem(item);
+      setShowForm(true);
+    } else {
+      toast.error("Cannot edit item. Required reference data is missing.");
+    }
+  };
+
+  /** Handle opening delete modal */
+  const handleDeleteRequest = (item: InventoryItem) => {
+    setItemToDelete(item);
+    setShowDeleteModal(true);
+  };
+
+  /** Handle opening create form */
+  const handleAddItem = () => {
+    if (canShowForm()) {
+      setEditingItem(null);
+      setShowForm(true);
+    } else {
+      toast.error("Cannot add item. Please ensure all reference data (categories, brands, sub-categories, UOMs) are available.");
+    }
+  };
+
+  /** Handle canceling form */
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingItem(null);
+    toast("Form canceled", { icon: "ℹ️" });
   };
 
   /** Guard — only show form if all reference data exists */
@@ -136,79 +164,72 @@ export default function InventoryPage() {
   }
 
   return (
-    <Container>
-      <h1 className="text-2xl font-bold mb-6">Inventory Items</h1>
-
-      {/* Stats */}
-      <StatsCards brands={brands} filteredBrands={brands} />
-
-      {/* Form Section */}
-      {showForm && canShowForm() ? (
-        <div className="mb-6 border p-4 rounded bg-gray-50">
-          <h2 className="text-lg font-semibold mb-4">
-            {editingItem ? "Edit Item" : "Add New Item"}
-          </h2>
-          <InventoryItemForm
-            item={editingItem || undefined}
-            onSuccess={handleSuccess}
-            onCancel={() => setShowForm(false)}
-            brands={brands}
-            categories={categories}
-            subCategories={subCategories}
-            uoms={uoms}
-          />
-          <button
-            className="mt-4 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            onClick={() => {
-              setShowForm(false);
-              setEditingItem(null);
-            }}
-          >
-            Cancel
-          </button>
+    <div className="mx-6">
+      <Container>
+        <div className="mt-18 mb-6">
+          <h1 className="text-2xl font-bold mb-6">Inventory Items</h1>
         </div>
-      ) : (
-        <button
-          className={`mb-6 px-4 py-2 text-white rounded ${
-            canShowForm()
+        {/* Stats */}
+        <StatsCards brands={brands} filteredBrands={brands} />
+
+        {/* Form Section */}
+        {showForm && canShowForm() ? (
+          <div className="mb-6 border p-4 rounded bg-gray-50">
+            <h2 className="text-lg font-semibold mb-4">
+              {editingItem ? "Edit Item" : "Add New Item"}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InventoryItemForm
+                item={editingItem || undefined}
+                onSuccess={() => handleSuccess(!!editingItem)}
+                onCancel={handleCancel}
+                brands={brands}
+                categories={categories}
+                subCategories={subCategories}
+                uoms={uoms}
+              />
+              <button
+                className="mt-4 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className={`mb-6 px-4 py-2 text-white rounded ${canShowForm()
               ? "bg-blue-500 hover:bg-blue-600"
               : "bg-gray-400 cursor-not-allowed"
-          }`}
-          onClick={() => canShowForm() && setShowForm(true)}
-          disabled={!canShowForm()}
-        >
-          + Add Item
-        </button>
-      )}
+              }`}
+            onClick={handleAddItem}
+            disabled={!canShowForm()}
+          >
+            + Add Item
+          </button>
+        )}
 
-      {/* Inventory List */}
-      <InventoryItemList
-        key={refreshKey}
-        onEdit={(item) => {
-          if (canShowForm()) {
-            setEditingItem(item);
-            setShowForm(true);
-          } else {
-            toast.error("Required reference data is missing.");
-          }
-        }}
-        onDelete={(item) => {
-          setItemToDelete(item);
-          setShowDeleteModal(true);
-        }}
-      />
-
-      {/* Delete Modal */}
-      {showDeleteModal && itemToDelete && (
-        <DeleteItemModal
-          itemName={itemToDelete.name}
-          onConfirm={confirmDelete}
-          onCancel={() => {
-            setShowDeleteModal(false);
-            setItemToDelete(null);
-          }}
+        {/* Inventory List */}
+        <InventoryItemList
+          key={refreshKey}
+          onEdit={handleEdit}
+          onDelete={handleDeleteRequest}
         />
-      )}
-    </Container>
+
+        {/* Delete Modal */}
+        {showDeleteModal && itemToDelete && (
+          <DeleteItemModal
+            itemName={itemToDelete.name}
+            onConfirm={confirmDelete}
+            onCancel={() => {
+              setShowDeleteModal(false);
+              setItemToDelete(null);
+              toast("Delete canceled", { icon: "ℹ️" });
+            }}
+          />
+        )}
+      </Container>
+    </div>
+
   );
 }

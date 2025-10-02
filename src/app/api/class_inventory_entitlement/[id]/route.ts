@@ -1,39 +1,122 @@
 // app/api/class_inventory_entitlements/[id]/route.ts
-import { NextResponse, type NextRequest } from "next/server";
-import { classInventoryEntitlementsApi } from "@/lib/class_inventory_entitlement";
 
-interface Params {
+import { NextRequest, NextResponse } from "next/server";
+
+const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/class_inventory_entitlements";
+
+/**
+ * Context type for route parameters
+ * In Next.js 15, params is a Promise
+ */
+interface Context {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(req: NextRequest, { params }: Params) {
+// GET /api/class_inventory_entitlements/[id]
+export async function GET(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const { id } = await params;
-  const response = await classInventoryEntitlementsApi.getClassInventoryEntitlementById(id, token);
-  if (response.error) return NextResponse.json({ error: response.error }, { status: response.status });
-  return NextResponse.json(response.data);
+  try {
+    const { id } = await params;
+    const res = await fetch(`${BASE_URL}/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Error fetching class inventory entitlement by ID:", err);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+// PUT /api/class_inventory_entitlements/[id]
+export async function PUT(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const { id } = await params;
-  const body = await req.json();
-  const response = await classInventoryEntitlementsApi.updateClassInventoryEntitlement(id, body, token);
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const res = await fetch(`${BASE_URL}/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
-  if (response.error) return NextResponse.json({ error: response.error }, { status: response.status });
-  return NextResponse.json(response.data);
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Error updating class inventory entitlement:", err);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
 
-export async function DELETE(req: NextRequest, { params }: Params) {
+// DELETE /api/class_inventory_entitlements/[id]
+export async function DELETE(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const { id } = await params;
-  const response = await classInventoryEntitlementsApi.deleteClassInventoryEntitlement(id, token);
-  if (response.error) return NextResponse.json({ error: response.error }, { status: response.status });
-  return NextResponse.json({ success: true });
+  try {
+    const { id } = await params;
+    const res = await fetch(`${BASE_URL}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    // If backend returns 204 No Content, convert to 200 with JSON
+    if (res.status === 204) {
+      return NextResponse.json(
+        { success: true, message: "Deleted" },
+        { status: 200 }
+      );
+    }
+
+    // For other status codes, try to get response data
+    if (res.ok) {
+      try {
+        const data = await res.json();
+        return NextResponse.json({ success: true, ...data }, { status: 200 });
+      } catch {
+        return NextResponse.json(
+          { success: true, message: "Deleted" },
+          { status: 200 }
+        );
+      }
+    }
+
+    // Handle error responses
+    const errorData = await res.json().catch(() => ({ error: "Delete failed" }));
+    return NextResponse.json(errorData, { status: res.status });
+  } catch (err) {
+    console.error("Error deleting class inventory entitlement:", err);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }

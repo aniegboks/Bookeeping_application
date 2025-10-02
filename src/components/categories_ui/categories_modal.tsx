@@ -70,7 +70,7 @@ export default function CategoryModal({
               type="button"
               onClick={onSubmit}
               disabled={isSubmitting || !formData.name.trim()}
-              className={`px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] flex items-center gap-2 ${
+              className={`px-4 py-2 text-white rounded-lg  flex items-center gap-2 ${
                 isSubmitting || !formData.name.trim()
                   ? "opacity-50 cursor-not-allowed"
                   : ""

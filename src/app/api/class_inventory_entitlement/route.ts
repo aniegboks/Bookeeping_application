@@ -1,32 +1,67 @@
 // app/api/class_inventory_entitlements/route.ts
-import { NextResponse, type NextRequest } from "next/server";
-import { classInventoryEntitlementsApi } from "@/lib/class_inventory_entitlement";
 
+import { NextRequest, NextResponse } from "next/server";
+
+const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/class_inventory_entitlements";
+
+// GET /api/class_inventory_entitlements
 export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    // Get query parameters from the request
+    const searchParams = req.nextUrl.searchParams;
+    const queryString = searchParams.toString();
+    const url = `${BASE_URL}${queryString ? `?${queryString}` : ""}`;
 
-  const { searchParams } = new URL(req.url);
-  const filters = {
-    class_id: searchParams.get("class_id") || undefined,
-    inventory_item_id: searchParams.get("inventory_item_id") || undefined,
-    session_term_id: searchParams.get("session_term_id") || undefined,
-  };
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
 
-  const response = await classInventoryEntitlementsApi.getAllClassInventoryEntitlements(filters, token);
-
-  if (response.error) return NextResponse.json({ error: response.error }, { status: response.status });
-  return NextResponse.json(response.data);
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Error fetching class inventory entitlements:", err);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }
 
+// POST /api/class_inventory_entitlements
 export async function POST(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const body = await req.json();
-  const response = await classInventoryEntitlementsApi.createClassInventoryEntitlement(body, token);
+  try {
+    const body = await req.json();
+    const res = await fetch(BASE_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
-  if (response.error) return NextResponse.json({ error: response.error }, { status: response.status });
-  return NextResponse.json(response.data, { status: 201 });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Error creating class inventory entitlement:", err);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }

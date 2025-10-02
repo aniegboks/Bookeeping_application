@@ -11,7 +11,7 @@ const Nav = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="w-full sticky top-0 z-50 bg-[#F3F4F7] mt-4">
+    <div className="w-full sticky top-0 z-50 bg-[#F3F4F7]">
       <Container>
         <div className="flex items-center justify-between py-4 px-4 bg-white rounded-md">
           {/* Profile section */}

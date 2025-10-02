@@ -148,7 +148,7 @@ export default function BrandsManagement() {
   return (
     <div className="min-h-screen p-6 bg-[#F3F4F7]">
       <Container>
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-24">
           <div>
             <h1 className="text-3xl font-bold text-[#171D26] mb-2">
               Brands Management

@@ -1,5 +1,6 @@
 // src/app/api/sub_categories/[id]/route.ts
-import { NextResponse, type NextRequest } from "next/server";
+
+import { NextRequest, NextResponse } from "next/server";
 import {
   fetchSubCategoryById,
   updateSubCategory,
@@ -7,7 +8,11 @@ import {
   SubCategory,
 } from "@/lib/sub_categories";
 
-interface Params {
+/**
+ * Type for the route handler context parameter
+ * In Next.js 15, params is a Promise
+ */
+interface Context {
   params: Promise<{ id: string }>;
 }
 
@@ -19,39 +24,59 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
-export async function GET(req: NextRequest, { params }: Params) {
+// GET /api/sub_categories/[id]
+export async function GET(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const { id } = await params;
-    const data: SubCategory = await fetchSubCategoryById(token!, id);
-    return NextResponse.json(data);
+    const subCategory: SubCategory = await fetchSubCategoryById(token, id);
+    return NextResponse.json(subCategory, { status: 200 });
   } catch (err: unknown) {
+    console.error("Failed to fetch sub-category:", err);
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+// PUT /api/sub_categories/[id]
+export async function PUT(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
-  const body: Partial<SubCategory> = await req.json();
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const { id } = await params;
-    const updated = await updateSubCategory(token!, id, body);
-    return NextResponse.json(updated);
+    const body: Partial<SubCategory> = await req.json();
+    const updated = await updateSubCategory(token, id, body);
+    return NextResponse.json(updated, { status: 200 });
   } catch (err: unknown) {
+    console.error("Failed to update sub-category:", err);
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: Params) {
+// DELETE /api/sub_categories/[id]
+export async function DELETE(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const { id } = await params;
-    await deleteSubCategory(token!, id);
-    return NextResponse.json({ success: true }, { status: 204 });
+    const deleted = await deleteSubCategory(token, id);
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Sub-category not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: unknown) {
+    console.error("Failed to delete sub-category:", err);
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

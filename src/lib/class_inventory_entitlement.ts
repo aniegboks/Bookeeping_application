@@ -1,187 +1,118 @@
-// lib/classInventoryEntitlementsApi.ts
+// lib/class_inventory_entitlement.ts
 
-export interface ClassInventoryEntitlement {
-  id: string;
-  class_id: string;
-  inventory_item_id: string;
-  session_term_id: string;
-  quantity: number;
-  notes: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
+import {
+  ClassInventoryEntitlement,
+  CreateClassInventoryEntitlementInput,
+  UpdateClassInventoryEntitlementInput,
+  ClassInventoryEntitlementFilters,
+} from "@/lib/types/class_inventory_entitlement";
 
-export interface CreateClassInventoryEntitlementRequest {
-  class_id: string;
-  inventory_item_id: string;
-  session_term_id: string;
-  quantity: number;
-  notes: string;
-  created_by: string;
-}
+const BASE_URL = "/api/proxy/class_inventory_entitlements";
 
-export type UpdateClassInventoryEntitlementRequest = Partial<CreateClassInventoryEntitlementRequest>;
-
-export interface BulkUpsertClassInventoryEntitlementRequest {
-  class_id: string;
-  inventory_item_id: string;
-  session_term_id: string;
-  quantity: number;
-  notes: string;
-  created_by: string;
-}
-
-export interface GetClassInventoryEntitlementsFilters {
-  class_id?: string;
-  inventory_item_id?: string;
-  session_term_id?: string;
-}
-
-export interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-  status: number;
-}
-
-export class ClassInventoryEntitlementsAPI {
-  private baseURL: string;
-
-  constructor(baseURL = "https://inventory-backend-hm7r.onrender.com") {
-    this.baseURL = baseURL;
-  }
-
-  private async makeRequest<T>(
-    endpoint: string,
-    options: RequestInit = {},
-    token?: string
-  ): Promise<ApiResponse<T>> {
-    try {
-      const headers: Record<string, string> = {
+async function fetchProxy(url: string, options: RequestInit = {}) {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
         "Content-Type": "application/json",
-        ...(options.headers as Record<string, string>),
-      };
+        ...(options.headers || {}),
+      },
+    });
 
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
 
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
-        ...options,
-        headers,
-      });
-
-      const status = response.status;
-      if (status === 204) return { status };
-
-      if (!response.ok) {
-        return { error: `HTTP ${status}: ${response.statusText}`, status };
+      // 401 check, handled by the server proxy response
+      if (response.status === 401) {
+        window.location.href = "/login";
       }
 
-      const data: T = await response.json();
-      return { data, status };
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : "Unknown error",
-        status: 0,
-      };
+      throw new Error(errorData?.message || response.statusText);
     }
-  }
 
-  private buildQueryParams(filters: GetClassInventoryEntitlementsFilters) {
-    const params = new URLSearchParams();
-    if (filters.class_id) params.append("class_id", filters.class_id);
-    if (filters.inventory_item_id)
-      params.append("inventory_item_id", filters.inventory_item_id);
-    if (filters.session_term_id)
-      params.append("session_term_id", filters.session_term_id);
-    return params.toString() ? `?${params.toString()}` : "";
-  }
+    // Handle 204 No Content - don't try to parse JSON
+    if (response.status === 204) {
+      return null;
+    }
 
-  // ===== CRUD methods =====
-  async getAllClassInventoryEntitlements(
-    filters: GetClassInventoryEntitlementsFilters = {},
-    token?: string
-  ) {
-    return this.makeRequest<ClassInventoryEntitlement[]>(
-      `/api/v1/class_inventory_entitlements${this.buildQueryParams(filters)}`,
-      {},
-      token
-    );
-  }
-
-  async getClassInventoryEntitlementById(id: string, token?: string) {
-    return this.makeRequest<ClassInventoryEntitlement>(
-      `/api/v1/class_inventory_entitlements/${id}`,
-      {},
-      token
-    );
-  }
-
-  async createClassInventoryEntitlement(
-    data: CreateClassInventoryEntitlementRequest,
-    token?: string
-  ) {
-    return this.makeRequest<ClassInventoryEntitlement>(
-      `/api/v1/class_inventory_entitlements`,
-      { method: "POST", body: JSON.stringify(data) },
-      token
-    );
-  }
-
-  async updateClassInventoryEntitlement(
-    id: string,
-    data: UpdateClassInventoryEntitlementRequest,
-    token?: string
-  ) {
-    return this.makeRequest<ClassInventoryEntitlement>(
-      `/api/v1/class_inventory_entitlements/${id}`,
-      { method: "PUT", body: JSON.stringify(data) },
-      token
-    );
-  }
-
-  async deleteClassInventoryEntitlement(id: string, token?: string) {
-    return this.makeRequest<null>(
-      `/api/v1/class_inventory_entitlements/${id}`,
-      { method: "DELETE" },
-      token
-    );
-  }
-
-  async bulkUpsertClassInventoryEntitlements(
-    entitlements: BulkUpsertClassInventoryEntitlementRequest[],
-    token?: string
-  ) {
-    return this.makeRequest<ClassInventoryEntitlement[]>(
-      `/api/v1/class_inventory_entitlements/bulk_upsert`,
-      { method: "POST", body: JSON.stringify(entitlements) },
-      token
-    );
-  }
-
-  // ===== Lookup methods =====
-  async getClasses(token?: string) {
-    return this.makeRequest<{ id: string; name: string }[]>(
-      `/api/v1/classes`,
-      {},
-      token
-    );
-  }
-
-  async getInventoryItems(token?: string) {
-    return this.makeRequest<{ id: string; name: string }[]>(
-      `/api/v1/inventory_items`,
-      {},
-      token
-    );
-  }
-
-  async getSessionTerms(token?: string) {
-    return this.makeRequest<{ id: string; name: string }[]>(
-      `/api/v1/session_terms`,
-      {},
-      token
-    );
+    // For all other successful responses, parse JSON
+    return response.json();
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    throw err;
   }
 }
 
-export const classInventoryEntitlementsApi = new ClassInventoryEntitlementsAPI();
+export const classInventoryEntitlementApi = {
+  /**
+   * Get all class inventory entitlements with optional filters
+   */
+  async getAll(
+    filters?: ClassInventoryEntitlementFilters
+  ): Promise<ClassInventoryEntitlement[]> {
+    const query = new URLSearchParams(
+      filters as Record<string, string>
+    ).toString();
+    const url = `${BASE_URL}${query ? `?${query}` : ""}`;
+    return fetchProxy(url);
+  },
+
+  /**
+   * Get a single class inventory entitlement by ID
+   */
+  async getById(id: string): Promise<ClassInventoryEntitlement> {
+    const url = `${BASE_URL}/${id}`;
+    return fetchProxy(url);
+  },
+
+  /**
+   * Create a new class inventory entitlement
+   */
+  async create(
+    data: CreateClassInventoryEntitlementInput
+  ): Promise<ClassInventoryEntitlement> {
+    return fetchProxy(BASE_URL, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update an existing class inventory entitlement
+   */
+  async update(
+    id: string,
+    data: UpdateClassInventoryEntitlementInput
+  ): Promise<ClassInventoryEntitlement> {
+    const url = `${BASE_URL}/${id}`;
+    return fetchProxy(url, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a class inventory entitlement
+   */
+  async delete(id: string): Promise<void> {
+    const url = `${BASE_URL}/${id}`;
+    await fetchProxy(url, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Bulk upsert class inventory entitlements
+   * Upsert (insert or update) multiple entitlements at once
+   * Records are matched on (class_id, inventory_item_id, session_term_id)
+   */
+  async bulkUpsert(
+    data: CreateClassInventoryEntitlementInput[]
+  ): Promise<ClassInventoryEntitlement[]> {
+    const url = `${BASE_URL}/bulk_upsert`;
+    return fetchProxy(url, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+};

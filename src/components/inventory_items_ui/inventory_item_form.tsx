@@ -127,7 +127,7 @@ export default function InventoryItemForm({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 overflow-y-auto max-h-[90vh] relative">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 overflow-y-auto max-h-[90vh] relative">
         {/* Cancel button */}
         <button
           type="button"
@@ -345,7 +345,7 @@ export default function InventoryItemForm({
               className={`px-6 py-2 rounded text-white ${
                 isSubmitting
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-green-500 hover:bg-green-600"
+                  : "bg-[#3D4C63] hover:bg-[#495C79]"
               }`}
             >
               {isSubmitting ? "Saving..." : item ? "Update Item" : "Create Item"}

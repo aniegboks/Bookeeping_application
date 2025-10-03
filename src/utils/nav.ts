@@ -16,4 +16,5 @@ export const AcademicSessionTerms: NavItem[] = [
   { label: "Suppliers", link: "/suppliers" },
   { label: "Users", link: "/user" },
   { label: "Classes", link: "/classes" },
+  { label: "Class Teachers", link: "/classTeachers" },
 ];

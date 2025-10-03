@@ -64,7 +64,7 @@ export default function UserTable({
               >
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   <div className="flex items-center gap-2">
-                    <UserIcon size={16} className="text-gray-400" />
+                    <UserIcon className="text-[#3D4C63] h-4 w-4" />
                     <span className="max-w-[200px] truncate" title={user.name}>
                       {user.name || "—"}
                     </span>
@@ -72,7 +72,7 @@ export default function UserTable({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   <div className="flex items-center gap-2">
-                    <Mail size={16} className="text-gray-400" />
+                    <Mail className="text-[#3D4C63] h-4 w-4" />
                     <span className="max-w-[250px] truncate" title={user.email}>
                       {user.email || "—"}
                     </span>
@@ -80,7 +80,7 @@ export default function UserTable({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   <div className="flex items-center gap-2">
-                    <Phone size={16} className="text-gray-400" />
+                    <Phone className="text-[#3D4C63] h-4 w-4" />
                     <span>{user.phone || "—"}</span>
                   </div>
                 </td>
@@ -104,17 +104,17 @@ export default function UserTable({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onEdit(user)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
                       title="Edit User"
                     >
-                      <Edit size={16} />
+                      <Edit className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => onDelete(user)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete User"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </td>

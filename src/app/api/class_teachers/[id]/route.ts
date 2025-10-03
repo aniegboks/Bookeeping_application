@@ -1,8 +1,8 @@
-// app/api/academic_session_terms/[id]/route.ts
+// app/api/class_teachers/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 
-const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/academic_session_terms";
+const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/class_teachers";
 
 /**
  * Context type for route parameters
@@ -12,7 +12,7 @@ interface Context {
   params: Promise<{ id: string }>;
 }
 
-// GET /api/academic_session_terms/[id]
+// GET /api/class_teachers/[id]
 export async function GET(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: Context) {
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
-    console.error("Error fetching academic session by ID:", err);
+    console.error("Error fetching class teacher by ID:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: Context) {
   }
 }
 
-// PUT /api/academic_session_terms/[id]
+// PUT /api/class_teachers/[id]
 export async function PUT(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
@@ -63,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: Context) {
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
-    console.error("Error updating academic session:", err);
+    console.error("Error updating class teacher:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: Context) {
   }
 }
 
-// DELETE /api/academic_session_terms/[id]
+// DELETE /api/class_teachers/[id]
 export async function DELETE(req: NextRequest, { params }: Context) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
@@ -113,7 +113,7 @@ export async function DELETE(req: NextRequest, { params }: Context) {
     const errorData = await res.json().catch(() => ({ error: "Delete failed" }));
     return NextResponse.json(errorData, { status: res.status });
   } catch (err) {
-    console.error("Error deleting academic session:", err);
+    console.error("Error deleting class teacher:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

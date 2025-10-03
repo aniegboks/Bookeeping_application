@@ -174,11 +174,7 @@ export default function InventoryPage() {
 
         {/* Form Section */}
         {showForm && canShowForm() ? (
-          <div className="mb-6 border p-4 rounded bg-gray-50">
-            <h2 className="text-lg font-semibold mb-4">
-              {editingItem ? "Edit Item" : "Add New Item"}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
               <InventoryItemForm
                 item={editingItem || undefined}
                 onSuccess={() => handleSuccess(!!editingItem)}
@@ -188,25 +184,21 @@ export default function InventoryPage() {
                 subCategories={subCategories}
                 uoms={uoms}
               />
-              <button
-                className="mt-4 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-                onClick={handleCancel}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+       
         ) : (
-          <button
-            className={`mb-6 px-4 py-2 text-white rounded ${canShowForm()
-              ? "bg-blue-500 hover:bg-blue-600"
-              : "bg-gray-400 cursor-not-allowed"
-              }`}
-            onClick={handleAddItem}
-            disabled={!canShowForm()}
-          >
-            + Add Item
-          </button>
+          <div className="bg-white w-full flex  items-center justify-between rounded-md border border-gray-200">
+            <h3 className="text-lg font-semibold m-8">Inventory Items</h3>
+            <button
+              className={`my-8 mr-8 px-4 py-2 text-white rounded ${canShowForm()
+                ? "bg-[#3D4C63] hover:bg-[#495C79]"
+                : "bg-gray-400 cursor-not-allowed"
+                }`}
+              onClick={handleAddItem}
+              disabled={!canShowForm()}
+            >
+              + Add Item
+            </button>
+          </div>
         )}
 
         {/* Inventory List */}

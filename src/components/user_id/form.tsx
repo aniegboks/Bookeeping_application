@@ -30,11 +30,11 @@ export default function UserForm({
     useEffect(() => {
         if (user) {
             setFormData({
-                email: user.email,
-                password: "", // Don't populate password for editing
-                phone: user.phone,
-                name: user.name,
-                roles: user.roles || [],
+                email: user.email ?? "",
+                password: "", // never prefill password
+                phone: user.phone ?? "",
+                name: user.name ?? "",
+                roles: user.roles ?? [],
             });
         }
     }, [user]);
@@ -51,7 +51,6 @@ export default function UserForm({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate roles
         const invalidRoles = formData.roles.filter(role => !VALID_ROLES.includes(role));
         if (invalidRoles.length > 0) {
             setRoleError(`roles can only include: ${VALID_ROLES.join(", ")}`);
@@ -68,7 +67,10 @@ export default function UserForm({
 
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="bg-white rounded-lg max-w-2xl w-full p-6">
+                <h3 className="text-lg font-semibold text-[#171D26] mb-4 py-4">
+                    {user ? "Edit User" : "Create New User"}
+                </h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -77,14 +79,14 @@ export default function UserForm({
                             </label>
                             <input
                                 type="email"
-                                value={formData.email}
+                                value={formData.email ?? ""}
                                 onChange={(e) =>
                                     setFormData({ ...formData, email: e.target.value })
                                 }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                                 required
                                 disabled={isSubmitting}
-                                placeholder="elena@mail.com"
+                                placeholder="name@mail.com"
                             />
                         </div>
 
@@ -94,14 +96,14 @@ export default function UserForm({
                             </label>
                             <input
                                 type="text"
-                                value={formData.name}
+                                value={formData.name ?? ""}
                                 onChange={(e) =>
                                     setFormData({ ...formData, name: e.target.value })
                                 }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                                 required
                                 disabled={isSubmitting}
-                                placeholder="Elena"
+                                placeholder="name"
                             />
                         </div>
                     </div>
@@ -113,14 +115,14 @@ export default function UserForm({
                             </label>
                             <input
                                 type="tel"
-                                value={formData.phone}
+                                value={formData.phone ?? ""}
                                 onChange={(e) =>
                                     setFormData({ ...formData, phone: e.target.value })
                                 }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                                 required
                                 disabled={isSubmitting}
-                                placeholder="377738383"
+                                placeholder="phone"
                             />
                         </div>
 
@@ -130,14 +132,14 @@ export default function UserForm({
                             </label>
                             <input
                                 type="password"
-                                value={formData.password}
+                                value={formData.password ?? ""}
                                 onChange={(e) =>
                                     setFormData({ ...formData, password: e.target.value })
                                 }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                                 required={!user}
                                 disabled={isSubmitting}
-                                placeholder={user ? "Leave blank to keep current" : "elena123"}
+                                placeholder={user ? "Leave blank to keep current" : "password"}
                             />
                             {user && (
                                 <p className="text-gray-500 text-xs mt-1">
@@ -159,7 +161,7 @@ export default function UserForm({
                                 >
                                     <input
                                         type="checkbox"
-                                        checked={formData.roles.includes(role)}
+                                        checked={formData.roles?.includes(role) ?? false}
                                         onChange={() => handleRoleToggle(role)}
                                         disabled={isSubmitting}
                                         className="w-4 h-4 text-[#3D4C63] border-gray-300 rounded focus:ring-[#3D4C63]"

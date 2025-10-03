@@ -57,7 +57,6 @@ export default function InventoryItemList({ filters, onEdit, onDelete }: Props) 
     <div className="bg-white rounded-lg border border-gray-200 px-6 py-4">
       {/* Header with search */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h2 className="text-xl font-semibold text-[#171D26]">Inventory Items</h2>
         <div className="relative w-full md:w-64">
           <input
             type="text"
@@ -88,7 +87,7 @@ export default function InventoryItemList({ filters, onEdit, onDelete }: Props) 
                 "Name",
                 "Selling Price",
                 "Cost Price",
-                "Profit",
+                "Estimated Profit",
                 "Margin",
                 "Updated At",
                 "Actions",

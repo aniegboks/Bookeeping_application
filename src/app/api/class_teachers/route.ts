@@ -1,10 +1,10 @@
-// app/api/academic_session_terms/route.ts
+// app/api/class_teachers/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 
-const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/academic_session_terms";
+const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/class_teachers";
 
-// GET /api/academic_session_terms
+// GET /api/class_teachers
 export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
-    console.error("Error fetching academic sessions:", err);
+    console.error("Error fetching class teachers:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/academic_session_terms
+// POST /api/class_teachers
 export async function POST(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
-    console.error("Error creating academic session:", err);
+    console.error("Error creating class teacher:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

@@ -208,6 +208,7 @@ export default function InventoryPage() {
           onDelete={handleDeleteRequest}
         />
 
+
         {/* Delete Modal */}
         {showDeleteModal && itemToDelete && (
           <DeleteItemModal

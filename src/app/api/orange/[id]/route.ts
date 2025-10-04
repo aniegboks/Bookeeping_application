@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/inventory_items";
+const BACKEND_URL = "https://your-backend-url.com/api/v1/orange";
 
-/**
- * GET /api/inventory_item/[id]
- * Fetch a single inventory item by ID.
- */
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const token = req.cookies.get("token")?.value;
@@ -16,7 +12,6 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
   try {
     const res = await fetch(`${BACKEND_URL}/${id}`, {
-      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -26,15 +21,11 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
-    console.error("Proxy GET by ID error:", err);
+    console.error("Proxy GET error:", err);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
 
-/**
- * PUT /api/inventory_item/[id]
- * Update an inventory item by ID.
- */
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const token = req.cookies.get("token")?.value;
@@ -63,10 +54,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
   }
 }
 
-/**
- * DELETE /api/inventory_item/[id]
- * Delete an inventory item by ID.
- */
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const token = req.cookies.get("token")?.value;
@@ -84,7 +71,6 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
       },
     });
 
-    // No data expected back from DELETE
     return NextResponse.json(null, { status: res.status });
   } catch (err) {
     console.error("Proxy DELETE error:", err);

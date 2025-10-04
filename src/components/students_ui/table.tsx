@@ -1,0 +1,150 @@
+// components/student_ui/student_table.tsx
+
+import { Edit, Trash2, User } from "lucide-react";
+import { Student } from "@/lib/types/students";
+
+interface StudentTableProps {
+  students: Student[];
+  onEdit: (student: Student) => void;
+  onDelete: (student: Student) => void;
+  loading?: boolean;
+}
+
+export default function StudentTable({
+  students,
+  onEdit,
+  onDelete,
+  loading = false,
+}: StudentTableProps) {
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3D4C63] mx-auto"></div>
+        <p className="mt-4 text-gray-500">Loading students...</p>
+      </div>
+    );
+  }
+
+  if (students.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+        <p className="text-gray-500">No students found</p>
+      </div>
+    );
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "inactive":
+        return "bg-gray-100 text-gray-800";
+      case "graduated":
+        return "bg-purple-100 text-purple-800";
+      case "transferred":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Student
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Admission No
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Gender
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date of Birth
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Guardian
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {students.map((student) => (
+              <tr
+                key={student.id}
+                className="hover:bg-gray-50 transition-colors"
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-full">
+                      <User size={20} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {student.first_name} {student.middle_name && `${student.middle_name} `}{student.last_name}
+                      </div>
+                      <div className="text-xs text-gray-500 max-w-[150px] truncate" title={student.id}>
+                        ID: {student.id}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {student.admission_number}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                  {student.gender}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(student.date_of_birth).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900">
+                  <div className="max-w-[200px]">
+                    <div className="font-medium truncate">{student.guardian_name}</div>
+                    <div className="text-gray-500 text-xs truncate">{student.guardian_contact}</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                      student.status
+                    )}`}
+                  >
+                    {student.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onEdit(student)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit Student"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() => onDelete(student)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete Student"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

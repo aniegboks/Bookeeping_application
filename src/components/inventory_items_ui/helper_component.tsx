@@ -1,12 +1,6 @@
-// src/components/debug/ApiDebugHelper.tsx
-// Use this component temporarily to verify your API responses
 "use client";
 
 import { useEffect, useState } from "react";
-import { brandsApi } from "@/lib/brands";
-import { categoriesApi } from "@/lib/categories";
-import { subCategoryApi } from "@/lib/sub_categories";
-import { uomApi } from "@/lib/uom";
 
 export default function ApiDebugHelper() {
   const [debugData, setDebugData] = useState<any>(null);
@@ -21,54 +15,75 @@ export default function ApiDebugHelper() {
         uoms: { loading: true },
       };
 
-      // Check Brands
+      // ✅ Helper for proxy calls
+      async function fetchProxy(path: string) {
+        try {
+          const res = await fetch(`/api/proxy${path}`, {
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store", // ensure fresh data
+          });
+
+          if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`HTTP ${res.status}: ${errText.slice(0, 100)}`);
+          }
+
+          return await res.json();
+        } catch (err: any) {
+          throw new Error(err.message || "Fetch failed");
+        }
+      }
+
+      // --- BRANDS ---
       try {
-        const brands = await brandsApi.getAll();
+        const brands = await fetchProxy("/brands");
         results.brands = {
           success: true,
           count: brands.length,
           sample: brands[0] || null,
-          hasIdField: brands[0] ? 'id' in brands[0] : false,
+          hasIdField: brands[0] ? "id" in brands[0] : false,
         };
       } catch (error: any) {
         results.brands = { success: false, error: error.message };
       }
 
-      // Check Categories
+      // --- CATEGORIES ---
       try {
-        const categories = await categoriesApi.getAll();
+        const categories = await fetchProxy("/categories");
         results.categories = {
           success: true,
           count: categories.length,
           sample: categories[0] || null,
-          hasIdField: categories[0] ? 'id' in categories[0] : false,
+          hasIdField: categories[0] ? "id" in categories[0] : false,
         };
       } catch (error: any) {
         results.categories = { success: false, error: error.message };
       }
 
-      // Check Sub-Categories
+      // --- SUB-CATEGORIES ---
       try {
-        const subCategories = await subCategoryApi.getAll();
+        const subCategories = await fetchProxy("/sub_categories");
         results.subCategories = {
           success: true,
           count: subCategories.length,
           sample: subCategories[0] || null,
-          hasIdField: subCategories[0] ? 'id' in subCategories[0] : false,
-          hasCategoryIdField: subCategories[0] ? 'category_id' in subCategories[0] : false,
+          hasIdField: subCategories[0] ? "id" in subCategories[0] : false,
+          hasCategoryIdField: subCategories[0]
+            ? "category_id" in subCategories[0]
+            : false,
         };
       } catch (error: any) {
         results.subCategories = { success: false, error: error.message };
       }
 
-      // Check UOMs
+      // --- UOMs ---
       try {
-        const uoms = await uomApi.getAll();
+        const uoms = await fetchProxy("/uom");
         results.uoms = {
           success: true,
           count: uoms.length,
           sample: uoms[0] || null,
-          hasIdField: uoms[0] ? 'id' in uoms[0] : false,
+          hasIdField: uoms[0] ? "id" in uoms[0] : false,
         };
       } catch (error: any) {
         results.uoms = { success: false, error: error.message };
@@ -139,9 +154,3 @@ export default function ApiDebugHelper() {
     </div>
   );
 }
-
-// Add this to your inventory page temporarily:
-// import ApiDebugHelper from "@/components/debug/ApiDebugHelper";
-// 
-// Then in your JSX:
-// <ApiDebugHelper />

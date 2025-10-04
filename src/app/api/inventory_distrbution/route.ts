@@ -1,10 +1,10 @@
-// app/api/class_inventory_entitlements/bulk_upsert/route.ts
+// app/api/inventory_transactions/distributions/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 
-const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/class_inventory_entitlements/bulk_upsert";
+const BASE_URL = "https://inventory-backend-hm7r.onrender.com/api/v1/inventory_transactions/distributions";
 
-// POST /api/class_inventory_entitlements/bulk_upsert
+// POST /api/inventory_transactions/distributions
 export async function POST(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
@@ -13,23 +13,6 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    
-    // Validate that body is an array
-    if (!Array.isArray(body)) {
-      return NextResponse.json(
-        { error: "Request body must be an array" },
-        { status: 400 }
-      );
-    }
-
-    // Validate that array is not empty
-    if (body.length === 0) {
-      return NextResponse.json(
-        { error: "Request body cannot be an empty array" },
-        { status: 400 }
-      );
-    }
-
     const res = await fetch(BASE_URL, {
       method: "POST",
       headers: {
@@ -43,7 +26,7 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
-    console.error("Error bulk upserting class inventory entitlements:", err);
+    console.error("Error creating inventory distribution:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

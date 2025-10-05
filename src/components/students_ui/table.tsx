@@ -1,5 +1,3 @@
-// components/student_ui/student_table.tsx
-
 import { Edit, Trash2, User } from "lucide-react";
 import { Student } from "@/lib/types/students";
 
@@ -70,6 +68,9 @@ export default function StudentTable({
                 Guardian
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Address
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -112,6 +113,9 @@ export default function StudentTable({
                     <div className="font-medium truncate">{student.guardian_name}</div>
                     <div className="text-gray-500 text-xs truncate">{student.guardian_contact}</div>
                   </div>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate" title={student.address ||"-"}>
+                  {student.address || "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span

@@ -1,19 +1,31 @@
-// components/inventory_distribution_ui/distribution_table.tsx
-
-import { Edit, User, Calendar, Package } from "lucide-react";
+import { Edit, User, Calendar, Package, School } from "lucide-react";
 import { InventoryDistribution } from "@/lib/types/inventory_distribution";
+import { SchoolClass } from "@/lib/types/classes";
+import { InventoryItem } from "@/lib/types/inventory_item";
 
 interface DistributionTableProps {
   distributions: InventoryDistribution[];
   onEdit: (distribution: InventoryDistribution) => void;
   loading?: boolean;
+  classes: SchoolClass[];
+  inventoryItems: InventoryItem[];
 }
 
 export default function DistributionTable({
   distributions,
   onEdit,
   loading = false,
+  classes,
+  inventoryItems,
 }: DistributionTableProps) {
+  const getClassName = (classId: string) => {
+    return classes.find(c => c.id === classId)?.name || classId;
+  };
+
+  const getItemName = (itemId: string) => {
+    return inventoryItems.find(i => i.id === itemId)?.name || itemId;
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -41,10 +53,10 @@ export default function DistributionTable({
                 Receiver
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Class ID
+                Class
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Item ID
+                Item
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Quantity
@@ -62,10 +74,7 @@ export default function DistributionTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {distributions.map((distribution) => (
-              <tr
-                key={distribution.id}
-                className="hover:bg-gray-50 transition-colors"
-              >
+              <tr key={distribution.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -75,20 +84,25 @@ export default function DistributionTable({
                       <div className="text-sm font-medium text-gray-900">
                         {distribution.receiver_name}
                       </div>
-                      <div className="text-xs text-gray-500 max-w-[120px] truncate" title={distribution.received_by}>
+                      <div className="text-xs text-gray-500 max-w-[120px] truncate">
                         {distribution.received_by}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <div className="max-w-[100px] truncate" title={distribution.class_id}>
-                    {distribution.class_id}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <School size={14} className="text-gray-400" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {getClassName(distribution.class_id)}
+                      </div>
+                    </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <div className="max-w-[100px] truncate" title={distribution.inventory_item_id}>
-                    {distribution.inventory_item_id}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {getItemName(distribution.inventory_item_id)}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -116,8 +130,9 @@ export default function DistributionTable({
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     title="Edit Distribution"
                   >
-                    <Edit size={16} />
+                    Edit
                   </button>
+                  {/* No delete button because backend does not support it */}
                 </td>
               </tr>
             ))}

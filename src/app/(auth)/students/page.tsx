@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Student } from "@/lib/types/students";
 import { studentApi } from "@/lib/students";
+import { schoolClassApi } from "@/lib/classes";
+import { userApi } from "@/lib/user";
+import { SchoolClass } from "@/lib/types/classes";
+import { User } from "@/lib/types/user";
+
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
 import StatsCards from "@/components/students_ui/stats_card";
@@ -14,6 +19,8 @@ import DeleteModal from "@/components/students_ui/delete_modal";
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
@@ -28,15 +35,23 @@ export default function StudentsPage() {
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load students
-  const loadStudents = async () => {
+  // Load all initial data
+  const loadData = async () => {
+    setInitialLoading(true);
     try {
       setLoading(true);
-      const data = await studentApi.getAll();
-      setStudents(data);
+      const [studentsData, classesData, usersData] = await Promise.all([
+        studentApi.getAll(),
+        schoolClassApi.getAll(),
+        userApi.getAll(),
+      ]);
+
+      setStudents(studentsData);
+      setClasses(classesData);
+      setUsers(usersData);
     } catch (err: any) {
-      console.error("Failed to load students:", err);
-      toast.error("Failed to load students: " + err.message);
+      console.error("Failed to load data:", err);
+      toast.error("Failed to load data: " + err.message);
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -44,7 +59,7 @@ export default function StudentsPage() {
   };
 
   useEffect(() => {
-    loadStudents();
+    loadData();
   }, []);
 
   // Filter students
@@ -62,12 +77,10 @@ export default function StudentsPage() {
     return matchesSearch && matchesStatus && matchesGender;
   });
 
-  // Handle form submission (create/update)
+  // Form submission
   const handleFormSubmit = async (data: any) => {
     setIsSubmitting(true);
-    const loadingToast = toast.loading(
-      editingStudent ? "Updating student..." : "Creating student..."
-    );
+    const loadingToast = toast.loading(editingStudent ? "Updating student..." : "Creating student...");
 
     try {
       if (editingStudent) {
@@ -82,7 +95,7 @@ export default function StudentsPage() {
 
       setShowForm(false);
       setEditingStudent(null);
-      await loadStudents();
+      await loadData();
     } catch (err: any) {
       toast.dismiss(loadingToast);
       console.error("Form submission failed:", err);
@@ -92,19 +105,18 @@ export default function StudentsPage() {
     }
   };
 
-  // Handle edit
+  // Edit
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
     setShowForm(true);
   };
 
-  // Handle delete request
+  // Delete
   const handleDeleteRequest = (student: Student) => {
     setDeletingStudent(student);
     setShowDeleteModal(true);
   };
 
-  // Confirm delete
   const confirmDelete = async () => {
     if (!deletingStudent) return;
 
@@ -115,10 +127,9 @@ export default function StudentsPage() {
       await studentApi.delete(deletingStudent.id);
       toast.dismiss(loadingToast);
       toast.success("Student deleted successfully!");
-
       setShowDeleteModal(false);
       setDeletingStudent(null);
-      await loadStudents();
+      await loadData();
     } catch (err: any) {
       toast.dismiss(loadingToast);
       console.error("Delete failed:", err);
@@ -128,20 +139,17 @@ export default function StudentsPage() {
     }
   };
 
-  // Handle cancel
   const handleCancel = () => {
     setShowForm(false);
     setEditingStudent(null);
     toast("Form canceled", { icon: "ℹ️" });
   };
 
-  // Handle add new
   const handleAdd = () => {
     setEditingStudent(null);
     setShowForm(true);
   };
 
-  // Initial loading screen
   if (initialLoading) {
     return (
       <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-[#F3F4F7] z-50">
@@ -154,20 +162,13 @@ export default function StudentsPage() {
     <div className="min-h-screen bg-[#F3F4F7]">
       <Container>
         <div className="mt-24 pb-8">
-          {/* Header */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-[#171D26] mb-2">
-              Student Management
-            </h1>
-            <p className="text-gray-600">
-              Manage student records, admissions, and information
-            </p>
+            <h1 className="text-3xl font-bold text-[#171D26] mb-2">Student Management</h1>
+            <p className="text-gray-600">Manage student records, admissions, and information</p>
           </div>
 
-          {/* Stats Cards */}
           <StatsCards students={students} filteredStudents={filteredStudents} />
 
-          {/* Controls */}
           <Controls
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -178,7 +179,6 @@ export default function StudentsPage() {
             onAdd={handleAdd}
           />
 
-          {/* Form Modal */}
           {showForm && (
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
               <h2 className="text-xl font-semibold text-[#171D26] mb-4">
@@ -189,11 +189,12 @@ export default function StudentsPage() {
                 onSubmit={handleFormSubmit}
                 onCancel={handleCancel}
                 isSubmitting={isSubmitting}
+                classes={classes}
+                users={users}
               />
             </div>
           )}
 
-          {/* Table */}
           <StudentTable
             students={filteredStudents}
             onEdit={handleEdit}
@@ -201,7 +202,6 @@ export default function StudentsPage() {
             loading={loading}
           />
 
-          {/* Delete Modal */}
           {showDeleteModal && deletingStudent && (
             <DeleteModal
               student={deletingStudent}

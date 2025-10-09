@@ -82,7 +82,7 @@ export default function LoginForm() {
           }`}
         disabled={loading}
       >
-        {loading ? <span className="flex gap-2"><SmallLoader />Logging in...</span> : "Login"}
+        {loading ? <span className="flex items-center justify-center gap-2"><SmallLoader />Logging in...</span> : "Login"}
       </button>
     </form>
   );

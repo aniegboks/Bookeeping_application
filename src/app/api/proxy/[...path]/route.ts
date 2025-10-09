@@ -7,7 +7,7 @@ interface Context {
     params: Promise<{ path: string[] }>;
 }
 
-export async function routeHandler(request: NextRequest, context: Context) {
+async function handleRequest(request: NextRequest, context: Context) {
     try {
         const token = request.cookies.get("token")?.value;
 
@@ -82,9 +82,9 @@ export async function routeHandler(request: NextRequest, context: Context) {
     }
 }
 
-// Export all HTTP methods
-export const GET = routeHandler;
-export const POST = routeHandler;
-export const PUT = routeHandler;
-export const DELETE = routeHandler;
-export const PATCH = routeHandler;
+// Export all HTTP methods (these are the only valid exports for Next.js routes)
+export const GET = handleRequest;
+export const POST = handleRequest;
+export const PUT = handleRequest;
+export const DELETE = handleRequest;
+export const PATCH = handleRequest;

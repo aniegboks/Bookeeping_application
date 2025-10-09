@@ -79,7 +79,8 @@ export default function BulkUploadForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const submitData = rows.map(({ tempId, ...rest }) => rest);
+        // Prefix with underscore to indicate intentionally unused
+        const submitData = rows.map(({ tempId: _tempId, ...rest }) => rest);
         await onSubmit(submitData);
     };
 

@@ -1,13 +1,9 @@
 // src/app/api/categories/[id]/route.ts
-import { NextRequest } from "next/server";
-import {
-  categoriesApiRequest,
-  getTokenFromRequest,
-  successResponse,
-  errorResponse,
-} from "@/lib/categories";
+import { NextRequest, NextResponse } from "next/server";
 
-// Custom error type
+const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL || 
+  'https://inventory-backend-hm7r.onrender.com/api/v1';
+
 interface CustomError extends Error {
   status?: number;
 }
@@ -24,50 +20,132 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
-// GET
+// GET by ID
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    const token = getTokenFromRequest(req);
+    const token = req.cookies.get("token")?.value;
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
     const { id } = await params;
-    const data = await categoriesApiRequest(`/categories/${id}`, { token });
-    return successResponse(data);
+    
+    const response = await fetch(`${BACKEND_BASE_URL}/categories/${id}`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { error: errorText || "Failed to fetch category" },
+        { status: response.status }
+      );
+    }
+    
+    const data = await response.json();
+    return NextResponse.json(data, { status: 200 });
+    
   } catch (err: unknown) {
     const { message, status } = getErrorMessage(err);
-    return errorResponse(message, status);
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
-// PUT
+// UPDATE
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    const token = getTokenFromRequest(req);
+    const token = req.cookies.get("token")?.value;
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
     const { id } = await params;
-    const body: Record<string, unknown> = await req.json();
-    const data = await categoriesApiRequest(`/categories/${id}`, {
+    const body = await req.json();
+    
+    const response = await fetch(`${BACKEND_BASE_URL}/categories/${id}`, {
       method: "PUT",
-      token,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(body),
+      cache: "no-store",
     });
-    return successResponse(data);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { error: errorText || "Failed to update category" },
+        { status: response.status }
+      );
+    }
+    
+    const data = await response.json();
+    return NextResponse.json(data, { status: 200 });
+    
   } catch (err: unknown) {
     const { message, status } = getErrorMessage(err);
-    return errorResponse(message, status);
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
 // DELETE
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    const token = getTokenFromRequest(req);
+    const token = req.cookies.get("token")?.value;
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    
     const { id } = await params;
 
-    // Delete the category
-    await categoriesApiRequest(`/categories/${id}`, { method: "DELETE", token });
+    const response = await fetch(`${BACKEND_BASE_URL}/categories/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { error: errorText || "Failed to delete category" },
+        { status: response.status }
+      );
+    }
 
-    // Return 200 with JSON (do NOT use 204 with body)
-    return successResponse({ message: "Category deleted successfully" });
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return NextResponse.json(
+        { message: "Category deleted successfully" },
+        { status: 200 }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: 200 });
+    
   } catch (err: unknown) {
     const { message, status } = getErrorMessage(err);
-    return errorResponse(message, status);
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -15,12 +15,24 @@ export class CategoriesApiError extends Error {
 }
 
 // ------------------------------
-// Environment
+// Proxy Base URL
 // ------------------------------
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://inventory-backend-hm7r.onrender.com/api/v1";
+// For server-side requests, we need the full URL
+const getProxyBaseUrl = () => {
+  // Check if we're on the server
+  if (typeof window === 'undefined') {
+    // Server-side: use environment variable or localhost
+    return process.env.NEXT_PUBLIC_SITE_URL 
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/proxy`
+      : 'http://localhost:3000/api/proxy';
+  }
+  // Client-side: use relative URL
+  return '/api/proxy';
+};
+
+const PROXY_BASE_URL = getProxyBaseUrl();
+console.log("🔧 PROXY_BASE_URL initialized:", PROXY_BASE_URL);
 
 // ------------------------------
 // Token and Response Helpers
@@ -47,28 +59,33 @@ export const errorResponse = (message: string, status = 500): Response => {
 };
 
 // ------------------------------
-// Core API Request Function
+// Core API Request Function (via Proxy)
 // ------------------------------
 
 export const categoriesApiRequest = async <T>(
   endpoint: string,
   {
     method = "GET",
-    token,
     body,
-  }: { method?: string; token: string; body?: string }
+  }: { method?: string; body?: string } = {}
 ): Promise<T> => {
-  const fullUrl = `${BASE_URL}${endpoint}`;
+  // Remove leading slash from endpoint if present
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const fullUrl = `${PROXY_BASE_URL}/${cleanEndpoint}`;
+
+  console.log("🌐 categoriesApiRequest:", { method, fullUrl });
 
   const res = await fetch(fullUrl, {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body,
+    credentials: "include", // Important: includes cookies for authentication
     cache: "no-store",
   });
+
+  console.log("📊 Response status:", res.status);
 
   // Read response text once
   const responseText = await res.text();
@@ -79,12 +96,13 @@ export const categoriesApiRequest = async <T>(
     // Attempt JSON parsing, ignore parse errors
     try {
       if (responseText) errorData = JSON.parse(responseText);
-    } catch (_) {
+    } catch {
       // ignore JSON parse errors
     }
 
     throw new CategoriesApiError(
-      (errorData as { message?: string })?.message ||
+      (errorData as { error?: string })?.error ||
+        (errorData as { message?: string })?.message ||
         `HTTP ${res.status}: ${responseText.slice(0, 100)}`,
       res.status
     );
@@ -98,7 +116,7 @@ export const categoriesApiRequest = async <T>(
   // Parse JSON response
   try {
     return JSON.parse(responseText) as T;
-  } catch (_) {
+  } catch {
     throw new CategoriesApiError(
       "Successful status, but response body is not valid JSON.",
       500
@@ -110,16 +128,39 @@ export const categoriesApiRequest = async <T>(
 // Exported API Call Functions
 // ------------------------------
 
-export async function getAll(token: string): Promise<Category[]> {
+export async function getAll(): Promise<Category[]> {
   return categoriesApiRequest<Category[]>("/categories", {
     method: "GET",
-    token,
   });
 }
 
-export async function getAllWithToken(token: string): Promise<Category[]> {
-  // Redundant wrapper if needed elsewhere
-  return categoriesApiRequest<Category[]>("/categories", { token });
+export async function getAllWithToken(): Promise<Category[]> {
+  // Token is now automatically handled by proxy via cookies
+  return categoriesApiRequest<Category[]>("/categories");
+}
+
+export async function getById(id: string): Promise<Category> {
+  return categoriesApiRequest<Category>(`/categories/${id}`);
+}
+
+export async function create(data: Partial<Category>): Promise<Category> {
+  return categoriesApiRequest<Category>("/categories", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function update(id: string, data: Partial<Category>): Promise<Category> {
+  return categoriesApiRequest<Category>(`/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function remove(id: string): Promise<void> {
+  return categoriesApiRequest<void>(`/categories/${id}`, {
+    method: "DELETE",
+  });
 }
 
 // ------------------------------
@@ -133,4 +174,8 @@ export const categoriesApi = {
   request: categoriesApiRequest,
   getAll,
   getAllWithToken,
+  getById,
+  create,
+  update,
+  delete: remove,
 };

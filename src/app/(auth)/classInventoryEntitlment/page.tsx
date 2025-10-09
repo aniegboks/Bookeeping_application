@@ -33,7 +33,6 @@ import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
 
 // --- Type alias for form data ---
-type EntitlementFormData = CreateClassInventoryEntitlementInput | UpdateClassInventoryEntitlementInput;
 
 export default function ClassInventoryEntitlementsPage() {
   const [entitlements, setEntitlements] = useState<ClassInventoryEntitlement[]>([]);

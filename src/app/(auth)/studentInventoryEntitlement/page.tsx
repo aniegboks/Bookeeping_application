@@ -65,18 +65,18 @@ export default function StudentInventoryCollectionPage() {
     const [filterClassId, setFilterClassId] = useState("");
     const [filterReceived, setFilterReceived] = useState("");
     const [filterEligible, setFilterEligible] = useState("");
-    
-const [classes, setClasses] = useState<SchoolClass[]>([]);
 
-// fetch classes from API or define statically
-useEffect(() => {
-  async function fetchClasses() {
-    const res = await fetch("/api/classes");
-    const data = await res.json();
-    setClasses(data);
-  }
-  fetchClasses();
-}, []);
+    const [classes, setClasses] = useState<SchoolClass[]>([]);
+
+    // fetch classes from API or define statically
+    useEffect(() => {
+        async function fetchClasses() {
+            const res = await fetch("/api/classes");
+            const data = await res.json();
+            setClasses(data);
+        }
+        fetchClasses();
+    }, []);
 
 
     // --- Load Initial Data ---
@@ -185,12 +185,13 @@ useEffect(() => {
                 "Inventory Item": itemName,
                 "Session Term": sessionName,
                 Quantity: c.qty,
-                Notes: (c as any).notes || "",
+                Notes: c.notes || "",
                 "Created By": createdBy,
                 "Created At": new Date(c.created_at).toLocaleString(),
                 "Updated At": new Date(c.updated_at).toLocaleString(),
             };
         });
+
 
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();

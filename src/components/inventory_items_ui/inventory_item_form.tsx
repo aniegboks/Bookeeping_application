@@ -108,6 +108,16 @@ export default function InventoryItemForm({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Type-safe helper to extract API error messages
+  const getApiErrorMessage = (err: unknown, fallback = "Failed to save inventory item"): string => {
+    if (err instanceof Error) return err.message;
+    if (typeof err === "object" && err !== null) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      return apiErr.response?.data?.error ?? fallback;
+    }
+    return fallback;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -117,6 +127,7 @@ export default function InventoryItemForm({
     }
 
     setIsSubmitting(true);
+
     try {
       const payload: InventoryItemPayload = {
         name: formData.name.trim(),
@@ -143,14 +154,7 @@ export default function InventoryItemForm({
     } catch (err: unknown) {
       console.error("Error saving inventory item:", err);
 
-      let message = "Failed to save inventory item.";
-      if (err instanceof Error) {
-        message = err.message;
-      } else if (typeof err === "object" && err !== null && "response" in err) {
-        // @ts-ignore
-        message = err.response?.data?.error ?? message;
-      }
-
+      const message = getApiErrorMessage(err);
       toast.error(message);
       setErrors({ submit: message });
     } finally {

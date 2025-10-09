@@ -21,7 +21,13 @@ import { getAllSuppliers } from "@/lib/suppliers";
 import { userApi } from "@/lib/user";
 import { inventoryDistributionApi } from "@/lib/inventory_distrbution";
 
-import { InventoryTransaction } from "@/lib/types/inventory_transactions";
+import {
+    InventoryTransaction,
+    CreateInventoryTransactionInput,
+    UpdateInventoryTransactionInput
+} from "@/lib/types/inventory_transactions";
+
+import { CreateInventoryDistributionInput } from "@/lib/types/inventory_distribution";
 import { InventoryItem } from "@/lib/types/inventory_item";
 import { Supplier } from "@/lib/types/suppliers";
 import { User } from "@/lib/types/user";
@@ -58,17 +64,18 @@ export default function InventoryTransactionsPage() {
     const [deletingTransaction, setDeletingTransaction] = useState<InventoryTransaction | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // --- Helper ---
-    const getItemName = (id: string) => {
-        const item = inventoryItems.find((i) => i.id === id);
-        return item ? item.name : id;
+    // --- Helpers ---
+    const getItemName = (id: string) => inventoryItems.find(i => i.id === id)?.name || id;
+
+    const handleError = (err: unknown, prefix = "Failed") => {
+        if (err instanceof Error) toast.error(`${prefix}: ${err.message}`);
+        else toast.error(`${prefix}: Unexpected error`);
     };
 
     // --- Load All Data ---
     const loadAllData = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-
             const [
                 transactionsData,
                 itemsData,
@@ -85,7 +92,6 @@ export default function InventoryTransactionsPage() {
                 academicSessionsApi.getAll() as Promise<AcademicSession[]>,
             ]);
 
-            // Normalize School Classes
             const normalizedClasses: SchoolClass[] = classesData.map(c => ({
                 ...c,
                 class_teacher_id: c.class_teacher_id || "",
@@ -95,7 +101,6 @@ export default function InventoryTransactionsPage() {
                 updated_at: c.updated_at || new Date().toISOString(),
             }));
 
-            // Normalize Academic Sessions
             const normalizedSessions: AcademicSession[] = sessionsData.map(s => ({
                 ...s,
                 name: s.name || s.session,
@@ -109,61 +114,63 @@ export default function InventoryTransactionsPage() {
             setAcademicSessions(normalizedSessions);
 
             if (usersData.length > 0) setCurrentUser(usersData[0]);
-        } catch (err: any) {
-            console.error("Failed to load data:", err);
-            toast.error("Failed to load initial data: " + err.message);
+
+        } catch (err: unknown) {
+            console.error(err);
+            handleError(err, "Failed to load data");
         } finally {
             setLoading(false);
             setInitialLoading(false);
         }
     };
 
-    useEffect(() => {
-        loadAllData();
-    }, []);
+    useEffect(() => { loadAllData(); }, []);
 
     // --- Filters ---
-    const filteredTransactions = transactions.filter((transaction) => {
+    const filteredTransactions = transactions.filter(t => {
         const matchesSearch =
-            transaction.reference_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            getItemName(transaction.item_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
-            transaction.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            transaction.supplier_receiver?.toLowerCase().includes(searchTerm.toLowerCase());
+            t.reference_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            getItemName(t.item_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.supplier_receiver?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesType = !typeFilter || transaction.transaction_type === typeFilter;
-        const matchesStatus = !statusFilter || transaction.status === statusFilter;
+        const matchesType = !typeFilter || t.transaction_type === typeFilter;
+        const matchesStatus = !statusFilter || t.status === statusFilter;
 
         return matchesSearch && matchesType && matchesStatus;
     });
 
     // --- Handlers ---
-    const handleTransactionSubmit = async (data: any) => {
+    const handleTransactionSubmit = async (
+        data: CreateInventoryTransactionInput | UpdateInventoryTransactionInput
+    ) => {
         if (!currentUser) return;
         setIsSubmitting(true);
         const loadingToast = toast.loading(editingTransaction ? "Updating transaction..." : "Creating transaction...");
 
         try {
             if (editingTransaction) {
-                await inventoryTransactionApi.update(editingTransaction.id, data);
+                await inventoryTransactionApi.update(editingTransaction.id, data as UpdateInventoryTransactionInput);
                 toast.dismiss(loadingToast);
                 toast.success("Transaction updated!");
             } else {
-                await inventoryTransactionApi.create(data);
+                await inventoryTransactionApi.create(data as CreateInventoryTransactionInput);
                 toast.dismiss(loadingToast);
                 toast.success("Transaction created!");
             }
+
             setEditingTransaction(null);
             setActiveForm(null);
             await loadAllData();
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.dismiss(loadingToast);
-            toast.error("Failed: " + err.message);
+            handleError(err, "Failed to save transaction");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleDistributionSubmit = async (data: any) => {
+    const handleDistributionSubmit = async (data: CreateInventoryDistributionInput) => {
         if (!currentUser) return;
         setIsSubmitting(true);
         const loadingToast = toast.loading("Creating distribution...");
@@ -174,9 +181,9 @@ export default function InventoryTransactionsPage() {
             toast.success("Distribution created!");
             setActiveForm(null);
             await loadAllData();
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.dismiss(loadingToast);
-            toast.error("Failed: " + err.message);
+            handleError(err, "Failed to create distribution");
         } finally {
             setIsSubmitting(false);
         }
@@ -204,26 +211,23 @@ export default function InventoryTransactionsPage() {
             setShowDeleteModal(false);
             setDeletingTransaction(null);
             await loadAllData();
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.dismiss(loadingToast);
-            toast.error("Failed: " + err.message);
+            handleError(err, "Failed to delete transaction");
         } finally {
             setIsDeleting(false);
         }
     };
 
     const exportToExcel = () => {
-        if (!filteredTransactions.length) {
-            toast.error("No transactions to export");
-            return;
-        }
+        if (!filteredTransactions.length) return toast.error("No transactions to export");
 
-        const data = filteredTransactions.map((t) => ({
+        const data = filteredTransactions.map(t => ({
             ReferenceNo: t.reference_no,
             Item: getItemName(t.item_id),
             Type: t.transaction_type,
             SupplierReceiver: t.supplier_receiver,
-            Quantity: t.qty_in ? t.qty_in : t.qty_out ? -t.qty_out : 0,
+            Quantity: t.qty_in ?? t.qty_out ? t.qty_out ? -t.qty_out : 0 : 0,
             Notes: t.notes,
             Status: t.status,
             CreatedAt: t.created_at,
@@ -235,20 +239,16 @@ export default function InventoryTransactionsPage() {
         XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
 
         const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(blob, "inventory_transactions.xlsx");
+        saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "inventory_transactions.xlsx");
 
         toast.success("Transactions exported successfully!");
     };
 
-    // --- Loading ---
-    if (initialLoading) {
-        return (
-            <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-[#F3F4F7] z-50">
-                <Loader />
-            </div>
-        );
-    }
+    if (initialLoading) return (
+        <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-[#F3F4F7] z-50">
+            <Loader />
+        </div>
+    );
 
     return (
         <Container>
@@ -262,10 +262,7 @@ export default function InventoryTransactionsPage() {
                 onTypeFilterChange={setTypeFilter}
                 statusFilter={statusFilter}
                 onStatusFilterChange={setStatusFilter}
-                onAddTransaction={() => {
-                    setEditingTransaction(null);
-                    setActiveForm("transaction");
-                }}
+                onAddTransaction={() => { setEditingTransaction(null); setActiveForm("transaction"); }}
                 onAddDistribution={() => setActiveForm("distribution")}
             />
 
@@ -302,7 +299,6 @@ export default function InventoryTransactionsPage() {
                 onDelete={handleDeleteRequest}
                 loading={loading}
             />
-
 
             {showDeleteModal && deletingTransaction && (
                 <DeleteModal

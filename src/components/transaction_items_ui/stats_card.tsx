@@ -17,7 +17,7 @@ interface CardProps {
   description: string,
 }
 
-export default function StatsCards({ transactions, filteredTransactions }: StatsCardsProps) {
+export default function StatsCards({ transactions }: StatsCardsProps) {
   const totalTransactions = transactions.length || 0;
   const purchaseCount = transactions.filter((t) => t.transaction_type === "purchase").length || 0;
   const saleCount = transactions.filter((t) => t.transaction_type === "sale").length || 0;

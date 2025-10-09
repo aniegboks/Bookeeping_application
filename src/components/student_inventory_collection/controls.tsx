@@ -28,16 +28,6 @@ interface ControlsProps {
 export default function Controls({
   searchTerm,
   onSearchChange,
-  filterStudentId,
-  onFilterStudentIdChange,
-  filterClassId,
-  onFilterClassIdChange,
-  filterInventoryItemId,
-  onFilterInventoryItemIdChange,
-  filterReceived,
-  onFilterReceivedChange,
-  filterEligible,
-  onFilterEligibleChange,
   onAdd,
   onBulkAdd,
 }: ControlsProps) {

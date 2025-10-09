@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Supplier } from "@/lib/types/suppliers";
 import {
   Mail,
@@ -57,9 +57,15 @@ export default function SuppliersTable({
   );
 
   // --- Pagination Handlers ---
-  const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const handleNext = () =>
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const handlePrev = useCallback(
+    () => setCurrentPage((prev) => Math.max(prev - 1, 1)),
+    []
+  );
+
+  const handleNext = useCallback(
+    () => setCurrentPage((prev) => Math.min(prev + 1, totalPages)),
+    [totalPages]
+  );
 
   // --- Keyboard Navigation ---
   useEffect(() => {
@@ -69,7 +75,7 @@ export default function SuppliersTable({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [currentPage, totalPages, handleNext]);
+  }, [handleNext, handlePrev]);
 
   // --- Loading ---
   if (loading) return <p className="text-center py-12">Loading suppliers...</p>;

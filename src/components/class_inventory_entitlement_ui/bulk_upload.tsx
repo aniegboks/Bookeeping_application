@@ -153,9 +153,6 @@ export default function BulkUploadForm({
       const existing = consolidatedDataMap.get(uniqueKey);
 
       if (existing) {
-        // 3. CONSOLIDATION: If a duplicate key is found, merge the data.
-        // The most common merging strategy for quantity is summation.
-        // For other fields (notes, created_by), we will use the value from the *latest* row.
 
         const newQuantity = existing.quantity + cleanRow.quantity;
 

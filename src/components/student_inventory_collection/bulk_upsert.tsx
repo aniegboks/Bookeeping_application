@@ -24,7 +24,10 @@ interface BulkUploadFormProps {
     classes: Class[];
 }
 
-interface CollectionRow extends CreateStudentInventoryCollectionInput {}
+// Extend base type and add a tempId for React keys
+interface CollectionRow extends CreateStudentInventoryCollectionInput {
+    tempId: string;
+}
 
 export default function BulkUploadForm({
     onSubmit,
@@ -33,11 +36,11 @@ export default function BulkUploadForm({
     students,
     inventoryItems,
     sessionTerms,
-    users,
     classes,
 }: BulkUploadFormProps) {
     const [rows, setRows] = useState<CollectionRow[]>([
         {
+            tempId: crypto.randomUUID(),
             student_id: "",
             class_id: "",
             session_term_id: "",
@@ -54,6 +57,7 @@ export default function BulkUploadForm({
         setRows([
             ...rows,
             {
+                tempId: crypto.randomUUID(),
                 student_id: "",
                 class_id: "",
                 session_term_id: "",
@@ -67,26 +71,31 @@ export default function BulkUploadForm({
         ]);
     };
 
-    const handleRemoveRow = (index: number) => {
-        setRows(rows.filter((_, i) => i !== index));
+    const handleRemoveRow = (tempId: string) => {
+        setRows(rows.filter((row) => row.tempId !== tempId));
     };
 
-    const handleChange = (
-        index: number,
-        field: keyof CollectionRow,
-        value: string | number | boolean | null
+    const handleChange = <K extends keyof CollectionRow>(
+        tempId: string,
+        field: K,
+        value: CollectionRow[K]
     ) => {
-        const updated = [...rows];
-        (updated[index] as any)[field] = value;
-        setRows(updated);
+        setRows((prevRows) =>
+            prevRows.map((row) =>
+                row.tempId === tempId ? { ...row, [field]: value } : row
+            )
+        );
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await onSubmit(rows);
+        // Remove tempId before submitting
+        const submitData = rows.map(
+            ({ tempId, ...rest }) => rest
+        );
+        await onSubmit(submitData);
     };
 
-    // Helper to safely get full name
     const getFullName = (s: Student) =>
         [s.first_name, s.middle_name, s.last_name].filter(Boolean).join(" ");
 
@@ -107,16 +116,16 @@ export default function BulkUploadForm({
                     </button>
                 </div>
 
-                {rows.map((row, index) => (
+                {rows.map((row) => (
                     <div
-                        key={index}
+                        key={row.tempId}
                         className="grid grid-cols-8 gap-2 items-center border p-3 rounded-lg bg-gray-50"
                     >
                         {/* Student */}
                         <select
                             value={row.student_id}
                             onChange={(e) =>
-                                handleChange(index, "student_id", e.target.value)
+                                handleChange(row.tempId, "student_id", e.target.value)
                             }
                             className="p-2 border rounded"
                             required
@@ -132,7 +141,9 @@ export default function BulkUploadForm({
                         {/* Class */}
                         <select
                             value={row.class_id}
-                            onChange={(e) => handleChange(index, "class_id", e.target.value)}
+                            onChange={(e) =>
+                                handleChange(row.tempId, "class_id", e.target.value)
+                            }
                             className="p-2 border rounded"
                             required
                         >
@@ -148,7 +159,7 @@ export default function BulkUploadForm({
                         <select
                             value={row.inventory_item_id}
                             onChange={(e) =>
-                                handleChange(index, "inventory_item_id", e.target.value)
+                                handleChange(row.tempId, "inventory_item_id", e.target.value)
                             }
                             className="p-2 border rounded"
                             required
@@ -165,7 +176,7 @@ export default function BulkUploadForm({
                         <select
                             value={row.session_term_id}
                             onChange={(e) =>
-                                handleChange(index, "session_term_id", e.target.value)
+                                handleChange(row.tempId, "session_term_id", e.target.value)
                             }
                             className="p-2 border rounded"
                             required
@@ -183,7 +194,7 @@ export default function BulkUploadForm({
                             type="number"
                             value={row.qty}
                             onChange={(e) =>
-                                handleChange(index, "qty", parseInt(e.target.value))
+                                handleChange(row.tempId, "qty", parseInt(e.target.value) || 1)
                             }
                             className="p-2 border rounded"
                             min={1}
@@ -195,7 +206,7 @@ export default function BulkUploadForm({
                             type="checkbox"
                             checked={row.eligible}
                             onChange={(e) =>
-                                handleChange(index, "eligible", e.target.checked)
+                                handleChange(row.tempId, "eligible", e.target.checked)
                             }
                         />
 
@@ -204,14 +215,14 @@ export default function BulkUploadForm({
                             type="checkbox"
                             checked={row.received}
                             onChange={(e) =>
-                                handleChange(index, "received", e.target.checked)
+                                handleChange(row.tempId, "received", e.target.checked)
                             }
                         />
 
                         {/* Remove button */}
                         <button
                             type="button"
-                            onClick={() => handleRemoveRow(index)}
+                            onClick={() => handleRemoveRow(row.tempId)}
                             className="p-2 text-red-600 hover:text-red-800"
                         >
                             <Trash2 className="w-5 h-5" />
@@ -232,7 +243,7 @@ export default function BulkUploadForm({
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-4 py-2 bg-green-600 text-white rounded-sm text-sm hover:bg-green-700 disabled:opacity-50"
+                            className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm text-sm disabled:opacity-50"
                         >
                             {isSubmitting ? "Submitting..." : "Submit All"}
                         </button>

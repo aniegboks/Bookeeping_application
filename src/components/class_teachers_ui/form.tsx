@@ -52,12 +52,13 @@ export default function TeacherForm({
 
   useEffect(() => {
     if (teacher) {
+      const sessionTermId = teacher.session_term_id ?? ""; 
+
       setFormData({
         class_id: teacher.class_id,
-        session_term_id:
-          (teacher as any).session_term_id || teacher.session_term_id || "",
+        session_term_id: sessionTermId,
         email: teacher.email,
-        name: teacher.name || "", // <-- populate if editing
+        name: teacher.name || "",
         role: teacher.role,
         status: teacher.status,
         assigned_at: teacher.assigned_at,

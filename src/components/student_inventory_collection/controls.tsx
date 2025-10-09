@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Plus, Upload, Filter } from "lucide-react";
+import { Search, Plus, Upload } from "lucide-react";
 
 interface ControlsProps {
   searchTerm: string;

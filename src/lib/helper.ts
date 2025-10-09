@@ -1,27 +1,41 @@
 // src/lib/helper.ts
 
 // Custom error class to carry status code and data
-export class ApiError extends Error {
-    constructor(message: string, public status: number, public data: any) {
+export class ApiError<T = unknown> extends Error {
+    constructor(
+        message: string,
+        public status: number,
+        public data: T
+    ) {
         super(message);
         this.name = 'ApiError';
-        // Ensure ApiError is caught as an instance of this class
         if (Error.captureStackTrace) {
             Error.captureStackTrace(this, ApiError);
         }
     }
 }
 
-// NOTE: The client side error trace showed /api/proxy/suppliers. 
-// Your Next.js proxy route is app/api/proxies/[...path]/route.ts.
-// We assume the URL here is relative to the client host and hits the Next.js proxy.
-const API_PROXY_PREFIX = '/api/proxy/'; 
+// API proxy prefix
+const API_PROXY_PREFIX = '/api/proxy/';
 
-export const apiRequest = async <T>(
-    endpoint: string, 
+/**
+ * Type guard to check if an object has an "error" property of type string
+ */
+function hasErrorProperty(obj: unknown): obj is { error: string } {
+    return typeof obj === 'object' && obj !== null && 'error' in obj && typeof (obj as { error: unknown }).error === 'string';
+}
+
+/**
+ * Makes a typed API request via the Next.js proxy.
+ * @param endpoint - API endpoint relative to /api/proxy/
+ * @param options - fetch options
+ * @returns A promise of type T
+ */
+export const apiRequest = async <T = unknown, E = unknown>(
+    endpoint: string,
     options: RequestInit = {}
 ): Promise<T> => {
-    const url = `${API_PROXY_PREFIX}${endpoint}`; 
+    const url = `${API_PROXY_PREFIX}${endpoint}`;
 
     const defaultHeaders: HeadersInit = {
         'Content-Type': 'application/json',
@@ -36,40 +50,38 @@ export const apiRequest = async <T>(
             } as HeadersInit,
         });
 
-        // If the response is not OK (status 4xx or 5xx)
+        // Handle non-OK responses
         if (!response.ok) {
-            let errorData: any = {};
+            let errorData: E | { message: string } = { message: '' };
             const contentType = response.headers.get('content-type');
-            
-            // Try to read JSON body if available
+
             if (contentType?.includes('application/json')) {
-                errorData = await response.json().catch(() => ({}));
+                errorData = await response.json().catch(() => ({ message: '' }));
             } else {
-                errorData.message = await response.text();
+                errorData = { message: await response.text() };
             }
 
-            // Line 54: Throw the custom error with status and message
-            throw new ApiError(
-                errorData.error || errorData.message || `API request failed with status ${response.status}`,
-                response.status,
-                errorData
-            );
+            const message = hasErrorProperty(errorData)
+                ? errorData.error
+                : 'message' in (errorData as object) && typeof (errorData as { message: unknown }).message === 'string'
+                    ? (errorData as { message: string }).message
+                    : `API request failed with status ${response.status}`;
+
+            throw new ApiError<E | { message: string }>(message, response.status, errorData);
         }
 
-        // Handle successful response (204 No Content for DELETE)
-        if (response.status === 204 || response.status === 201 && response.headers.get('content-length') === '0') {
+        // Handle successful responses with no content
+        if (response.status === 204 || (response.status === 201 && response.headers.get('content-length') === '0')) {
             return undefined as unknown as T;
         }
-        
-        // Return parsed JSON data
+
+        // Parse JSON response
         return response.json() as Promise<T>;
-        
+
     } catch (error) {
-        // Re-throw if it's already an ApiError (from the block above)
         if (error instanceof ApiError) {
-            throw error; 
+            throw error;
         }
-        // Handle network errors (e.g., DNS failure, CORS block)
         console.error("Network Error:", error);
         throw new Error(`A network or unexpected error occurred: ${(error as Error).message}`);
     }

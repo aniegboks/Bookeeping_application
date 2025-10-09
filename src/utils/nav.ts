@@ -20,4 +20,5 @@ export const AcademicSessionTerms: NavItem[] = [
   { label: "Class Teachers", link: "/classTeachers", description: "Assign and manage class teachers" },
   { label: "Transaction Items", link: "/transactionItem", description: "Track inventory transactions" },
   { label: "Students", link: "/students", description: "View and manage students" },
+  { label: "Student Entitlement", link: "/studentInventoryEntitlement", description: "Assign inventory to students" },
 ];

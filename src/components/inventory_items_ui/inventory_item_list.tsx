@@ -15,7 +15,6 @@ type Props = {
 };
 
 export default function InventoryItemList({
-  items,
   filteredItems,
   searchTerm,
   onSearch,

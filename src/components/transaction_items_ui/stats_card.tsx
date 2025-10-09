@@ -8,6 +8,15 @@ interface StatsCardsProps {
   filteredTransactions: InventoryTransaction[];
 }
 
+interface CardProps {
+  title: string,
+  value: string | number,
+  icon: React.ReactNode,
+  colorBg: string,
+  progress: number,
+  description: string,
+}
+
 export default function StatsCards({ transactions, filteredTransactions }: StatsCardsProps) {
   const totalTransactions = transactions.length || 0;
   const purchaseCount = transactions.filter((t) => t.transaction_type === "purchase").length || 0;
@@ -58,8 +67,7 @@ export default function StatsCards({ transactions, filteredTransactions }: Stats
   );
 }
 
-function Card({ title, value, icon, colorBg, progress, description }: any) {
-  const barWidthFactor = 70; // reduce width of the bar
+function Card({ title, value, icon, colorBg, progress, description }: CardProps) {
 
   return (
     <div className="bg-white rounded-sm p-6 border border-gray-200 hover:shadow-md transition">

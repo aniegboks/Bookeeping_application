@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
 // --- API Clients ---
-import { ClassInventoryEntitlement } from "@/lib/types/class_inventory_entitlement";
+import { ClassInventoryEntitlement, CreateClassInventoryEntitlementInput, UpdateClassInventoryEntitlementInput } from "@/lib/types/class_inventory_entitlement";
 import { classInventoryEntitlementApi } from "@/lib/class_inventory_entitlement";
 import { schoolClassApi } from "@/lib/classes";
 import { inventoryItemApi } from "@/lib/inventory_item";
@@ -27,9 +27,13 @@ import EntitlementForm from "@/components/class_inventory_entitlement_ui/form";
 import BulkUploadForm from "@/components/class_inventory_entitlement_ui/bulk_upload";
 import DeleteModal from "@/components/class_inventory_entitlement_ui/delete_modal";
 import EntitlementBarChart from "@/components/class_inventory_entitlement_ui/trends";
+
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
+
+// --- Type alias for form data ---
+type EntitlementFormData = CreateClassInventoryEntitlementInput | UpdateClassInventoryEntitlementInput;
 
 export default function ClassInventoryEntitlementsPage() {
   const [entitlements, setEntitlements] = useState<ClassInventoryEntitlement[]>([]);
@@ -54,7 +58,7 @@ export default function ClassInventoryEntitlementsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingEntitlement, setDeletingEntitlement] = useState<ClassInventoryEntitlement | null>(null);
 
-  // --- Load all initial data ---
+  // --- Load initial data ---
   const loadInitialData = async () => {
     try {
       setLoading(true);
@@ -71,9 +75,14 @@ export default function ClassInventoryEntitlementsPage() {
       setInventoryItems(items);
       setAcademicSessions(sessions);
       setUsers(userData);
-    } catch (err: any) {
-      console.error("Failed to load initial data:", err);
-      toast.error("Failed to load initial data: " + err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Failed to load initial data:", err);
+        toast.error("Failed to load initial data: " + err.message);
+      } else {
+        console.error("Failed to load initial data:", err);
+        toast.error("Failed to load initial data");
+      }
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -84,14 +93,25 @@ export default function ClassInventoryEntitlementsPage() {
     loadInitialData();
   }, []);
 
+  // --- Reload entitlements ---
   const loadEntitlements = async () => {
     try {
       setLoading(true);
       const data = await classInventoryEntitlementApi.getAll();
       setEntitlements(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      let message: string;
+      if (err instanceof Error) message = err.message;
+      else if (typeof err === "string") message = err;
+      else {
+        try {
+          message = JSON.stringify(err);
+        } catch {
+          message = "An unknown error occurred";
+        }
+      }
       console.error("Failed to reload entitlements:", err);
-      toast.error("Failed to reload entitlements: " + err.message);
+      toast.error("Failed to reload entitlements: " + message);
     } finally {
       setLoading(false);
     }
@@ -116,7 +136,7 @@ export default function ClassInventoryEntitlementsPage() {
     return matchesSearch && matchesClassFilter && matchesInventoryFilter;
   });
 
-  // --- Export as Spreadsheet ---
+  // --- Export to Excel ---
   const handleExport = () => {
     if (filteredEntitlements.length === 0) {
       toast.error("No data to export!");
@@ -155,33 +175,42 @@ export default function ClassInventoryEntitlementsPage() {
     toast.success("Spreadsheet exported successfully!");
   };
 
-  // --- CRUD Handlers ---
-  const handleFormSubmit = async (data: any) => {
+  // --- Form Submission ---
+  const handleFormSubmit = async (data: CreateClassInventoryEntitlementInput | UpdateClassInventoryEntitlementInput) => {
     setIsSubmitting(true);
     const loadingToast = toast.loading(editingEntitlement ? "Updating entitlement..." : "Creating entitlement...");
 
     try {
       if (editingEntitlement) {
-        await classInventoryEntitlementApi.update(editingEntitlement.id, data);
+        // Update: cast to UpdateClassInventoryEntitlementInput
+        await classInventoryEntitlementApi.update(editingEntitlement.id, data as UpdateClassInventoryEntitlementInput);
         toast.success("Entitlement updated successfully!");
       } else {
-        await classInventoryEntitlementApi.create(data);
+        // Create: cast to CreateClassInventoryEntitlementInput
+        await classInventoryEntitlementApi.create(data as CreateClassInventoryEntitlementInput);
         toast.success("Entitlement created successfully!");
       }
 
       setShowForm(false);
       setEditingEntitlement(null);
       await loadEntitlements();
-    } catch (err: any) {
-      console.error("Form submission failed:", err);
-      toast.error("Failed to save entitlement: " + err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Form submission failed:", err);
+        toast.error("Failed to save entitlement: " + err.message);
+      } else {
+        console.error("Form submission failed:", err);
+        toast.error("Failed to save entitlement");
+      }
     } finally {
       toast.dismiss(loadingToast);
       setIsSubmitting(false);
     }
   };
 
-  const handleBulkSubmit = async (data: any[]) => {
+
+  // --- Bulk Submission ---
+  const handleBulkSubmit = async (data: CreateClassInventoryEntitlementInput[]) => {
     setIsSubmitting(true);
     const loadingToast = toast.loading(`Creating ${data.length} entitlements...`);
 
@@ -191,15 +220,21 @@ export default function ClassInventoryEntitlementsPage() {
 
       setShowBulkForm(false);
       await loadEntitlements();
-    } catch (err: any) {
-      console.error("Bulk submission failed:", err);
-      toast.error("Failed to create entitlements: " + err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Bulk submission failed:", err);
+        toast.error("Failed to create entitlements: " + err.message);
+      } else {
+        console.error("Bulk submission failed:", err);
+        toast.error("Failed to create entitlements");
+      }
     } finally {
       toast.dismiss(loadingToast);
       setIsSubmitting(false);
     }
   };
 
+  // --- Edit / Delete Handlers ---
   const handleEdit = (entitlement: ClassInventoryEntitlement) => {
     setEditingEntitlement(entitlement);
     setShowForm(true);
@@ -222,9 +257,14 @@ export default function ClassInventoryEntitlementsPage() {
       setShowDeleteModal(false);
       setDeletingEntitlement(null);
       await loadEntitlements();
-    } catch (err: any) {
-      console.error("Delete failed:", err);
-      toast.error("Failed to delete entitlement: " + err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Delete failed:", err);
+        toast.error("Failed to delete entitlement: " + err.message);
+      } else {
+        console.error("Delete failed:", err);
+        toast.error("Failed to delete entitlement");
+      }
     } finally {
       toast.dismiss(loadingToast);
       setIsDeleting(false);
@@ -305,16 +345,16 @@ export default function ClassInventoryEntitlementsPage() {
             users={users}
           />
 
-          {/* --- Export Button --- */}
+          {/* Export Button */}
           <div className="mt-6 flex justify-start">
             <button
               onClick={handleExport}
               className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-5 py-2 rounded-sm transition"
             >
-            <span className="flex gap-2">
-              <Download className="w-5 h-5" />
-              <span>Export</span>
-            </span>
+              <span className="flex gap-2">
+                <Download className="w-5 h-5" />
+                <span>Export</span>
+              </span>
             </button>
           </div>
 

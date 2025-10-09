@@ -17,6 +17,7 @@ import StudentTable from "@/components/students_ui/table";
 import StudentForm from "@/components/students_ui/form";
 import DeleteModal from "@/components/students_ui/delete_modal";
 import StudentStatusChart from "@/components/students_ui/trends";
+import { CreateStudentInput, UpdateStudentInput } from "@/lib/types/students";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
@@ -53,14 +54,20 @@ export default function StudentsPage() {
       setStudents(studentsData);
       setClasses(classesData);
       setUsers(usersData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load data:", err);
-      toast.error("Failed to load data: " + err.message);
+
+      if (err instanceof Error) {
+        toast.error("Failed to load data: " + err.message);
+      } else {
+        toast.error("Failed to load data");
+      }
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
   };
+
 
   useEffect(() => {
     loadData();
@@ -118,17 +125,24 @@ export default function StudentsPage() {
   };
 
   // Form submission
-  const handleFormSubmit = async (data: any) => {
+
+  const handleFormSubmit = async (
+    data: CreateStudentInput | UpdateStudentInput
+  ) => {
     setIsSubmitting(true);
-    const loadingToast = toast.loading(editingStudent ? "Updating student..." : "Creating student...");
+    const loadingToast = toast.loading(
+      editingStudent ? "Updating student..." : "Creating student..."
+    );
 
     try {
       if (editingStudent) {
-        await studentApi.update(editingStudent.id, data);
+        // Type assertion is safe because update expects UpdateStudentInput
+        await studentApi.update(editingStudent.id, data as UpdateStudentInput);
         toast.dismiss(loadingToast);
         toast.success("Student updated successfully!");
       } else {
-        await studentApi.create(data);
+        // Type assertion is safe because create expects CreateStudentInput
+        await studentApi.create(data as CreateStudentInput);
         toast.dismiss(loadingToast);
         toast.success("Student created successfully!");
       }
@@ -136,10 +150,15 @@ export default function StudentsPage() {
       setShowForm(false);
       setEditingStudent(null);
       await loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Form submission failed:", err);
-      toast.error("Failed to save student: " + err.message);
+
+      if (err instanceof Error) {
+        toast.error("Failed to save student: " + err.message);
+      } else {
+        toast.error("Failed to save student");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -170,14 +189,20 @@ export default function StudentsPage() {
       setShowDeleteModal(false);
       setDeletingStudent(null);
       await loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Delete failed:", err);
-      toast.error("Failed to delete student: " + err.message);
+
+      if (err instanceof Error) {
+        toast.error("Failed to delete student: " + err.message);
+      } else {
+        toast.error("Failed to delete student");
+      }
     } finally {
       setIsDeleting(false);
     }
   };
+
 
   const handleCancel = () => {
     setShowForm(false);

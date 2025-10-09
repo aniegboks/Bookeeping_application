@@ -9,7 +9,7 @@ interface StatsCardsProps {
   filteredUsers: User[];
 }
 
-export default function StatsCards({ users, filteredUsers }: StatsCardsProps) {
+export default function StatsCards({ users }: StatsCardsProps) {
   const totalUsers = users.length;
 
   const teachers = users.filter(

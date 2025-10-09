@@ -1,5 +1,3 @@
-// lib/user.ts
-
 import {
     User,
     CreateUserInput,
@@ -8,22 +6,25 @@ import {
 
 const BASE_URL = "/api/proxy/users";
 
-
-function transformUser(user: any): User {
-    if (user.name !== undefined && user.roles !== undefined) {
-        return user;
-    }
-
+/**
+ * Transform raw user data (possibly coming from API) 
+ * into a fully typed User object
+ */
+function transformUser(user: Partial<User> & { user_metadata?: Partial<User> }): User {
     return {
         ...user,
-        name: user.user_metadata?.name || "", 
-       
-        roles: user.user_metadata?.roles || [],
-    } as User; 
+        id: user.id ?? "",
+        email: user.email ?? "",
+        phone: user.phone ?? "",
+        name: user.name ?? user.user_metadata?.name ?? "",
+        roles: user.roles ?? user.user_metadata?.roles ?? [],
+        username: user.username, // optional
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+    };
 }
 
 // --- END: DATA TRANSFORMATION FIX ---
-
 
 async function fetchProxy(url: string, options: RequestInit = {}) {
     try {
@@ -61,8 +62,7 @@ export const userApi = {
      * Get all users
      */
     async getAll(): Promise<User[]> {
-        const rawUsers = await fetchProxy(BASE_URL);
-        // Apply transformation to the array of users
+        const rawUsers = await fetchProxy(BASE_URL) as Partial<User>[];
         return rawUsers.map(transformUser);
     },
 
@@ -70,9 +70,7 @@ export const userApi = {
      * Get a single user by ID
      */
     async getById(id: string): Promise<User> {
-        const url = `${BASE_URL}/${id}`;
-        const rawUser = await fetchProxy(url);
-        // Apply transformation to the single user
+        const rawUser = await fetchProxy(`${BASE_URL}/${id}`) as Partial<User>;
         return transformUser(rawUser);
     },
 
@@ -83,7 +81,7 @@ export const userApi = {
         const rawUser = await fetchProxy(BASE_URL, {
             method: "POST",
             body: JSON.stringify(data),
-        });
+        }) as Partial<User>;
         return transformUser(rawUser);
     },
 
@@ -91,17 +89,16 @@ export const userApi = {
      * Update an existing user
      */
     async update(id: string, data: UpdateUserInput): Promise<User> {
-        const url = `${BASE_URL}/${id}`;
-        
         const updateData = { ...data };
         if (updateData.password === "") {
             delete updateData.password;
         }
-        
-        const rawUser = await fetchProxy(url, {
+
+        const rawUser = await fetchProxy(`${BASE_URL}/${id}`, {
             method: "PUT",
             body: JSON.stringify(updateData),
-        });
+        }) as Partial<User>;
+
         return transformUser(rawUser);
     },
 
@@ -109,8 +106,7 @@ export const userApi = {
      * Delete a user
      */
     async delete(id: string): Promise<void> {
-        const url = `${BASE_URL}/${id}`;
-        await fetchProxy(url, {
+        await fetchProxy(`${BASE_URL}/${id}`, {
             method: "DELETE",
         });
     },

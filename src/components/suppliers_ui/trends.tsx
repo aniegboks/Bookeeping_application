@@ -1,21 +1,28 @@
 "use client";
 
 import { useMemo } from "react";
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, TooltipProps } from "recharts";
 import { motion } from "framer-motion";
 import { Supplier } from "@/lib/types/suppliers";
 
 // --- Modern palette ---
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#84CC16"];
 
-interface SupplierPieChartProps {
-  suppliers: Supplier[];
+// Pie chart payload type
+interface PiePayload {
+  name: string;
+  value: number;
 }
 
-// --- Custom Tooltip ---
-const CustomPieTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
+// Props for the Custom Pie Tooltip
+interface CustomPieTooltipProps extends TooltipProps<number, string> {
+  payload?: PiePayload[];
+}
+
+const CustomPieTooltip = ({ active, payload }: CustomPieTooltipProps) => {
+  if (active && payload && payload.length > 0) {
     const entry = payload[0];
+
     return (
       <div className="p-3 bg-white/90 backdrop-blur-md border border-gray-100 rounded-sm text-sm">
         <p className="font-semibold text-gray-800">{entry.name}</p>
@@ -27,6 +34,11 @@ const CustomPieTooltip = ({ active, payload }: any) => {
   }
   return null;
 };
+
+// Props for the SupplierPieChart
+interface SupplierPieChartProps {
+  suppliers: Supplier[];
+}
 
 export default function SupplierPieChart({ suppliers }: SupplierPieChartProps) {
   const data = useMemo(() => {
@@ -82,7 +94,6 @@ export default function SupplierPieChart({ suppliers }: SupplierPieChartProps) {
                 const p = typeof percent === "number" ? percent : 0;
                 return `${name} (${(p * 100).toFixed(1)}%)`;
               }}
-
             >
               {data.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -104,12 +115,9 @@ export default function SupplierPieChart({ suppliers }: SupplierPieChartProps) {
                 </span>
               )}
             />
-
           </PieChart>
         </ResponsiveContainer>
       </div>
     </motion.div>
   );
 }
-
-

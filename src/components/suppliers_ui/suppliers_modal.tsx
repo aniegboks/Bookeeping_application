@@ -42,7 +42,7 @@ export default function SupplierModal({
 
   useEffect(() => {
     if (supplier && mode === "edit") {
-      const { id, created_at, updated_at, created_by, ...rest } = supplier;
+      const {  ...rest } = supplier;
       setFormData(rest);
     } else if (mode === "add") {
       setFormData({

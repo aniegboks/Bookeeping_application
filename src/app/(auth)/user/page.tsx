@@ -12,6 +12,7 @@ import UserTable from "@/components/user_id/table";
 import UserForm from "@/components/user_id/form";
 import DeleteModal from "@/components/user_id/delete_modal";
 import Trends from "@/components/user_id/trends";
+import { CreateUserInput, UpdateUserInput } from "@/lib/types/user";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -37,14 +38,22 @@ export default function UsersPage() {
             setLoading(true);
             const data = await userApi.getAll();
             setUsers(data);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to load users:", err);
-            toast.error("Failed to load users: " + err.message);
+
+            // Map unknown error to a user-friendly message
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : "An unexpected error occurred while loading users.";
+
+            toast.error("Failed to load users: " + message);
         } finally {
             setLoading(false);
             setInitialLoading(false);
         }
     };
+
 
     useEffect(() => {
         loadUsers();
@@ -61,7 +70,7 @@ export default function UsersPage() {
     });
 
     // Handle form submission (create/update)
-    const handleFormSubmit = async (data: any) => {
+    const handleFormSubmit = async (data: CreateUserInput | UpdateUserInput) => {
         setIsSubmitting(true);
         const loadingToast = toast.loading(
             editingUser ? "Updating user..." : "Creating user..."
@@ -69,11 +78,12 @@ export default function UsersPage() {
 
         try {
             if (editingUser) {
-                await userApi.update(editingUser.id, data);
+                // Update requires user ID
+                await userApi.update(editingUser.id, data as UpdateUserInput);
                 toast.dismiss(loadingToast);
                 toast.success("User updated successfully!");
             } else {
-                await userApi.create(data);
+                await userApi.create(data as CreateUserInput);
                 toast.dismiss(loadingToast);
                 toast.success("User created successfully!");
             }
@@ -81,14 +91,21 @@ export default function UsersPage() {
             setShowForm(false);
             setEditingUser(null);
             await loadUsers();
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.dismiss(loadingToast);
             console.error("Form submission failed:", err);
-            toast.error("Failed to save user: " + err.message);
+
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : "An unexpected error occurred while saving the user.";
+
+            toast.error("Failed to save user: " + message);
         } finally {
             setIsSubmitting(false);
         }
     };
+
 
     // Handle edit
     const handleEdit = (user: User) => {
@@ -117,14 +134,22 @@ export default function UsersPage() {
             setShowDeleteModal(false);
             setDeletingUser(null);
             await loadUsers();
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.dismiss(loadingToast);
             console.error("Delete failed:", err);
-            toast.error("Failed to delete user: " + err.message);
+
+            // Safe user-facing message
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : "An unexpected error occurred while deleting the user.";
+
+            toast.error("Failed to delete user: " + message);
         } finally {
             setIsDeleting(false);
         }
     };
+
 
     // Handle cancel
     const handleCancel = () => {
@@ -139,7 +164,6 @@ export default function UsersPage() {
         setShowForm(true);
     };
 
-    // ✅ EXPORT AS SPREADSHEET
     const handleExport = () => {
         if (filteredUsers.length === 0) {
             toast.error("No users to export!");
@@ -155,8 +179,8 @@ export default function UsersPage() {
             Role: u.roles || "",
             CreatedAt: u.created_at ? new Date(u.created_at).toLocaleString() : "",
             UpdatedAt: u.updated_at ? new Date(u.updated_at).toLocaleString() : "",
-          }));
-          
+        }));
+
         // Create worksheet and workbook
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
@@ -229,10 +253,10 @@ export default function UsersPage() {
                                 onClick={handleExport}
                                 className="bg-[#3D4C63] hover:bg-[#495C79] text-white font-medium py-2 px-4 rounded-sm shadow-sm transition-all"
                             >
-                              <span className="flex gap-2">
-                                <Download className="w-5 h-5" />
-                                Export
-                              </span>
+                                <span className="flex gap-2">
+                                    <Download className="w-5 h-5" />
+                                    Export
+                                </span>
                             </button>
                         </div>
 

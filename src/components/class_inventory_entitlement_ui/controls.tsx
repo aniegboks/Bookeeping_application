@@ -16,10 +16,6 @@ interface ControlsProps {
 export default function Controls({
   searchTerm,
   onSearchChange,
-  filterClassId,
-  onFilterClassIdChange,
-  filterInventoryItemId,
-  onFilterInventoryItemIdChange,
   onAdd,
   onBulkAdd,
 }: ControlsProps) {

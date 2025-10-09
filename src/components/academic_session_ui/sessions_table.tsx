@@ -4,7 +4,6 @@ import { useState } from "react";
 import { AcademicSession } from "@/lib/types/academic_session";
 import { BookOpen, Plus, PenSquare, Trash2, ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react";
 import toast from "react-hot-toast";
-import { Button } from "../ui/button";
 
 // Delete modal component
 function DeleteConfirmModal({

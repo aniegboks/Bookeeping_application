@@ -2,16 +2,25 @@
 
 import { Users, UserCheck, UserX, GraduationCap } from "lucide-react";
 import { Student } from "@/lib/types/students";
+import { ReactNode } from "react";
 
 interface StatsCardsProps {
   students: Student[];
   filteredStudents: Student[];
 }
 
+interface CardsProps {
+  title: string;
+  value: number;
+  icon: ReactNode;
+  colorBg: string;
+  progress: number;
+  description: string;
+}
+
 export default function StatsCards({ students, filteredStudents }: StatsCardsProps) {
   const totalStudents = students.length || 0;
   const activeStudents = students.filter((s) => s.status === "active").length || 0;
-  const inactiveStudents = students.filter((s) => s.status === "inactive").length || 0;
   const graduatedStudents = students.filter((s) => s.status === "graduated").length || 0;
   const filteredCount = filteredStudents.length || 0;
 
@@ -59,8 +68,7 @@ export default function StatsCards({ students, filteredStudents }: StatsCardsPro
   );
 }
 
-function Card({ title, value, icon, colorBg, progress, description }: any) {
-  const barWidthFactor = 70; // reduce bar width
+function Card({ title, value, icon, colorBg, progress, description }: CardsProps) {
 
   return (
     <div className="bg-white rounded-sm p-6 border border-gray-200 hover:shadow-md transition">

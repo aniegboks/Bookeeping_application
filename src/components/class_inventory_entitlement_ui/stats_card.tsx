@@ -13,7 +13,6 @@ export default function StatsCards({
   filteredEntitlements,
 }: StatsCardsProps) {
   const totalQuantity = entitlements.reduce((sum, e) => sum + e.quantity, 0);
-  const filteredQuantity = filteredEntitlements.reduce((sum, e) => sum + e.quantity, 0);
   const lowStockCount = entitlements.filter((e) => e.quantity < 5).length;
   const activeEntitlements = entitlements.length;
 

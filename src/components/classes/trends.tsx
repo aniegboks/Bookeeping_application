@@ -11,30 +11,39 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 import { SchoolClass } from "@/lib/types/classes";
-
 // --- Props ---
 interface ClassStatusChartProps {
   classes: SchoolClass[];
 }
+interface PayloadItem {
+  name: string;
+  value: number | string;
+  fill?: string;
+}
 
-// --- Colors (sleek modern palette) ---
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: PayloadItem[];
+}
+
 const colors = {
   active: "#3B82F6", // Blue-500
   inactive: "#9CA3AF", // Gray-400
 };
 
-// --- Tooltip ---
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
-    const { name, value } = payload[0];
+    const { name, value, fill } = payload[0];
+
     return (
       <div className="p-3 bg-white/90 backdrop-blur-md border border-gray-200 rounded-sm text-sm">
-        <p className="font-semibold" style={{ color: payload[0].fill }}>
+        <p className="font-semibold" style={{ color: fill }}>
           {name}: {value}
         </p>
       </div>
     );
   }
+
   return null;
 };
 

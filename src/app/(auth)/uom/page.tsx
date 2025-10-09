@@ -19,7 +19,7 @@ import { Download } from 'lucide-react';
 export default function UOMsPage() {
   const [uoms, setUoms] = useState<UOM[]>([]);
   const [filteredUOMs, setFilteredUOMs] = useState<UOM[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
 

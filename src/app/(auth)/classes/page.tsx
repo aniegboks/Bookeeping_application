@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { SchoolClass } from "@/lib/types/classes";
 import { ClassTeacher } from "@/lib/types/class_teacher";
 import { User } from "@/lib/types/user";
 import { schoolClassApi } from "@/lib/classes";
@@ -17,6 +16,7 @@ import ClassTable from "@/components/classes/tables";
 import ClassForm from "@/components/classes/form";
 import DeleteModal from "@/components/classes/modal";
 import Trends from "@/components/classes/trends";
+import { CreateSchoolClassInput, UpdateSchoolClassInput, SchoolClass } from "@/lib/types/classes";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -39,11 +39,11 @@ export default function SchoolClassesPage() {
     const [deletingClass, setDeletingClass] = useState<SchoolClass | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Load data
     const loadData = async () => {
         try {
             setLoading(true);
-            const [classData, teacherData, userData] = await Promise.all([
+
+            const [classData, teacherData, userData]: [SchoolClass[], ClassTeacher[], User[]] = await Promise.all([
                 schoolClassApi.getAll(),
                 classTeacherApi.getAll(),
                 userApi.getAll(),
@@ -52,9 +52,16 @@ export default function SchoolClassesPage() {
             setClasses(classData);
             setClassTeachers(teacherData);
             setUsers(userData);
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : typeof err === "string"
+                        ? err
+                        : "Unknown error";
+
             console.error("Failed to load data:", err);
-            toast.error("Failed to load data: " + err.message);
+            toast.error("Failed to load data: " + message);
         } finally {
             setLoading(false);
             setInitialLoading(false);
@@ -88,23 +95,35 @@ export default function SchoolClassesPage() {
     });
 
     // Form submission
-    const handleFormSubmit = async (data: any) => {
+    const handleFormSubmit = async (data: CreateSchoolClassInput | UpdateSchoolClassInput) => {
         setIsSubmitting(true);
         const loadingToast = toast.loading(editingClass ? "Updating class..." : "Creating class...");
 
         try {
-            if (editingClass) await schoolClassApi.update(editingClass.id, data);
-            else await schoolClassApi.create(data);
+            if (editingClass) {
+                // Type assertion ensures correct input for update
+                await schoolClassApi.update(editingClass.id, data as UpdateSchoolClassInput);
+            } else {
+                await schoolClassApi.create(data as CreateSchoolClassInput);
+            }
 
             toast.success(editingClass ? "Class updated!" : "Class created!");
             toast.dismiss(loadingToast);
             setShowForm(false);
             setEditingClass(null);
             await loadData();
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.dismiss(loadingToast);
+
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : typeof err === "string"
+                        ? err
+                        : "Unknown error";
+
             console.error("Form submission failed:", err);
-            toast.error("Failed to save class: " + err.message);
+            toast.error("Failed to save class: " + message);
         } finally {
             setIsSubmitting(false);
         }
@@ -127,19 +146,29 @@ export default function SchoolClassesPage() {
 
         try {
             await schoolClassApi.delete(deletingClass.id);
+
             toast.success("Class deleted successfully!");
             toast.dismiss(loadingToast);
             setShowDeleteModal(false);
             setDeletingClass(null);
             await loadData();
-        } catch (err: any) {
+        } catch (err: unknown) {
             toast.dismiss(loadingToast);
+
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : typeof err === "string"
+                        ? err
+                        : "Unknown error";
+
             console.error("Delete failed:", err);
-            toast.error("Failed to delete class: " + err.message);
+            toast.error("Failed to delete class: " + message);
         } finally {
             setIsDeleting(false);
         }
     };
+
 
     const handleCancel = () => {
         setShowForm(false);

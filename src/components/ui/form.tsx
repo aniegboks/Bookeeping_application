@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
+import SmallLoader from "./small_loader";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -81,7 +82,7 @@ export default function LoginForm() {
           }`}
         disabled={loading}
       >
-        {loading ? "Logging in..." : "Login"}
+        {loading ? <span className="flex gap-2"><SmallLoader />Logging in...</span> : "Login"}
       </button>
     </form>
   );

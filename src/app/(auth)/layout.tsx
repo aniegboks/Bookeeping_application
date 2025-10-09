@@ -1,7 +1,6 @@
 "use client";
 
 import Nav from "@/components/ui/nav";
-import ApiDebugVertical from "@/components/ui/helper_component";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (

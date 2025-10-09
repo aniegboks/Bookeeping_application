@@ -3,7 +3,7 @@
 import { useState } from "react";
 import TransactionForm from "./form";
 import DistributionForm from "./distrbution_form";
-import { InventoryTransaction, CreateInventoryTransactionInput } from "@/lib/types/inventory_transactions";
+import { CreateInventoryTransactionInput } from "@/lib/types/inventory_transactions";
 import { CreateInventoryDistributionInput } from "@/lib/types/inventory_distribution";
 import { InventoryItem } from "@/lib/types/inventory_item";
 import { Supplier } from "@/lib/types/suppliers";

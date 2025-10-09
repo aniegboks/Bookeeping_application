@@ -20,6 +20,30 @@ interface InventoryItemFormProps {
   uoms: UOM[];
 }
 
+interface InventoryItemFormData {
+  sku: string;
+  name: string;
+  category_id: string;
+  sub_category_id: string;
+  brand_id: string;
+  uom_id: string;
+  barcode: string;
+  cost_price: string;
+  selling_price: string;
+}
+
+interface InventoryItemPayload {
+  name: string;
+  category_id: string;
+  brand_id: string;
+  uom_id: string;
+  cost_price: number;
+  selling_price: number;
+  sku?: string;
+  sub_category_id?: string;
+  barcode?: string;
+}
+
 export default function InventoryItemForm({
   item,
   onSuccess,
@@ -29,7 +53,7 @@ export default function InventoryItemForm({
   subCategories,
   uoms,
 }: InventoryItemFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<InventoryItemFormData>({
     sku: item?.sku || "",
     name: item?.name || "",
     category_id: item?.category_id || "",
@@ -59,7 +83,7 @@ export default function InventoryItemForm({
       setFilteredSubCategories([]);
       setFormData((prev) => ({ ...prev, sub_category_id: "" }));
     }
-  }, [formData.category_id, subCategories]);
+  }, [formData.category_id, subCategories, formData.sub_category_id]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -94,8 +118,7 @@ export default function InventoryItemForm({
 
     setIsSubmitting(true);
     try {
-      const userId = localStorage.getItem("user_id") || "default-user-id";
-      const payload: any = {
+      const payload: InventoryItemPayload = {
         name: formData.name.trim(),
         category_id: formData.category_id,
         brand_id: formData.brand_id,
@@ -103,6 +126,7 @@ export default function InventoryItemForm({
         cost_price: parseFloat(formData.cost_price),
         selling_price: parseFloat(formData.selling_price),
       };
+
       if (formData.sku.trim()) payload.sku = formData.sku.trim();
       if (formData.sub_category_id) payload.sub_category_id = formData.sub_category_id;
       if (formData.barcode.trim()) payload.barcode = formData.barcode.trim();
@@ -116,10 +140,17 @@ export default function InventoryItemForm({
       }
 
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error saving inventory item:", err);
-      const message =
-        err?.response?.data?.error || err.message || "Failed to save inventory item.";
+
+      let message = "Failed to save inventory item.";
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === "object" && err !== null && "response" in err) {
+        // @ts-ignore
+        message = err.response?.data?.error ?? message;
+      }
+
       toast.error(message);
       setErrors({ submit: message });
     } finally {
@@ -198,7 +229,7 @@ export default function InventoryItemForm({
             {/* Sub-Category */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Sub-Category <span className="text-gray-400">*</span>
+                Sub-Category <span className="text-gray-400">(Optional)</span>
               </label>
               <select
                 name="sub_category_id"
@@ -327,10 +358,16 @@ export default function InventoryItemForm({
                 isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#3D4C63] hover:bg-[#495C79]"
               }`}
             >
-              {isSubmitting ? <span className="flex gap-2">
-                <SmallLoader />
-                <p className="text-sm font-semibold">Saving...</p>
-              </span> : item ? "Update Item" : "Create Item"}
+              {isSubmitting ? (
+                <span className="flex gap-2">
+                  <SmallLoader />
+                  <p className="text-sm font-semibold">Saving...</p>
+                </span>
+              ) : item ? (
+                "Update Item"
+              ) : (
+                "Create Item"
+              )}
             </button>
           </div>
         </form>

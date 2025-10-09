@@ -1,32 +1,53 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, PieLabelRenderProps } from "recharts";
+import { useMemo } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  TooltipProps,
+  PieLabelRenderProps,
+} from "recharts";
 import { motion } from "framer-motion";
 import { InventoryTransaction } from "@/lib/types/inventory_transactions";
 
-interface InventoryTransactionChartProps {
-  transactions: InventoryTransaction[];
-}
-
-// Colors for the chart
+// --- Colors ---
 const COLORS = ["#3B82F6", "#EF4444"]; // Blue = In, Red = Out
 
-// Custom tooltip
-const CustomPieTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0];
+// --- Tooltip Payload Type ---
+interface InventoryPiePayload {
+  name: string;
+  value: number;
+  fill?: string;
+}
+
+// --- Custom Tooltip ---
+interface CustomPieTooltipProps extends TooltipProps<number, string> {
+  payload?: InventoryPiePayload[];
+}
+
+const CustomPieTooltip = ({ active, payload }: CustomPieTooltipProps) => {
+  if (active && payload && payload.length > 0) {
+    const entry = payload[0];
     return (
       <div className="p-3 bg-white/90 backdrop-blur-md border border-gray-100 rounded-sm shadow-sm text-sm">
-        <p className="text-gray-500 font-medium mb-1">{data.name}</p>
-        <p className="font-bold text-lg" style={{ color: data.fill }}>
-          {data.value} Units
+        <p className="text-gray-500 font-medium mb-1">{entry.name}</p>
+        <p className="font-bold text-lg" style={{ color: entry.fill }}>
+          {entry.value} Units
         </p>
       </div>
     );
   }
   return null;
 };
+
+// --- Props ---
+interface InventoryTransactionChartProps {
+  transactions: InventoryTransaction[];
+}
 
 export default function InventoryTransactionChart({ transactions }: InventoryTransactionChartProps) {
   const chartData = useMemo(() => {
@@ -52,7 +73,7 @@ export default function InventoryTransactionChart({ transactions }: InventoryTra
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="bg-white p-6 mt-8 rounded-sm border border-gray-200  overflow-hidden mb-8"
+      className="bg-white p-6 mt-8 rounded-sm border border-gray-200 overflow-hidden mb-8"
     >
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-800">Inventory Movement</h2>
@@ -73,7 +94,6 @@ export default function InventoryTransactionChart({ transactions }: InventoryTra
               paddingAngle={5}
               cornerRadius={8}
               label={(props: PieLabelRenderProps) => {
-                // percent may be undefined
                 const name = props.name ?? "Unknown";
                 const percent = typeof props.percent === "number" ? props.percent : 0;
                 return `${name}: ${(percent * 100).toFixed(0)}%`;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { ClassTeacher } from "@/lib/types/class_teacher";
+import { ClassTeacher, CreateClassTeacherInput, UpdateClassTeacherInput } from "@/lib/types/class_teacher";
 import { classTeacherApi } from "@/lib/class_teacher";
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
@@ -25,6 +25,7 @@ import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
 
 export default function ClassTeachersPage() {
+  // --- State ---
   const [teachers, setTeachers] = useState<ClassTeacher[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [academicSessions, setAcademicSessions] = useState<AcademicSessionType[]>([]);
@@ -46,13 +47,15 @@ export default function ClassTeachersPage() {
 
   // --- Load Data Functions ---
   const loadTeachers = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const data = await classTeacherApi.getAll();
       setTeachers(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load class teachers:", err);
-      toast.error("Failed to load class teachers: " + err.message);
+      let errorMessage = "Failed to load class teachers.";
+      if (err instanceof Error) errorMessage += " " + err.message;
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -62,9 +65,11 @@ export default function ClassTeachersPage() {
     try {
       const data = await schoolClassApi.getAll();
       setClasses(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load classes:", err);
-      toast.error("Failed to load classes: " + err.message);
+      let errorMessage = "Failed to load classes.";
+      if (err instanceof Error) errorMessage += " " + err.message;
+      toast.error(errorMessage);
     }
   };
 
@@ -72,9 +77,11 @@ export default function ClassTeachersPage() {
     try {
       const data = await academicSessionsApi.getAll();
       setAcademicSessions(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load academic sessions:", err);
-      toast.error("Failed to load academic sessions: " + err.message);
+      let errorMessage = "Failed to load academic sessions.";
+      if (err instanceof Error) errorMessage += " " + err.message;
+      toast.error(errorMessage);
     }
   };
 
@@ -82,9 +89,11 @@ export default function ClassTeachersPage() {
     try {
       const data = await userApi.getAll();
       setUsers(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load users/teachers:", err);
-      toast.error("Failed to load users/teachers: " + err.message);
+      let errorMessage = "Failed to load users/teachers.";
+      if (err instanceof Error) errorMessage += " " + err.message;
+      toast.error(errorMessage);
     }
   };
 
@@ -97,12 +106,11 @@ export default function ClassTeachersPage() {
       setDependenciesLoading(false);
       setInitialLoading(false);
     };
-
     loadInitialData();
   }, []);
 
   // --- Filter Teachers ---
-  const filteredTeachers = teachers.filter((teacher) => {
+  const filteredTeachers: ClassTeacher[] = teachers.filter((teacher) => {
     const matchesSearch =
       teacher.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       teacher.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,7 +123,7 @@ export default function ClassTeachersPage() {
   });
 
   // --- CRUD Handlers ---
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: CreateClassTeacherInput | UpdateClassTeacherInput) => {
     setIsSubmitting(true);
     const loadingToast = toast.loading(
       editingTeacher ? "Updating teacher assignment..." : "Creating teacher assignment..."
@@ -123,11 +131,27 @@ export default function ClassTeachersPage() {
 
     try {
       if (editingTeacher) {
-        await classTeacherApi.update(editingTeacher.id, data);
+        // Editing: data must match UpdateClassTeacherInput
+        const updateData: UpdateClassTeacherInput = data;
+        await classTeacherApi.update(editingTeacher.id, updateData);
         toast.dismiss(loadingToast);
         toast.success("Teacher assignment updated successfully!");
       } else {
-        await classTeacherApi.create(data);
+        // Creating: data must match CreateClassTeacherInput
+        const { class_id, session_term_id, email, name, role, status, assigned_at, unassigned_at, created_by } =
+          data as CreateClassTeacherInput; // <--- safe because we are in 'create' branch
+        const createData: CreateClassTeacherInput = {
+          class_id,
+          session_term_id,
+          email,
+          name,
+          role,
+          status,
+          assigned_at,
+          unassigned_at,
+          created_by,
+        };
+        await classTeacherApi.create(createData);
         toast.dismiss(loadingToast);
         toast.success("Teacher assignment created successfully!");
       }
@@ -135,10 +159,15 @@ export default function ClassTeachersPage() {
       setShowForm(false);
       setEditingTeacher(null);
       await loadTeachers();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.dismiss(loadingToast);
-      console.error("Form submission failed:", err);
-      toast.error("Failed to save teacher assignment: " + err.message);
+      if (err instanceof Error) {
+        console.error("Form submission failed:", err);
+        toast.error("Failed to save teacher assignment: " + err.message);
+      } else {
+        console.error("Form submission failed:", err);
+        toast.error("Failed to save teacher assignment");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -158,6 +187,7 @@ export default function ClassTeachersPage() {
     if (!deletingTeacher) return;
     setIsDeleting(true);
     const loadingToast = toast.loading("Deleting teacher assignment...");
+
     try {
       await classTeacherApi.delete(deletingTeacher.id);
       toast.dismiss(loadingToast);
@@ -165,10 +195,15 @@ export default function ClassTeachersPage() {
       setShowDeleteModal(false);
       setDeletingTeacher(null);
       await loadTeachers();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.dismiss(loadingToast);
-      console.error("Delete failed:", err);
-      toast.error("Failed to delete teacher assignment: " + err.message);
+      if (err instanceof Error) {
+        console.error("Delete failed:", err);
+        toast.error("Failed to delete teacher assignment: " + err.message);
+      } else {
+        console.error("Delete failed:", err);
+        toast.error("Failed to delete teacher assignment");
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -225,7 +260,7 @@ export default function ClassTeachersPage() {
   }
 
   return (
-    <div className="">
+    <div>
       <Container>
         <div className="mt-4 pb-8">
           <StatsCards teachers={teachers} filteredTeachers={filteredTeachers} />
@@ -283,11 +318,9 @@ export default function ClassTeachersPage() {
             />
           )}
 
-          {/* Export Button */}
           <div className="mt-4 flex justify-start">
             <button
-              className="px-4 py-2 rounded bg-[#3D4C63] hover:bg-[#495C79] text-white
- transition"
+              className="px-4 py-2 rounded bg-[#3D4C63] hover:bg-[#495C79] text-white transition"
               onClick={exportToExcel}
             >
               <span className="flex gap-2">

@@ -69,7 +69,7 @@ export default function SuppliersTable({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, handleNext]);
 
   // --- Loading ---
   if (loading) return <p className="text-center py-12">Loading suppliers...</p>;

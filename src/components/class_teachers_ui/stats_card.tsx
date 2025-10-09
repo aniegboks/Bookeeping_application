@@ -2,12 +2,21 @@
 
 import { Users, UserCheck, UserX, Filter } from "lucide-react";
 import { ClassTeacher } from "@/lib/types/class_teacher";
+import { ReactNode } from "react";
 
 interface StatsCardsProps {
   teachers: ClassTeacher[];
   filteredTeachers: ClassTeacher[];
 }
 
+interface CardProps {
+  title: string;
+  value: string | number;
+  icon: ReactNode; // now recognized
+  colorBg: string;
+  progress: number;
+  description?: string;
+}
 export default function StatsCards({ teachers, filteredTeachers }: StatsCardsProps) {
   const totalTeachers = teachers.length || 0;
   const activeTeachers = teachers.filter((t) => t.status === "active").length || 0;
@@ -58,9 +67,7 @@ export default function StatsCards({ teachers, filteredTeachers }: StatsCardsPro
   );
 }
 
-function Card({ title, value, icon, colorBg, progress, description }: any) {
-  const barWidthFactor = 70; // reduce bar width
-
+function Card({ title, value, icon, colorBg, progress, description }: CardProps) {
   return (
     <div className="bg-white rounded-sm p-6 border border-gray-200 hover:shadow-md transition">
     <div className="flex items-center gap-4">

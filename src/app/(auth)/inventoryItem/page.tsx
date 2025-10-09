@@ -57,11 +57,18 @@ export default function InventoryPage() {
       if (brandData.length === 0) toast.error("No brands found. Please add brands first.");
       if (subCategoryData.length === 0) toast.error("No sub-categories found. Please add sub-categories first.");
       if (uomData.length === 0) toast.error("No units of measure found. Please add UOMs first.");
-    } catch (err: any) {
-      console.error("Failed to load reference data:", err);
-      toast.error("Failed to load reference data: " + err.message);
+    } catch (err: unknown) {
+      // Type-safe error handling
+      if (err instanceof Error) {
+        console.error("Failed to load reference data:", err);
+        toast.error("Failed to load reference data: " + err.message);
+      } else {
+        console.error("Failed to load reference data:", err);
+        toast.error("Failed to load reference data");
+      }
     }
   };
+
 
   /** Load inventory items */
   const loadInventoryItems = async () => {
@@ -69,9 +76,14 @@ export default function InventoryPage() {
       const items = await inventoryItemApi.getAll();
       setInventoryItems(items);
       setFilteredInventoryItems(items);
-    } catch (error: any) {
-      console.error("Failed to load inventory items:", error);
-      toast.error("Failed to load inventory items: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Failed to load inventory items:", error);
+        toast.error("Failed to load inventory items: " + error.message);
+      } else {
+        console.error("Failed to load inventory items:", error);
+        toast.error("Failed to load inventory items");
+      }
     }
   };
 
@@ -120,12 +132,19 @@ export default function InventoryPage() {
       setItemToDelete(null);
       setRefreshKey((prev) => prev + 1);
       await loadInventoryItems();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss(loadingToast);
-      console.error("Failed to delete item:", error);
-      toast.error("Failed to delete item: " + error.message);
+
+      if (error instanceof Error) {
+        console.error("Failed to delete item:", error);
+        toast.error("Failed to delete item: " + error.message);
+      } else {
+        console.error("Failed to delete item:", error);
+        toast.error("Failed to delete item");
+      }
     }
   };
+
 
   /** Edit */
   const handleEdit = (item: InventoryItem) => {
@@ -164,11 +183,11 @@ export default function InventoryPage() {
     }
 
     // Map items exactly as shown in the table
-    const dataToExport = filteredInventoryItems.map((item) => {
-      const sku = (item as any).sku || "";
-      const name = (item as any).name || "";
-      const sellingPrice = (item as any).selling_price ?? 0;
-      const costPrice = (item as any).cost_price ?? 0;
+    const dataToExport = filteredInventoryItems.map((item: InventoryItem) => {
+      const sku = item.sku || "";
+      const name = item.name || "";
+      const sellingPrice = item.selling_price ?? 0;
+      const costPrice = item.cost_price ?? 0;
       const estimatedProfit = sellingPrice - costPrice;
 
       // Calculate margin (as %)
@@ -176,7 +195,7 @@ export default function InventoryPage() {
         sellingPrice > 0 ? ((estimatedProfit / sellingPrice) * 100).toFixed(2) + "%" : "0.00%";
 
       // Format updated_at nicely
-      const updatedAt = (item as any).updated_at
+      const updatedAt = item.updated_at
         ? new Date(item.updated_at).toLocaleString("en-NG", {
           day: "numeric",
           month: "short",
@@ -196,6 +215,7 @@ export default function InventoryPage() {
         "Updated At": updatedAt,
       };
     });
+
 
     // Create Excel file
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);

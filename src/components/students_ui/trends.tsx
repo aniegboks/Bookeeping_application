@@ -13,10 +13,33 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-// Tooltip with shadow for depth
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const { name, value, fill } = payload[0];
+// Chart data type
+interface StatusDatum {
+  name: string;
+  value: number;
+  fill?: string;
+}
+
+// Type for the payload items inside the tooltip
+interface CustomTooltipPayload {
+  payload: StatusDatum;
+  value: number;
+  name: string;
+  fill?: string;
+}
+
+// Custom tooltip for RadarChart
+const CustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: CustomTooltipPayload[];
+}) => {
+  if (active && payload && payload.length > 0) {
+    const data: StatusDatum = payload[0].payload;
+    const { name, value, fill } = data;
+
     return (
       <div className="p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-sm text-sm">
         <p className="uppercase text-gray-500 dark:text-gray-300 text-xs tracking-wider">
@@ -33,12 +56,6 @@ const CustomTooltip = ({ active, payload }: any) => {
   }
   return null;
 };
-
-interface StatusDatum {
-  name: string;
-  value: number;
-  fill?: string;
-}
 
 interface Props {
   students: Student[];
@@ -72,8 +89,15 @@ export default function StudentStatusRadarChart({ students }: Props) {
           <div className="relative w-full h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={data} cx="50%" cy="50%" outerRadius="80%">
-                <PolarGrid gridType="polygon" strokeDasharray="4 4" stroke="rgba(148,163,184,0.15)" />
-                <PolarAngleAxis dataKey="name" tick={{ fill: "#6B7280", fontSize: 13, fontWeight: 500 }} />
+                <PolarGrid
+                  gridType="polygon"
+                  strokeDasharray="4 4"
+                  stroke="rgba(148,163,184,0.15)"
+                />
+                <PolarAngleAxis
+                  dataKey="name"
+                  tick={{ fill: "#6B7280", fontSize: 13, fontWeight: 500 }}
+                />
                 <PolarRadiusAxis
                   angle={30}
                   domain={[0, Math.max(...data.map((d) => d.value)) || 1]}
@@ -101,7 +125,9 @@ export default function StudentStatusRadarChart({ students }: Props) {
             {/* Total student count overlay */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <p className="text-xs text-gray-400 dark:text-gray-500">Total</p>
-              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{totalStudents}</p>
+              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+                {totalStudents}
+              </p>
             </div>
           </div>
 
@@ -110,9 +136,15 @@ export default function StudentStatusRadarChart({ students }: Props) {
             <div className="text-sm font-medium text-gray-700 dark:text-gray-300 space-y-2">
               {data.map((d) => (
                 <div key={d.name} className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-full shadow-md" style={{ backgroundColor: d.fill ?? "#4F46E5" }} />
+                  <span
+                    className="w-3 h-3 rounded-full shadow-md"
+                    style={{ backgroundColor: d.fill ?? "#4F46E5" }}
+                  />
                   <span>
-                    {d.name}: <span className="font-bold text-gray-900 dark:text-gray-100">{d.value}</span>
+                    {d.name}:{" "}
+                    <span className="font-bold text-gray-900 dark:text-gray-100">
+                      {d.value}
+                    </span>
                   </span>
                 </div>
               ))}
@@ -120,10 +152,16 @@ export default function StudentStatusRadarChart({ students }: Props) {
 
             <div className="mt-4 border-t border-gray-200 dark:border-zinc-700 pt-3 text-sm space-y-1 text-gray-600 dark:text-gray-400">
               <p>
-                Male: <span className="font-bold text-indigo-600 dark:text-indigo-400">{totalMale}</span>
+                Male:{" "}
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                  {totalMale}
+                </span>
               </p>
               <p>
-                Female: <span className="font-bold text-pink-500 dark:text-pink-400">{totalFemale}</span>
+                Female:{" "}
+                <span className="font-bold text-pink-500 dark:text-pink-400">
+                  {totalFemale}
+                </span>
               </p>
             </div>
           </div>

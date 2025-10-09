@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit, Trash2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { InventoryTransaction } from "@/lib/types/inventory_transactions";
 import { InventoryItem } from "@/lib/types/inventory_item";
@@ -20,9 +20,16 @@ export default function TransactionTable({
   onEdit,
   onDelete,
   loading = false,
-  itemsPerPage = 10, // default to 10 rows per page
+  itemsPerPage = 10,
 }: TransactionTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(transactions.length / itemsPerPage);
+
+  // Ensure currentPage is within bounds if transactions array changes
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages || 1);
+  }, [transactions.length, totalPages, currentPage]);
 
   if (loading) {
     return (
@@ -40,8 +47,6 @@ export default function TransactionTable({
       </div>
     );
   }
-
-  const totalPages = Math.ceil(transactions.length / itemsPerPage);
 
   const paginatedTransactions = transactions.slice(
     (currentPage - 1) * itemsPerPage,
@@ -155,7 +160,7 @@ export default function TransactionTable({
                       className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
                       title="Edit Transaction"
                     >
-                      <Edit  className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => onDelete(transaction)}
@@ -175,7 +180,9 @@ export default function TransactionTable({
       {/* Pagination Controls */}
       <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
         <span className="text-sm text-gray-700">
-          Page {currentPage} of {totalPages}
+          Showing {(currentPage - 1) * itemsPerPage + 1} –{" "}
+          {Math.min(currentPage * itemsPerPage, transactions.length)} of{" "}
+          {transactions.length}
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -185,6 +192,7 @@ export default function TransactionTable({
           >
             Previous
           </button>
+
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}

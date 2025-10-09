@@ -99,10 +99,10 @@ export default function BulkUploadForm({
     setError("");
   };
 
-  const updateRow = (
+  const updateRow = <K extends keyof CreateClassInventoryEntitlementInput>(
     tempId: string,
-    field: keyof CreateClassInventoryEntitlementInput,
-    value: any
+    field: K,
+    value: CreateClassInventoryEntitlementInput[K] // value type inferred from field
   ) => {
     setRows((prev) =>
       prev.map((row) =>
@@ -124,7 +124,7 @@ export default function BulkUploadForm({
     }
 
     const invalid: number[] = [];
-    
+
     // Use a Map for consolidation, keyed by the unique constraint: class_id, inventory_item_id, session_term_id
     const consolidatedDataMap = new Map<
       string,
@@ -149,23 +149,23 @@ export default function BulkUploadForm({
 
       // Create a clean object without the temporary ID
       const { tempId, ...cleanRow } = row;
-      
+
       const existing = consolidatedDataMap.get(uniqueKey);
 
       if (existing) {
         // 3. CONSOLIDATION: If a duplicate key is found, merge the data.
         // The most common merging strategy for quantity is summation.
         // For other fields (notes, created_by), we will use the value from the *latest* row.
-        
+
         const newQuantity = existing.quantity + cleanRow.quantity;
-        
+
         consolidatedDataMap.set(uniqueKey, {
-            ...existing,
-            // Sum quantities
-            quantity: newQuantity,
-            // Overwrite other fields with the latest data
-            notes: cleanRow.notes,
-            created_by: cleanRow.created_by,
+          ...existing,
+          // Sum quantities
+          quantity: newQuantity,
+          // Overwrite other fields with the latest data
+          notes: cleanRow.notes,
+          created_by: cleanRow.created_by,
         });
 
         toast.error(`Consolidating duplicate entry for row ${i + 1}. Quantity is now ${newQuantity}.`, { duration: 5000, icon: '🔄' });
@@ -174,7 +174,7 @@ export default function BulkUploadForm({
         consolidatedDataMap.set(uniqueKey, cleanRow);
       }
     });
-    
+
     // 5. Check if any rows were invalid
     if (invalid.length > 0) {
       setError(
@@ -262,8 +262,8 @@ export default function BulkUploadForm({
                             "Quantity",
                             "Created By",
                           ].includes(header) && (
-                            <span className="text-red-500">*</span>
-                          )}
+                              <span className="text-red-500">*</span>
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -434,8 +434,7 @@ export default function BulkUploadForm({
                     Saving {rows.length}...
                   </>
                 ) : (
-                  `Create ${rows.length} Entitlement${
-                    rows.length > 1 ? "s" : ""
+                  `Create ${rows.length} Entitlement${rows.length > 1 ? "s" : ""
                   }`
                 )}
               </button>

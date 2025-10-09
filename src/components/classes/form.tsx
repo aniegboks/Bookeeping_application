@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import {
     SchoolClass,
     CreateSchoolClassInput,
-    SchoolClassStatus,
 } from "@/lib/types/classes";
 import { User } from "@/lib/types/user";
 import { ClassTeacher } from "@/lib/types/class_teacher";
@@ -17,7 +16,7 @@ interface ClassFormProps {
     onCancel: () => void;
     isSubmitting: boolean;
     users: User[];
-    classTeachers: ClassTeacher[]; // NOTE: This likely holds association IDs
+    classTeachers: ClassTeacher[]; 
 }
 
 export default function ClassForm({
@@ -26,10 +25,6 @@ export default function ClassForm({
     onCancel,
     isSubmitting,
     users,
-    // We will use 'users' instead of 'classTeachers' for the dropdown to get names
-    // If 'classTeachers' is indeed a list of *only* teacher User objects, 
-    // you would simply use it and ensure it's not null/undefined (e.g., classTeachers ?? []).
-    // The previous error suggests it's either an association list or a partial list.
 }: ClassFormProps) {
     const [formData, setFormData] = useState<CreateSchoolClassInput>({
         name: "",
@@ -62,17 +57,7 @@ export default function ClassForm({
         await onSubmit(formData);
     };
 
-    // 🌟 FIX: Filter the full user list to get only the users who are teachers 🌟
-    // This assumes your User type has a 'role' property.
-    // If not, you should filter by the IDs present in the 'classTeachers' prop
-    // to map the full user object to the dropdown.
-
-    // METHOD 1: Filter by a 'role' property on the User object (BEST PRACTICE)
     const availableTeachers: User[] = users.filter(user => user.roles.includes('teacher')); 
-
-    // METHOD 2: If 'users' only contains teachers, then use it directly (Less likely)
-    // const availableTeachers: User[] = users;
-
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-2xl w-full p-6">
@@ -111,9 +96,7 @@ export default function ClassForm({
                                 disabled={isSubmitting}
                             >
                                 <option value="">Select a teacher</option>
-                                {/* Mapping over the filtered 'availableTeachers' list (which are full User objects) */}
                                 {availableTeachers.map((teacher) => {
-                                    // Use 'name' if available, otherwise fall back to 'email' or 'id'
                                     const displayName: string = 
                                         teacher.name || teacher.email || String(teacher.id);
 
@@ -128,8 +111,6 @@ export default function ClassForm({
                                 })}
                             </select>
                         </div>
-
-                        {/* Status Dropdown */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Status <span className="text-gray-500">*</span>

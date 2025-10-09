@@ -3,9 +3,20 @@
 import React from "react";
 import { Supplier } from "@/lib/types/suppliers";
 import { MapPin, Plus, Globe, Users } from "lucide-react";
+import { ReactNode } from "react";
 
 interface Props {
   suppliers?: Supplier[];
+}
+
+interface CardProps {
+  title: string;
+  value: number;
+  icon: ReactNode;
+  colorBg: string;
+  progress: number;
+  description: string;
+  barColor: string;
 }
 
 export default function StatsCards({ suppliers = [] }: Props) {
@@ -67,7 +78,7 @@ export default function StatsCards({ suppliers = [] }: Props) {
   );
 }
 
-function Card({ title, value, icon, colorBg, barColor, progress, description }: any) {
+function Card({ title, value, icon, colorBg, barColor, progress, description }: CardProps) {
   return (
     <div className="bg-white rounded-sm p-6 border border-slate-200 hover:shadow-sm transition">
       <div className="flex items-center">

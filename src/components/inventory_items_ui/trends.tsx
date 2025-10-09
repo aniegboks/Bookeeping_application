@@ -20,16 +20,39 @@ interface InventoryPriceMarginTrendProps {
   items: InventoryItem[];
 }
 
+// Chart data interface
+interface ChartData {
+  label: string;
+  avgCost: number;
+  avgSell: number;
+  avgMargin: number;
+}
+
+// Radar tooltip entry type
+interface RadarTooltipEntry {
+  value: number;
+  name: string;
+  dataKey: keyof ChartData;
+}
+
+// Custom Tooltip props
+interface CustomRadarTooltipProps {
+  active?: boolean;
+  payload?: RadarTooltipEntry[];
+}
+
 // Custom Tooltip
-const CustomRadarTooltip = ({ active, payload }: any) => {
+const CustomRadarTooltip: React.FC<CustomRadarTooltipProps> = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
       <div className="p-3 bg-white/80 backdrop-blur-md border border-gray-100 rounded-lg shadow-lg text-xs">
-        {payload.map((entry: any, index: number) => {
+        {payload.map((entry, index) => {
           const isMargin = entry.dataKey === "avgMargin";
           return (
             <p key={index} className="text-black py-1">
-              {`${entry.name}: ${isMargin ? entry.value.toFixed(2) + "%" : formatCurrency(entry.value)}`}
+              {`${entry.name}: ${
+                isMargin ? entry.value.toFixed(2) + "%" : formatCurrency(entry.value)
+              }`}
             </p>
           );
         })}
@@ -41,13 +64,14 @@ const CustomRadarTooltip = ({ active, payload }: any) => {
 
 // Main component
 export default function InventoryPriceMarginTrend({ items }: InventoryPriceMarginTrendProps) {
-  const chartData = useMemo(() => {
+  const chartData: ChartData[] = useMemo(() => {
     if (!items || !items.length) return [];
+
     const sortedItems = [...items].sort(
       (a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime()
     );
 
-    return sortedItems.map(item => {
+    return sortedItems.map((item) => {
       const cost = Number(item.cost_price ?? 0);
       const sell = Number(item.selling_price ?? 0);
       const margin = sell > 0 ? ((sell - cost) / sell) * 100 : 0;
@@ -75,10 +99,10 @@ export default function InventoryPriceMarginTrend({ items }: InventoryPriceMargi
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="bg-white/90 dark:bg-gray-900/60 backdrop-blur-xl p-8 mt-8 rounded-sm border border-gray-200 dark:border-gray-800  mb-8"
+      className="bg-white/90 dark:bg-gray-900/60 backdrop-blur-xl p-8 mt-8 rounded-sm border border-gray-200 dark:border-gray-800 mb-8"
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
           Inventory Price & Margin Trend
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -89,19 +113,10 @@ export default function InventoryPriceMarginTrend({ items }: InventoryPriceMargi
       <div className="h-[450px]">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={chartData} outerRadius="80%">
-            {/* Custom subtle grid */}
             <PolarGrid stroke="#D1D5DB" strokeOpacity={0.25} />
-            <PolarAngleAxis
-              dataKey="label"
-              tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 500 }}
-            />
-            <PolarRadiusAxis
-              angle={30}
-              tick={{ fill: "#6B7280", fontSize: 10 }}
-              axisLine={false}
-            />
+            <PolarAngleAxis dataKey="label" tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 500 }} />
+            <PolarRadiusAxis angle={30} tick={{ fill: "#6B7280", fontSize: 10 }} axisLine={false} />
 
-            {/* Radars with unique gradients and shadows */}
             <Radar
               name="Cost"
               dataKey="avgCost"
@@ -127,7 +142,10 @@ export default function InventoryPriceMarginTrend({ items }: InventoryPriceMargi
               animationDuration={800}
             />
 
-            <Tooltip content={<CustomRadarTooltip />} cursor={{ stroke: "#A1A1AA", strokeWidth: 1, strokeDasharray: "4 4", opacity: 0.4 }} />
+            <Tooltip
+              content={<CustomRadarTooltip />}
+              cursor={{ stroke: "#A1A1AA", strokeWidth: 1, strokeDasharray: "4 4", opacity: 0.4 }}
+            />
 
             <Legend
               verticalAlign="bottom"

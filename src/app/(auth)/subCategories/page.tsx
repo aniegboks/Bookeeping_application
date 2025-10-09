@@ -9,6 +9,7 @@ import SubCategoriesTable from "@/components/sub_categories_ui/sub_categories_ta
 import SubCategoryModal from "@/components/sub_categories_ui/sub_categories_modal";
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
+import Trends from "@/components/sub_categories_ui/trends";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import toast from "react-hot-toast";
@@ -190,22 +191,19 @@ export default function SubCategoriesPage() {
   }
 
   return (
-    <div className="h-screen bg-[#F3F4F7]">
+    <div className="">
       <div className="mx-6">
       <Container>
-        <div className="bg mt-24">
-          <h1 className="text-3xl font-bold mb-2 my-4 text-[#171D26]">
-            Sub-Categories Management
-          </h1>
-          <p className="text-gray-600 mb-4">
-            Manage your product sub-categories
-          </p>
-
+        <div className="bg mt-6">
           <StatsCards
             total={categories.length}
             addedToday={subCategories.length}
             searchResults={filteredSubCategories.length}
             viewMode={viewMode}
+          />
+
+          <Trends
+            subCategories={subCategories}
           />
 
           <div className="bg-white rounded-lgborder border border-gray-200">
@@ -231,6 +229,11 @@ export default function SubCategoriesPage() {
                 loading={loading}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onAdd={() => {
+                  setEditingItem(null);
+                  setFormData({ name: "", category_id: "" });
+                  setIsModalOpen(true);
+                }}
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pb-6">
@@ -278,7 +281,7 @@ export default function SubCategoriesPage() {
         <div className="flex gap-2 mt-4">
           <button
             onClick={exportSubCategoriesToExcel}
-            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:bg-[#495C79] transition-colors btn-color"
+            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm hover:bg-[#495C79] transition-colors btn-color"
           >
             <Download className="w-5 h-5" />
             Export

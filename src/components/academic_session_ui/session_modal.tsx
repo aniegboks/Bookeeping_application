@@ -71,11 +71,10 @@ export default function SessionModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-sm max-w-md w-full p-6 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-[#171D26] mb-4">
           {editingSession ? "Edit Academic Session" : "Create New Academic Session"}
         </h3>
-
         <form className="space-y-4" onSubmit={handleSubmit}>
           {/* Session */}
           <div>

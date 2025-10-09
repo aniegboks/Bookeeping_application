@@ -2,22 +2,22 @@
 export interface NavItem {
   label: string;
   link: string;
+  description?: string; // Optional description for dashboard cards
 }
 
 // Export the menu items
 export const AcademicSessionTerms: NavItem[] = [
-  { label: "Academic Session", link: "/dashboard" },
-  { label: "Brands", link: "/brands" },
-  { label: "Categories", link: "/categories" },
-  { label: "Sub Categories", link: "/subCategories" },
-  { label: "UOM", link: "/uom" },
-  { label: "InventoryItems", link: "/inventoryItem" },
-  { label: "Class Inventory Entitlement", link: "/classInventoryEntitlment" },
-  { label: "Suppliers", link: "/suppliers" },
-  { label: "Users", link: "/user" },
-  { label: "Classes", link: "/classes" },
-  { label: "Class Teachers", link: "/classTeachers" },
-  { label: "Transaction Items", link: "/transactionItem" },
-  { label: "Students", link: "/students" },
-  { label: "Inventory Distributions", link: "/inventory_distrbution" },
+  { label: "Academic Session", link: "/dashboard", description: "Manage academic sessions and terms" },
+  { label: "Brands", link: "/brands", description: "View and manage product brands" },
+  { label: "Categories", link: "/categories", description: "Manage product categories" },
+  { label: "Sub Categories", link: "/subCategories", description: "Manage subcategories under categories" },
+  { label: "UOM", link: "/uom", description: "Define and manage units of measure" },
+  { label: "InventoryItems", link: "/inventoryItem", description: "View and manage inventory items" },
+  { label: "Inventory Entitlement", link: "/classInventoryEntitlment", description: "Assign inventory to classes" },
+  { label: "Suppliers", link: "/suppliers", description: "Manage suppliers and contacts" },
+  { label: "Users", link: "/user", description: "Manage system users and roles" },
+  { label: "Classes", link: "/classes", description: "View and manage classes" },
+  { label: "Class Teachers", link: "/classTeachers", description: "Assign and manage class teachers" },
+  { label: "Transaction Items", link: "/transactionItem", description: "Track inventory transactions" },
+  { label: "Students", link: "/students", description: "View and manage students" },
 ];

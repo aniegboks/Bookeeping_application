@@ -1,10 +1,9 @@
-// src/pages/ClassInventoryEntitlementsPage.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
-// --- API Clients (Assume these are updated to use /api/proxy/ internally) ---
+// --- API Clients ---
 import { ClassInventoryEntitlement } from "@/lib/types/class_inventory_entitlement";
 import { classInventoryEntitlementApi } from "@/lib/class_inventory_entitlement";
 import { schoolClassApi } from "@/lib/classes";
@@ -27,11 +26,13 @@ import EntitlementTable from "@/components/class_inventory_entitlement_ui/table"
 import EntitlementForm from "@/components/class_inventory_entitlement_ui/form";
 import BulkUploadForm from "@/components/class_inventory_entitlement_ui/bulk_upload";
 import DeleteModal from "@/components/class_inventory_entitlement_ui/delete_modal";
+import EntitlementBarChart from "@/components/class_inventory_entitlement_ui/trends";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { Download } from "lucide-react";
 
 export default function ClassInventoryEntitlementsPage() {
   const [entitlements, setEntitlements] = useState<ClassInventoryEntitlement[]>([]);
-  
-  // State for reference data, fetched once by the parent
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [academicSessions, setAcademicSessions] = useState<AcademicSession[]>([]);
@@ -48,18 +49,15 @@ export default function ClassInventoryEntitlementsPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
-  const [editingEntitlement, setEditingEntitlement] =
-    useState<ClassInventoryEntitlement | null>(null);
+  const [editingEntitlement, setEditingEntitlement] = useState<ClassInventoryEntitlement | null>(null);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletingEntitlement, setDeletingEntitlement] =
-    useState<ClassInventoryEntitlement | null>(null);
+  const [deletingEntitlement, setDeletingEntitlement] = useState<ClassInventoryEntitlement | null>(null);
 
-  // Load initial entitlements and all reference data concurrently
+  // --- Load all initial data ---
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      
       const [entitlementData, cls, items, sessions, userData] = await Promise.all([
         classInventoryEntitlementApi.getAll(),
         schoolClassApi.getAll(),
@@ -73,10 +71,8 @@ export default function ClassInventoryEntitlementsPage() {
       setInventoryItems(items);
       setAcademicSessions(sessions);
       setUsers(userData);
-
     } catch (err: any) {
       console.error("Failed to load initial data:", err);
-      // NOTE: This error handler will now catch ALL 404s if the API clients are misconfigured
       toast.error("Failed to load initial data: " + err.message);
     } finally {
       setLoading(false);
@@ -88,7 +84,6 @@ export default function ClassInventoryEntitlementsPage() {
     loadInitialData();
   }, []);
 
-  // Function to reload only the entitlement data (used after CRUD operations)
   const loadEntitlements = async () => {
     try {
       setLoading(true);
@@ -102,35 +97,68 @@ export default function ClassInventoryEntitlementsPage() {
     }
   };
 
-
-  // Filters (Unchanged)
+  // --- Filter & Search ---
   const filteredEntitlements = entitlements.filter((e) => {
+    const className = classes.find((c) => c.id === e.class_id)?.name || e.class_id;
+    const itemName = inventoryItems.find((i) => i.id === e.inventory_item_id)?.name || e.inventory_item_id;
+    const sessionName = academicSessions.find((s) => s.id === e.session_term_id)?.name || e.session_term_id;
+
     const matchesSearch =
-      e.class_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.inventory_item_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.session_term_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      className.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sessionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (e.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
 
-    const matchesClassFilter =
-      !filterClassId ||
-      e.class_id.toLowerCase().includes(filterClassId.toLowerCase());
-
+    const matchesClassFilter = !filterClassId || className.toLowerCase().includes(filterClassId.toLowerCase());
     const matchesInventoryFilter =
-      !filterInventoryItemId ||
-      e.inventory_item_id
-        .toLowerCase()
-        .includes(filterInventoryItemId.toLowerCase());
+      !filterInventoryItemId || itemName.toLowerCase().includes(filterInventoryItemId.toLowerCase());
 
     return matchesSearch && matchesClassFilter && matchesInventoryFilter;
   });
 
-  // --- CRUD Handlers (Unchanged) ---
-  
+  // --- Export as Spreadsheet ---
+  const handleExport = () => {
+    if (filteredEntitlements.length === 0) {
+      toast.error("No data to export!");
+      return;
+    }
+
+    const dataToExport = filteredEntitlements.map((e) => {
+      const className = classes.find((c) => c.id === e.class_id)?.name || "";
+      const itemName = inventoryItems.find((i) => i.id === e.inventory_item_id)?.name || "";
+      const sessionName = academicSessions.find((s) => s.id === e.session_term_id)?.name || "";
+      const user = users.find((u) => u.id === e.created_by);
+      const createdBy = user?.name || user?.username || user?.email || "Unknown";
+
+      return {
+        "Class Name": className,
+        "Inventory Item": itemName,
+        "Session Term": sessionName,
+        Quantity: e.quantity,
+        Notes: e.notes || "",
+        "Created By": createdBy,
+        "Created At": new Date(e.created_at).toLocaleString(),
+        "Updated At": new Date(e.updated_at).toLocaleString(),
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Entitlements");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    saveAs(blob, `class_inventory_entitlements_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Spreadsheet exported successfully!");
+  };
+
+  // --- CRUD Handlers ---
   const handleFormSubmit = async (data: any) => {
     setIsSubmitting(true);
-    const loadingToast = toast.loading(
-      editingEntitlement ? "Updating entitlement..." : "Creating entitlement..."
-    );
+    const loadingToast = toast.loading(editingEntitlement ? "Updating entitlement..." : "Creating entitlement...");
 
     try {
       if (editingEntitlement) {
@@ -143,7 +171,7 @@ export default function ClassInventoryEntitlementsPage() {
 
       setShowForm(false);
       setEditingEntitlement(null);
-      await loadEntitlements(); // Reload entitlements after change
+      await loadEntitlements();
     } catch (err: any) {
       console.error("Form submission failed:", err);
       toast.error("Failed to save entitlement: " + err.message);
@@ -210,7 +238,7 @@ export default function ClassInventoryEntitlementsPage() {
     toast("Action canceled", { icon: "ℹ️" });
   };
 
-  // UI States (Unchanged)
+  // --- UI States ---
   if (initialLoading) {
     return (
       <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-[#F3F4F7] z-50">
@@ -220,24 +248,12 @@ export default function ClassInventoryEntitlementsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F7] mx-6">
+    <div className="mx-6">
       <Container>
-        <div className="mt-24 pb-8">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-[#171D26] mb-2">
-              Class Inventory Entitlements
-            </h1>
-            <p className="text-gray-600">
-              Manage class inventory allocations and entitlements
-            </p>
-          </div>
-
+        <div className="mt-2 pb-8">
           {/* Stats */}
-          <StatsCards
-            entitlements={entitlements}
-            filteredEntitlements={filteredEntitlements}
-          />
+          <StatsCards entitlements={entitlements} filteredEntitlements={filteredEntitlements} />
+          <EntitlementBarChart entitlements={entitlements} />
 
           {/* Controls */}
           <Controls
@@ -249,8 +265,6 @@ export default function ClassInventoryEntitlementsPage() {
             onFilterInventoryItemIdChange={setFilterInventoryItemId}
             onAdd={() => setShowForm(true)}
             onBulkAdd={() => setShowBulkForm(true)}
-            // Assuming Controls uses 'classes' and 'inventoryItems' for filters
-            // This data should be passed down via props if needed.
           />
 
           {/* Modals */}
@@ -260,8 +274,6 @@ export default function ClassInventoryEntitlementsPage() {
               onSubmit={handleFormSubmit}
               onCancel={handleCancel}
               isSubmitting={isSubmitting}
-              
-              // Pass the pre-loaded data down to the form
               classes={classes}
               inventoryItems={inventoryItems}
               sessionTerms={academicSessions}
@@ -287,7 +299,24 @@ export default function ClassInventoryEntitlementsPage() {
             onEdit={handleEdit}
             onDelete={handleDeleteRequest}
             loading={loading}
+            inventoryItems={inventoryItems}
+            classes={classes}
+            academicSessions={academicSessions}
+            users={users}
           />
+
+          {/* --- Export Button --- */}
+          <div className="mt-6 flex justify-start">
+            <button
+              onClick={handleExport}
+              className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-5 py-2 rounded-sm transition"
+            >
+            <span className="flex gap-2">
+              <Download className="w-5 h-5" />
+              <span>Export</span>
+            </span>
+            </button>
+          </div>
 
           {/* Delete Modal */}
           {showDeleteModal && deletingEntitlement && (

@@ -35,7 +35,7 @@ export default function Controls({
             placeholder="Search sub-categories..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-[#171D26]"
+            className="pl-10 pr-4 py-2 border border-gray-300 rounded-sm text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-[#171D26]"
           />
         </div>
 
@@ -45,7 +45,7 @@ export default function Controls({
           <select
             value={filterCategory}
             onChange={(e) => onFilterChange(e.target.value)}
-            className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-[#171D26]"
+            className="pl-10 pr-8 py-2 border border-gray-300 rounded-sm text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-[#171D26]"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -58,10 +58,10 @@ export default function Controls({
       <div className="flex items-center gap-4">
         {/* Add button */}
         {/* View mode toggle */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-gray-100 rounded-sm p-1">
           <button
             onClick={() => setViewMode('list')}
-            className={`px-3 py-1 rounded-md text-sm font-medium ${viewMode==='list' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`px-3 py-1 rounded-sm text-sm font-medium ${viewMode==='list' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
           >
             List
           </button>
@@ -74,7 +74,7 @@ export default function Controls({
         </div>
         <button
           onClick={onAdd}
-          className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-sm transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" /> Add Sub-Category
         </button>

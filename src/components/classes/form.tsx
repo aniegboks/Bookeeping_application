@@ -66,7 +66,7 @@ export default function ClassForm({
     // This assumes your User type has a 'role' property.
     // If not, you should filter by the IDs present in the 'classTeachers' prop
     // to map the full user object to the dropdown.
-    
+
     // METHOD 1: Filter by a 'role' property on the User object (BEST PRACTICE)
     const availableTeachers: User[] = users.filter(user => user.roles.includes('teacher')); 
 
@@ -84,7 +84,7 @@ export default function ClassForm({
                         {/* Class Name */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Class Name <span className="text-red-500">*</span>
+                                Class Name <span className="text-gray-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -100,13 +100,13 @@ export default function ClassForm({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Class Teacher <span className="text-red-500">*</span>
+                                Class Teacher <span className="text-gray-500">*</span>
                             </label>
                             <select
                                 name="class_teacher_id"
                                 value={formData.class_teacher_id}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                                className="w-full px-3 py-2 border border-gray-300 text-sm text-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                                 required
                                 disabled={isSubmitting}
                             >
@@ -132,13 +132,13 @@ export default function ClassForm({
                         {/* Status Dropdown */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Status <span className="text-red-500">*</span>
+                                Status <span className="text-gray-500">*</span>
                             </label>
                             <select
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                                className="w-full px-3 py-2 border border-gray-300 text-sm text-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                                 required
                                 disabled={isSubmitting}
                             >
@@ -150,13 +150,13 @@ export default function ClassForm({
                         {/* Created By Dropdown */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Created By (User) <span className="text-red-500">*</span>
+                                Created By (User) <span className="text-gray-500">*</span>
                             </label>
                             <select
                                 name="created_by"
                                 value={formData.created_by}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] text-sm text-gray-500"
                                 required
                                 disabled={isSubmitting}
                             >

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Jost } from "next/font/google";
+import { Inter, Jost } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "react-hot-toast";
+import ToasterClient from "@/components/ui/toaster"; 
+
 const jost = Jost({
   variable: "--font-jost",
   subsets: ["latin"],
@@ -21,7 +22,7 @@ export default function RootLayout({
     <html lang="en" className={jost.variable}>
       <body className="antialiased font-sans">
         {children}
-        <Toaster />
+        <ToasterClient /> 
       </body>
     </html>
   );

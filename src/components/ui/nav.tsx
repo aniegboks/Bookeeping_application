@@ -1,82 +1,72 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Container from "./container";
-import { Menu, X } from "lucide-react";
 import { AcademicSessionTerms, NavItem } from "@/utils/nav";
+import { Home, BookOpen, Calendar, Users } from "lucide-react";
 
-const Nav = () => {
-  const [isOpen, setIsOpen] = useState(false);
+// Map labels to icons
+const navIcons: Record<string, React.ReactNode> = {
+  Dashboard: <Home className="w-5 h-5" />,
+  Sessions: <BookOpen className="w-5 h-5" />,
+  Calendar: <Calendar className="w-5 h-5" />,
+  Users: <Users className="w-5 h-5" />,
+};
 
+const VerticalNav = () => {
   return (
-    <div className="w-full sticky z-50 bg-[#F3F4F7]">
-      <Container>
-        <div className="flex items-center justify-between py-4 px-4 bg-white rounded-md">
-          {/* Profile section */}
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 relative">
-              <Image
-                src="/images/profile.jpg"
-                alt="profile"
-                fill
-                className="rounded-full object-cover"
-              />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[#171D26]">Administrator</h3>
-              <p className="text-sm text-gray-500">admin@admin.com</p>
-            </div>
-          </div>
-
-          {/* Hamburger menu */}
-          <Menu
-            className="w-5 h-5 cursor-pointer text-[#171D26]"
-            onClick={() => setIsOpen(true)}
+    <div className="w-64 h-screen bg-white flex flex-col border-r border-gray-200">
+      {/* Profile Section */}
+      <div className="flex flex-col items-center py-6 border-b border-gray-200">
+        <div className="w-16 h-16 relative mb-3">
+          <Image
+            src="/images/profile.jpg"
+            alt="profile"
+            fill
+            className="rounded-full object-cover"
           />
         </div>
-      </Container>
+        <h3 className="font-semibold text-gray-800 text-lg tracking-tighter">
+          Administrator
+        </h3>
+        <p className="text-sm text-gray-500">admin@admin.com</p>
+      </div>
 
-      {/* Drawer */}
-      <div
-        className={`fixed top-0 right-0 h-full w-64 sm:w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        {/* Close button */}
-        <div className="flex justify-end p-4">
-          <X
-            className="w-4 h-4 cursor-pointer text-[#171D26]"
-            onClick={() => setIsOpen(false)}
-          />
-        </div>
-
-        {/* Links stacked vertically */}
-        <ul className="flex flex-col items-start gap-6 p-6 text-[#171D26] font-medium">
+      {/* Scrollable Nav Links */}
+      <nav className="flex-1 overflow-y-auto px-4 mt-6 scrollbar-none">
+        <ul className="flex flex-col gap-2">
           {AcademicSessionTerms.map((item: NavItem) => (
-            <li key={item.label} className="text-sm">
+            <li key={item.label}>
               <Link
-                href={item.link} // <-- use 'link' here
-                className="hover:text-[#3D4C63]"
-                onClick={() => setIsOpen(false)} // close drawer on click
+                href={item.link}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#F3F4F7] transition-colors duration-200 text-gray-700 font-sm"
               >
-                {item.label}
+                {navIcons[item.label] ?? <BookOpen className="w-5 h-5" />}
+                <span>{item.label}</span>
               </Link>
             </li>
           ))}
         </ul>
+      </nav>
+
+      {/* Footer */}
+      <div className="mt-auto py-4 px-4 border-t border-gray-200">
+        <p className="text-xs text-gray-400 text-center">&copy; 2025 My Dashboard</p>
       </div>
 
-      {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/70 z-40"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* Hide scrollbar */}
+      <style jsx>{`
+        .scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-none {
+          -ms-overflow-style: none; /* IE/Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+      `}</style>
     </div>
   );
 };
 
-export default Nav;
+export default VerticalNav;

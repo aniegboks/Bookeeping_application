@@ -7,6 +7,7 @@ export interface UOM {
     id: string;
     name: string;
     symbol: string;
+    description?: string;
     created_at: string; // ISO date string
     updated_at: string; // ISO date string
   }
@@ -17,6 +18,7 @@ export interface UOM {
   export interface CreateUOMInput {
     name: string;
     symbol: string;
+    description?: string;
   }
   
   /**
@@ -25,10 +27,12 @@ export interface UOM {
   export interface UpdateUOMInput {
     name: string;
     symbol: string;
+    description?: string;
   }
   
   export interface CreateUOMInput {
     name: string;
     symbol: string;
+    description?: string;
   }
   

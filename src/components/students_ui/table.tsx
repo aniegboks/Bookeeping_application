@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Edit, Trash2, User } from "lucide-react";
 import { Student } from "@/lib/types/students";
 
@@ -6,6 +7,7 @@ interface StudentTableProps {
   onEdit: (student: Student) => void;
   onDelete: (student: Student) => void;
   loading?: boolean;
+  pageSize?: number; // Optional, default to 10
 }
 
 export default function StudentTable({
@@ -13,7 +15,11 @@ export default function StudentTable({
   onEdit,
   onDelete,
   loading = false,
+  pageSize = 10,
 }: StudentTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(students.length / pageSize);
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -46,8 +52,14 @@ export default function StudentTable({
     }
   };
 
+  // Slice students for current page
+  const paginatedStudents = students.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
@@ -79,7 +91,7 @@ export default function StudentTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {students.map((student) => (
+            {paginatedStudents.map((student) => (
               <tr
                 key={student.id}
                 className="hover:bg-gray-50 transition-colors"
@@ -114,7 +126,7 @@ export default function StudentTable({
                     <div className="text-gray-500 text-xs truncate">{student.guardian_contact}</div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate" title={student.address ||"-"}>
+                <td className="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate" title={student.address || "-"}>
                   {student.address || "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -130,17 +142,17 @@ export default function StudentTable({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onEdit(student)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
                       title="Edit Student"
                     >
-                      <Edit size={16} />
+                      <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => onDelete(student)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete Student"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </td>
@@ -148,6 +160,30 @@ export default function StudentTable({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
+
+        <span className="text-sm text-gray-700">
+          Page {currentPage} of {totalPages}
+        </span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

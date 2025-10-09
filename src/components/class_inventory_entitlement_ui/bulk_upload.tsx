@@ -205,7 +205,7 @@ export default function BulkUploadForm({
         className="bg-white rounded-lg max-w-6xl w-full p-6 my-8"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-8">
           <h2 className="text-xl font-semibold text-[#171D26]">
             Bulk Create Entitlements
           </h2>
@@ -213,7 +213,7 @@ export default function BulkUploadForm({
             type="button"
             onClick={addRow}
             disabled={isSubmitting || isDataMissing}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2  btext-[#171D26]  transition-colors disabled:opacity-50"
           >
             <Plus size={16} />
             Add Row
@@ -419,7 +419,7 @@ export default function BulkUploadForm({
                 type="button"
                 onClick={onCancel}
                 disabled={isSubmitting}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
               >
                 Cancel
               </button>

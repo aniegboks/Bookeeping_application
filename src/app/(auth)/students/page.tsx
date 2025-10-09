@@ -16,6 +16,10 @@ import Controls from "@/components/students_ui/controls";
 import StudentTable from "@/components/students_ui/table";
 import StudentForm from "@/components/students_ui/form";
 import DeleteModal from "@/components/students_ui/delete_modal";
+import StudentStatusChart from "@/components/students_ui/trends";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { Download } from "lucide-react";
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -76,6 +80,42 @@ export default function StudentsPage() {
 
     return matchesSearch && matchesStatus && matchesGender;
   });
+
+  // Export to Excel
+  const handleExport = () => {
+    if (filteredStudents.length === 0) {
+      toast("No students to export", { icon: "⚠️" });
+      return;
+    }
+
+    const exportData = filteredStudents.map((student) => {
+      const studentClass = classes.find((c) => c.id === student.class_id);
+      const createdByUser = users.find((u) => u.id === student.created_by);
+      return {
+        "First Name": student.first_name,
+        "Middle Name": student.middle_name || "",
+        "Last Name": student.last_name,
+        "Admission Number": student.admission_number,
+        "Gender": student.gender,
+        "Status": student.status,
+        "Guardian Name": student.guardian_name,
+        "Class": studentClass ? studentClass.name : "",
+        "Created By": createdByUser ? createdByUser.name : "",
+        "Created At": student.created_at,
+        "Updated At": student.updated_at,
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, "students.xlsx");
+
+    toast.success("Students exported successfully!");
+  };
 
   // Form submission
   const handleFormSubmit = async (data: any) => {
@@ -159,15 +199,11 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F7]">
+    <div className="">
       <Container>
-        <div className="mt-24 pb-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-[#171D26] mb-2">Student Management</h1>
-            <p className="text-gray-600">Manage student records, admissions, and information</p>
-          </div>
-
+        <div className="mt-4 pb-8">
           <StatsCards students={students} filteredStudents={filteredStudents} />
+          <StudentStatusChart students={students} />
 
           <Controls
             searchTerm={searchTerm}
@@ -194,7 +230,6 @@ export default function StudentsPage() {
               />
             </div>
           )}
-
           <StudentTable
             students={filteredStudents}
             onEdit={handleEdit}
@@ -215,6 +250,18 @@ export default function StudentsPage() {
             />
           )}
         </div>
+        <div className="flex justify-start mb-4">
+          <button
+            className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition"
+            onClick={handleExport}
+          >
+            <span className="flex gap-2">
+              <Download className="w-5 h-5" />
+              Export
+            </span>
+          </button>
+        </div>
+
       </Container>
     </div>
   );

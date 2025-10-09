@@ -3,7 +3,12 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { SchoolClass } from "@/lib/types/classes";
+import { ClassTeacher } from "@/lib/types/class_teacher";
+import { User } from "@/lib/types/user";
 import { schoolClassApi } from "@/lib/classes";
+import { classTeacherApi } from "@/lib/class_teacher";
+import { userApi } from "@/lib/user";
+
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
 import StatsCards from "@/components/classes/stats_card";
@@ -11,10 +16,11 @@ import Controls from "@/components/classes/controls";
 import ClassTable from "@/components/classes/tables";
 import ClassForm from "@/components/classes/form";
 import DeleteModal from "@/components/classes/modal";
-import { classTeacherApi } from "@/lib/class_teacher";
-import { userApi } from "@/lib/user";
-import { ClassTeacher } from "@/lib/types/class_teacher";
-import { User } from "@/lib/types/user";
+import Trends from "@/components/classes/trends";
+
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { Download } from "lucide-react";
 
 export default function SchoolClassesPage() {
     const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -59,35 +65,39 @@ export default function SchoolClassesPage() {
         loadData();
     }, []);
 
+    // Get teacher name for display
+    const getTeacherName = (teacherId: string) => {
+        const teacher = classTeachers.find((t) => t.id === teacherId);
+        if (!teacher) return teacherId;
+        const user = users.find((u) => u.id === teacher.teacher_id);
+        return user?.username ?? user?.name ?? teacher.name ?? teacher.email ?? teacher.id;
+    };
+
     // Filter classes
     const filteredClasses = classes.filter((schoolClass) => {
-        const matchesSearch =
-            schoolClass.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            schoolClass.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            schoolClass.class_teacher_id.toLowerCase().includes(searchTerm.toLowerCase());
+        const searchLower = searchTerm.toLowerCase();
+        const teacherName = schoolClass.class_teacher_id
+            ? getTeacherName(schoolClass.class_teacher_id).toLowerCase()
+            : "";
 
-        const matchesStatus = !statusFilter || schoolClass.status === statusFilter;
-
-        return matchesSearch && matchesStatus;
+        return (
+            schoolClass.name.toLowerCase().includes(searchLower) ||
+            schoolClass.id.toLowerCase().includes(searchLower) ||
+            teacherName.includes(searchLower)
+        ) && (!statusFilter || schoolClass.status === statusFilter);
     });
 
-    // Handle form submission
+    // Form submission
     const handleFormSubmit = async (data: any) => {
         setIsSubmitting(true);
-        const loadingToast = toast.loading(
-            editingClass ? "Updating class..." : "Creating class..."
-        );
+        const loadingToast = toast.loading(editingClass ? "Updating class..." : "Creating class...");
 
         try {
-            if (editingClass) {
-                await schoolClassApi.update(editingClass.id, data);
-                toast.success("Class updated successfully!");
-            } else {
-                await schoolClassApi.create(data);
-                toast.success("Class created successfully!");
-            }
-            toast.dismiss(loadingToast);
+            if (editingClass) await schoolClassApi.update(editingClass.id, data);
+            else await schoolClassApi.create(data);
 
+            toast.success(editingClass ? "Class updated!" : "Class created!");
+            toast.dismiss(loadingToast);
             setShowForm(false);
             setEditingClass(null);
             await loadData();
@@ -100,22 +110,18 @@ export default function SchoolClassesPage() {
         }
     };
 
-    // Handle edit
     const handleEdit = (schoolClass: SchoolClass) => {
         setEditingClass(schoolClass);
         setShowForm(true);
     };
 
-    // Handle delete request
     const handleDeleteRequest = (schoolClass: SchoolClass) => {
         setDeletingClass(schoolClass);
         setShowDeleteModal(true);
     };
 
-    // Confirm delete
     const confirmDelete = async () => {
         if (!deletingClass) return;
-
         setIsDeleting(true);
         const loadingToast = toast.loading("Deleting class...");
 
@@ -123,7 +129,6 @@ export default function SchoolClassesPage() {
             await schoolClassApi.delete(deletingClass.id);
             toast.success("Class deleted successfully!");
             toast.dismiss(loadingToast);
-
             setShowDeleteModal(false);
             setDeletingClass(null);
             await loadData();
@@ -136,97 +141,122 @@ export default function SchoolClassesPage() {
         }
     };
 
-    // Handle cancel
     const handleCancel = () => {
         setShowForm(false);
         setEditingClass(null);
         toast("Form canceled", { icon: "ℹ️" });
     };
 
-    // Handle add new
     const handleAdd = () => {
         setEditingClass(null);
         setShowForm(true);
     };
 
-    if (initialLoading) {
+    // Export to Excel
+    const exportToExcel = () => {
+        if (filteredClasses.length === 0) {
+            toast("No data to export", { icon: "ℹ️" });
+            return;
+        }
+
+        const dataToExport = filteredClasses.map((schoolClass) => {
+            const teacherName = schoolClass.class_teacher_id
+                ? getTeacherName(schoolClass.class_teacher_id)
+                : "";
+            return {
+                ID: schoolClass.id,
+                Name: schoolClass.name,
+                Teacher: teacherName,
+                Status: schoolClass.status,
+                CreatedAt: new Date(schoolClass.created_at).toLocaleString(),
+                UpdatedAt: new Date(schoolClass.updated_at).toLocaleString(),
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "SchoolClasses");
+
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+        saveAs(blob, `SchoolClasses_${new Date().toISOString()}.xlsx`);
+    };
+
+    if (initialLoading)
         return (
             <div className="fixed inset-0 w-full h-full flex items-center justify-center bg-[#F3F4F7] z-50">
                 <Loader />
             </div>
         );
-    }
 
     return (
-        <div className="min-h-screen bg-[#F3F4F7]">
-            <div className="mx-6">
-                <Container>
-                    <div className="mt-24 pb-8">
-                        {/* Header */}
-                        <div className="mb-6">
-                            <h1 className="text-3xl font-bold text-[#171D26] mb-2">
-                                School Classes Management
-                            </h1>
-                            <p className="text-gray-600">
-                                Manage school classes, teachers, and class status
-                            </p>
-                        </div>
+        <div className="mx-6">
+            <Container>
+                <div className="mt-4 pb-8">
+                    <StatsCards classes={classes} filteredClasses={filteredClasses} />
+                    <Trends classes={classes} />
 
-                        {/* Stats Cards */}
-                        <StatsCards classes={classes} filteredClasses={filteredClasses} />
+                    <Controls
+                        searchTerm={searchTerm}
+                        onSearchChange={setSearchTerm}
+                        statusFilter={statusFilter}
+                        onStatusFilterChange={setStatusFilter}
+                        onAdd={handleAdd}
+                    />
 
-                        {/* Controls */}
-                        <Controls
-                            searchTerm={searchTerm}
-                            onSearchChange={setSearchTerm}
-                            statusFilter={statusFilter}
-                            onStatusFilterChange={setStatusFilter}
-                            onAdd={handleAdd}
-                        />
-
-                        {/* Form Modal */}
-                        {showForm && (
-                            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
-                                <h2 className="text-xl font-semibold text-[#171D26] mb-4">
-                                    {editingClass ? "Edit Class" : "Create New Class"}
-                                </h2>
-                                <ClassForm
-                                    schoolClass={editingClass || undefined}
-                                    onSubmit={handleFormSubmit}
-                                    onCancel={handleCancel}
-                                    isSubmitting={isSubmitting}
-                                    users={users}
-                                    classTeachers={classTeachers}
-                                />
-                            </div>
-                        )}
-
-                        {/* Table */}
-                        <ClassTable
-                            classes={filteredClasses}
-                            onEdit={handleEdit}
-                            onDelete={handleDeleteRequest}
-                            loading={loading}
-                            users={users}
-                            classTeachers={classTeachers}
-                        />
-
-                        {/* Delete Modal */}
-                        {showDeleteModal && deletingClass && (
-                            <DeleteModal
-                                schoolClass={deletingClass}
-                                onConfirm={confirmDelete}
-                                onCancel={() => {
-                                    setShowDeleteModal(false);
-                                    setDeletingClass(null);
-                                    toast("Delete canceled", { icon: "ℹ️" });
-                                }}
-                                isDeleting={isDeleting}
+                    {showForm && (
+                        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
+                            <h2 className="text-xl font-semibold text-[#171D26] mb-4">
+                                {editingClass ? "Edit Class" : "Create New Class"}
+                            </h2>
+                            <ClassForm
+                                schoolClass={editingClass || undefined}
+                                onSubmit={handleFormSubmit}
+                                onCancel={handleCancel}
+                                isSubmitting={isSubmitting}
+                                users={users}
+                                classTeachers={classTeachers}
                             />
-                        )}
+                        </div>
+                    )}
+
+                    <ClassTable
+                        classes={filteredClasses}
+                        onEdit={handleEdit}
+                        onDelete={handleDeleteRequest}
+                        loading={loading}
+                        users={users}
+                        classTeachers={classTeachers}
+                    />
+
+                    {/* Export Button */}
+                    <div className="mt-4 flex justify-start">
+                        <button
+                            onClick={exportToExcel}
+                            className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm
+transition"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Download className="w-5 h-5" />
+                                Export
+                            </span>
+                        </button>
                     </div>
-                </Container>
-            </div>
+
+                    {showDeleteModal && deletingClass && (
+                        <DeleteModal
+                            schoolClass={deletingClass}
+                            onConfirm={confirmDelete}
+                            onCancel={() => {
+                                setShowDeleteModal(false);
+                                setDeletingClass(null);
+                                toast("Delete canceled", { icon: "ℹ️" });
+                            }}
+                            isDeleting={isDeleting}
+                        />
+                    )}
+                </div>
+            </Container>
         </div>
     );
 }

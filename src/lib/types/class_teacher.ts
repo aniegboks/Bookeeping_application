@@ -11,7 +11,7 @@ export interface ClassTeacher {
   session_term_id: string;
   teacher_id: string;
   email: string;
-  name: string; // required now
+  name: string; 
   role: ClassTeacherRole;
   status: ClassTeacherStatus;
   assigned_at: string;

@@ -6,8 +6,7 @@ import {
   UpdateInventoryDistributionInput,
 } from "@/lib/types/inventory_distribution";
 
-// Base URL for distributions (not nested)
-const BASE_URL = `/api/proxy/inventory_transactions/distributions`;
+const BASE_URL = "/api/proxy/inventory_transactions/distributions";
 
 async function fetchProxy(url: string, options: RequestInit = {}) {
   try {
@@ -22,6 +21,7 @@ async function fetchProxy(url: string, options: RequestInit = {}) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
 
+      // 401 check, handled by the server proxy response
       if (response.status === 401) {
         window.location.href = "/login";
       }
@@ -29,10 +29,12 @@ async function fetchProxy(url: string, options: RequestInit = {}) {
       throw new Error(errorData?.message || response.statusText);
     }
 
+    // Handle 204 No Content - don't try to parse JSON
     if (response.status === 204) {
       return null;
     }
 
+    // For all other successful responses, parse JSON
     return response.json();
   } catch (err) {
     console.error("Fetch failed:", err);
@@ -42,24 +44,11 @@ async function fetchProxy(url: string, options: RequestInit = {}) {
 
 export const inventoryDistributionApi = {
   /**
-   * Get all distributions
-   */
-  async getAll(): Promise<InventoryDistribution[]> {
-    return fetchProxy(BASE_URL, { method: "GET" });
-  },
-
-  /**
-   * Get a single distribution by ID
-   */
-  async getById(distributionId: string): Promise<InventoryDistribution> {
-    const url = `${BASE_URL}/${distributionId}`;
-    return fetchProxy(url, { method: "GET" });
-  },
-
-  /**
    * Create a new inventory distribution
    */
-  async create(data: CreateInventoryDistributionInput): Promise<InventoryDistribution> {
+  async create(
+    data: CreateInventoryDistributionInput
+  ): Promise<InventoryDistribution> {
     return fetchProxy(BASE_URL, {
       method: "POST",
       body: JSON.stringify(data),
@@ -70,21 +59,13 @@ export const inventoryDistributionApi = {
    * Update an existing inventory distribution
    */
   async update(
-    distributionId: string,
+    id: string,
     data: UpdateInventoryDistributionInput
   ): Promise<InventoryDistribution> {
-    const url = `${BASE_URL}/${distributionId}`;
+    const url = `${BASE_URL}/${id}`;
     return fetchProxy(url, {
       method: "PUT",
       body: JSON.stringify(data),
     });
-  },
-
-  /**
-   * Delete an inventory distribution
-   */
-  async delete(distributionId: string): Promise<void> {
-    const url = `${BASE_URL}/${distributionId}`;
-    return fetchProxy(url, { method: "DELETE" });
   },
 };

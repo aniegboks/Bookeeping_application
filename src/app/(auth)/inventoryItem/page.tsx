@@ -15,6 +15,10 @@ import StatsCards from "@/components/inventory_items_ui/stats_card";
 import DeleteItemModal from "@/components/inventory_items_ui/delete_modal";
 import Loader from "@/components/ui/loading_spinner";
 import Container from "@/components/ui/container";
+import Trends from "@/components/inventory_items_ui/trends";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { Download } from "lucide-react";
 
 export default function InventoryPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -22,6 +26,10 @@ export default function InventoryPage() {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [uoms, setUOMs] = useState<UOM[]>([]);
 
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [filteredInventoryItems, setFilteredInventoryItems] = useState<InventoryItem[]>([]);
+
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -30,80 +38,88 @@ export default function InventoryPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  /** Load all reference data from API using the secure proxy */
+  /** Load reference data */
   const loadReferenceData = async () => {
     try {
-      const [categoryData, brandData, subCategoryData, uomData] =
-        await Promise.all([
-          referenceDataApi.fetchCategories(),
-          referenceDataApi.fetchBrands(),
-          referenceDataApi.fetchSubCategories(),
-          referenceDataApi.fetchUOMs(),
-        ]);
+      const [categoryData, brandData, subCategoryData, uomData] = await Promise.all([
+        referenceDataApi.fetchCategories(),
+        referenceDataApi.fetchBrands(),
+        referenceDataApi.fetchSubCategories(),
+        referenceDataApi.fetchUOMs(),
+      ]);
 
       setCategories(categoryData);
       setBrands(brandData);
       setSubCategories(subCategoryData);
       setUOMs(uomData);
 
-      // Only show warnings on initial load
-      if (initialLoading) {
-        if (categoryData.length === 0) {
-          toast.error("No categories found. Please add categories first.");
-        }
-        if (brandData.length === 0) {
-          toast.error("No brands found. Please add brands first.");
-        }
-        if (subCategoryData.length === 0) {
-          toast.error("No sub-categories found. Please add sub-categories first.");
-        }
-        if (uomData.length === 0) {
-          toast.error("No units of measure found. Please add UOMs first.");
-        }
-      }
+      if (categoryData.length === 0) toast.error("No categories found. Please add categories first.");
+      if (brandData.length === 0) toast.error("No brands found. Please add brands first.");
+      if (subCategoryData.length === 0) toast.error("No sub-categories found. Please add sub-categories first.");
+      if (uomData.length === 0) toast.error("No units of measure found. Please add UOMs first.");
     } catch (err: any) {
       console.error("Failed to load reference data:", err);
       toast.error("Failed to load reference data: " + err.message);
-    } finally {
-      setInitialLoading(false);
     }
   };
 
-  /** Initial load */
+  /** Load inventory items */
+  const loadInventoryItems = async () => {
+    try {
+      const items = await inventoryItemApi.getAll();
+      setInventoryItems(items);
+      setFilteredInventoryItems(items);
+    } catch (error: any) {
+      console.error("Failed to load inventory items:", error);
+      toast.error("Failed to load inventory items: " + error.message);
+    }
+  };
+
+  /** Load everything on mount */
   useEffect(() => {
-    loadReferenceData();
+    const loadAll = async () => {
+      setInitialLoading(true);
+      await loadReferenceData();
+      await loadInventoryItems();
+      setInitialLoading(false);
+    };
+    loadAll();
   }, []);
 
-  /** Success handler (after form submit) */
-  const handleSuccess = async (isEdit: boolean) => {
-    // Show appropriate success message
-    if (isEdit) {
-      toast.success("Inventory item updated successfully!");
-    } else {
-      toast.success("Inventory item created successfully!");
+  /** Handle search input */
+  const handleSearch = (query: string) => {
+    setSearchTerm(query);
+    if (!query) {
+      setFilteredInventoryItems(inventoryItems);
+      return;
     }
+    const filtered = inventoryItems.filter((item) =>
+      item.name.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredInventoryItems(filtered);
+  };
 
+  /** Success handler after create/update */
+  const handleSuccess = async (isEdit: boolean) => {
+    toast.success(isEdit ? "Inventory item updated successfully!" : "Inventory item created successfully!");
     setShowForm(false);
     setEditingItem(null);
     setRefreshKey((prev) => prev + 1);
-    await loadReferenceData();
+    await loadInventoryItems();
   };
 
   /** Delete handler */
   const confirmDelete = async () => {
     if (!itemToDelete) return;
-
     const loadingToast = toast.loading("Deleting item...");
-
     try {
       await inventoryItemApi.delete(itemToDelete.id);
-
       toast.dismiss(loadingToast);
       toast.success("Inventory item deleted successfully!");
-
       setShowDeleteModal(false);
       setItemToDelete(null);
       setRefreshKey((prev) => prev + 1);
+      await loadInventoryItems();
     } catch (error: any) {
       toast.dismiss(loadingToast);
       console.error("Failed to delete item:", error);
@@ -111,50 +127,95 @@ export default function InventoryPage() {
     }
   };
 
-  /** Handle opening edit form */
+  /** Edit */
   const handleEdit = (item: InventoryItem) => {
     if (canShowForm()) {
       setEditingItem(item);
       setShowForm(true);
-    } else {
-      toast.error("Cannot edit item. Required reference data is missing.");
-    }
+    } else toast.error("Cannot edit item. Required reference data is missing.");
   };
 
-  /** Handle opening delete modal */
+  /** Delete request */
   const handleDeleteRequest = (item: InventoryItem) => {
     setItemToDelete(item);
     setShowDeleteModal(true);
   };
 
-  /** Handle opening create form */
+  /** Add item */
   const handleAddItem = () => {
     if (canShowForm()) {
       setEditingItem(null);
       setShowForm(true);
-    } else {
-      toast.error("Cannot add item. Please ensure all reference data (categories, brands, sub-categories, UOMs) are available.");
-    }
+    } else toast.error("Cannot add item. Ensure all reference data is available.");
   };
 
-  /** Handle canceling form */
+  /** Cancel form */
   const handleCancel = () => {
     setShowForm(false);
     setEditingItem(null);
     toast("Form canceled", { icon: "ℹ️" });
   };
 
-  /** Guard — only show form if all reference data exists */
-  const canShowForm = () => {
-    return (
-      categories.length > 0 &&
-      brands.length > 0 &&
-      subCategories.length > 0 &&
-      uoms.length > 0
-    );
+  /** Export as Spreadsheet — matches table columns */
+  const handleExport = () => {
+    if (filteredInventoryItems.length === 0) {
+      toast.error("No items to export.");
+      return;
+    }
+
+    // Map items exactly as shown in the table
+    const dataToExport = filteredInventoryItems.map((item) => {
+      const sku = (item as any).sku || "";
+      const name = (item as any).name || "";
+      const sellingPrice = (item as any).selling_price ?? 0;
+      const costPrice = (item as any).cost_price ?? 0;
+      const estimatedProfit = sellingPrice - costPrice;
+
+      // Calculate margin (as %)
+      const margin =
+        sellingPrice > 0 ? ((estimatedProfit / sellingPrice) * 100).toFixed(2) + "%" : "0.00%";
+
+      // Format updated_at nicely
+      const updatedAt = (item as any).updated_at
+        ? new Date(item.updated_at).toLocaleString("en-NG", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+        : "";
+
+      return {
+        SKU: sku,
+        Name: name,
+        "Selling Price": `₦${sellingPrice.toLocaleString()}`,
+        "Cost Price": `₦${costPrice.toLocaleString()}`,
+        "Estimated Profit": `₦${estimatedProfit.toLocaleString()}`,
+        Margin: margin,
+        "Updated At": updatedAt,
+      };
+    });
+
+    // Create Excel file
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "InventoryItems");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const file = new Blob([excelBuffer], { type: "application/octet-stream" });
+
+    saveAs(file, `inventory_items_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Spreadsheet exported successfully!");
   };
 
-  /** Loader during initial fetch */
+
+
+  /** Guard for showing form */
+  const canShowForm = () =>
+    categories.length && brands.length && subCategories.length && uoms.length;
+
+  /** Loader */
   if (initialLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#F3F4F7] z-50">
@@ -164,29 +225,27 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="mx-6">
+    <div className="px-8 mt-2">
       <Container>
-        <div className="mt-18 mb-6">
-          <h1 className="text-2xl font-bold mb-6">Inventory Items</h1>
-        </div>
         {/* Stats */}
-        <StatsCards brands={brands} filteredBrands={brands} />
+        <StatsCards items={inventoryItems} filteredItems={filteredInventoryItems} />
+
+        {/* Trends */}
+        <Trends items={inventoryItems} />
 
         {/* Form Section */}
         {showForm && canShowForm() ? (
-        
-              <InventoryItemForm
-                item={editingItem || undefined}
-                onSuccess={() => handleSuccess(!!editingItem)}
-                onCancel={handleCancel}
-                brands={brands}
-                categories={categories}
-                subCategories={subCategories}
-                uoms={uoms}
-              />
-       
+          <InventoryItemForm
+            item={editingItem || undefined}
+            onSuccess={() => handleSuccess(!!editingItem)}
+            onCancel={handleCancel}
+            brands={brands}
+            categories={categories}
+            subCategories={subCategories}
+            uoms={uoms}
+          />
         ) : (
-          <div className="bg-white w-full flex  items-center justify-between rounded-md border border-gray-200">
+          <div className="bg-white w-full flex items-center justify-between rounded-md border border-gray-200 border-b-0">
             <h3 className="text-lg font-semibold m-8">Inventory Items</h3>
             <button
               className={`my-8 mr-8 px-4 py-2 text-white rounded ${canShowForm()
@@ -204,10 +263,26 @@ export default function InventoryPage() {
         {/* Inventory List */}
         <InventoryItemList
           key={refreshKey}
+          items={inventoryItems}
+          filteredItems={filteredInventoryItems}
+          searchTerm={searchTerm}
+          onSearch={handleSearch}
           onEdit={handleEdit}
           onDelete={handleDeleteRequest}
         />
 
+        {/* Export as Spreadsheet */}
+        <div className="flex justify-start mt-4">
+          <button
+            onClick={handleExport}
+            className="px-5 py-2 font-medium rounded bg-[#3D4C63] hover:bg-[#495C79] text-white transition rounded-sm"
+          >
+            <span className="flex gap-2">
+              <Download className="w-5 h-5" />
+              <span>Export</span>
+            </span>
+          </button>
+        </div>
 
         {/* Delete Modal */}
         {showDeleteModal && itemToDelete && (
@@ -223,6 +298,5 @@ export default function InventoryPage() {
         )}
       </Container>
     </div>
-
   );
 }

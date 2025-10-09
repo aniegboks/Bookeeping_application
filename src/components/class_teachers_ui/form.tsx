@@ -107,15 +107,14 @@ export default function TeacherForm({
   const FormContent = (
     <>
       <h3 className="text-lg font-semibold text-[#171D26] mb-4 py-4">
-        {teacher ? "Edit Teacher Assignment" : "Create New Teacher Assignment"}
+        {teacher ? "Edit Assignment" : "Assign Teacher"}
       </h3>
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 1. School Class */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              School Class <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              School Class <span className="text-gray-500">*</span>
             </label>
             <select
               name="class_id"
@@ -138,8 +137,8 @@ export default function TeacherForm({
 
           {/* 2. Role */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Role <span className="text-gray-500">*</span>
             </label>
             <select
               name="role"
@@ -157,8 +156,8 @@ export default function TeacherForm({
 
           {/* 3. Academic Session */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Academic Session/Term <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Academic Session/Term <span className="text-gray-500">*</span>
             </label>
             <select
               name="session_term_id"
@@ -181,8 +180,8 @@ export default function TeacherForm({
 
           {/* 4. Status */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Status <span className="text-gray-500">*</span>
             </label>
             <select
               name="status"
@@ -204,8 +203,8 @@ export default function TeacherForm({
 
           {/* 5. Teacher Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Teacher Name <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Teacher Name <span className="text-gray-500">*</span>
             </label>
             <input
               type="text"
@@ -221,8 +220,8 @@ export default function TeacherForm({
 
           {/* 6. Teacher Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Teacher (Email) <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Teacher (Email) <span className="text-gray-500">*</span>
             </label>
             <input
               type="email"
@@ -238,8 +237,8 @@ export default function TeacherForm({
 
           {/* 7. Assigned At */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Assigned At <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Assigned At <span className="text-gray-500">*</span>
             </label>
             <input
               type="datetime-local"
@@ -253,7 +252,7 @@ export default function TeacherForm({
 
           {/* 8. Unassigned At */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
               Unassigned At
             </label>
             <input
@@ -269,8 +268,8 @@ export default function TeacherForm({
 
           {/* 9. Created By */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Created By (User) <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Created By (User) <span className="text-gray-500">*</span>
             </label>
             <select
               name="created_by"
@@ -297,14 +296,14 @@ export default function TeacherForm({
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 bg-[#3D4C63] text-white rounded-sm hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
           >
             {isSubmitting ? (
               <>

@@ -1,0 +1,1 @@
+bg-[#3D4C63] text-white flex items-center gap-2 hover:bg-[#495C79] transition-colors px-2 py-2 rounded-sm

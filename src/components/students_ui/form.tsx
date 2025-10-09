@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Student, CreateStudentInput, Gender, StudentStatus } from "@/lib/types/students";
 import { SchoolClass } from "@/lib/types/classes";
 import { User } from "@/lib/types/user";
+import SmallLoader from "../ui/small_loader";
 
 interface StudentFormProps {
   student?: Student;
@@ -62,16 +63,16 @@ export default function StudentForm({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center py-4 px-6 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 overflow-y-auto max-h-[90vh] relative">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Personal Information */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-6">Personal Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-visible">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  First Name <span className="text-red-500">*</span>
+                  First Name <span className="text-gray-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -96,7 +97,7 @@ export default function StudentForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Name <span className="text-red-500">*</span>
+                  Last Name <span className="text-gray-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -116,7 +117,7 @@ export default function StudentForm({
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-visible">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Admission Number <span className="text-red-500">*</span>
+                  Admission Number <span className="text-gray-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -131,7 +132,7 @@ export default function StudentForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Gender <span className="text-red-500">*</span>
+                  Gender <span className="text-gray-500">*</span>
                 </label>
                 <select
                   value={formData.gender}
@@ -148,7 +149,7 @@ export default function StudentForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date of Birth <span className="text-red-500">*</span>
+                  Date of Birth <span className="text-gray-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -162,7 +163,7 @@ export default function StudentForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status <span className="text-red-500">*</span>
+                  Status <span className="text-gray-500">*</span>
                 </label>
                 <select
                   value={formData.status}
@@ -190,7 +191,7 @@ export default function StudentForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Class <span className="text-red-500">*</span>
+                  Class <span className="text-gray-500">*</span>
                 </label>
                 <select
                   value={formData.class_id}
@@ -210,7 +211,7 @@ export default function StudentForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Created By <span className="text-red-500">*</span>
+                  Created By <span className="text-gray-500">*</span>
                 </label>
                 <select
                   value={formData.created_by}
@@ -283,7 +284,7 @@ export default function StudentForm({
             >
               {isSubmitting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <SmallLoader />
                   Saving...
                 </>
               ) : student ? (

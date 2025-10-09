@@ -24,14 +24,18 @@ export default function Controls({
   onBulkAdd,
 }: ControlsProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search */}
-        <div className="flex-1">
+    <div className="bg-white rounded-sm border border-gray-200 border-b-0 p-4">
+      <div className="flex flex-col lg:flex-row gap-4 justify-between">
+
+
+        <h3 className="text-lg font-semibold tracking-tighter">Entitlements Management</h3>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          {/* Search */}
           <div className="relative">
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
+              className="absolute ml-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"
             />
             <input
               type="text"
@@ -41,31 +45,9 @@ export default function Controls({
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
             />
           </div>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <input
-            type="text"
-            placeholder="Filter by Class ID"
-            value={filterClassId}
-            onChange={(e) => onFilterClassIdChange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] w-full sm:w-48"
-          />
-          <input
-            type="text"
-            placeholder="Filter by Item ID"
-            value={filterInventoryItemId}
-            onChange={(e) => onFilterInventoryItemIdChange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] w-full sm:w-48"
-          />
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
           <button
             onClick={onAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 bg-[#3D4C63] text-white rounded-sm hover:bg-[#495C79] transition-colors whitespace-nowrap text-sm"
           >
             <Plus size={20} />
             Add Single
@@ -73,7 +55,7 @@ export default function Controls({
           {onBulkAdd && (
             <button
               onClick={onBulkAdd}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors whitespace-nowrap text-sm"
             >
               <Upload size={20} />
               Bulk Add

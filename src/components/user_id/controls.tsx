@@ -14,9 +14,10 @@ export default function Controls({
     onAdd,
 }: ControlsProps) {
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-sm border border-gray-200 border-b-0 p-4">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                {/* Search */}
+                <h3 className="text-lg font-semibold">Users Role Managment</h3>
+                <div className="gap-4 flex">
                 <div className="w-full sm:w-72"> {/* reduced width */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -33,11 +34,12 @@ export default function Controls({
                 {/* Add Button */}
                 <button
                     onClick={onAdd}
-                    className="bg-[#3D4C63] text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap"
+                    className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap"
                 >
                     <Plus size={20} />
                     Add User
                 </button>
+                </div>
             </div>
         </div>
 

@@ -2,23 +2,22 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { InventoryTransaction } from "@/lib/types/inventory_transactions";
+import { InventoryTransaction, CreateInventoryTransactionInput } from "@/lib/types/inventory_transactions";
 import { InventoryItem } from "@/lib/types/inventory_item";
 import { Supplier } from "@/lib/types/suppliers";
 import { User } from "@/lib/types/user";
+import SmallLoader from "../ui/small_loader";
 
 interface TransactionFormProps {
-  transaction?: InventoryTransaction;
-  onSubmit: (data: Partial<InventoryTransaction>) => void;
+  transaction?: InventoryTransaction; // optional, for edit
+  onSubmit: (data: CreateInventoryTransactionInput) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   inventoryItems: InventoryItem[];
   suppliers: Supplier[];
   users: User[];
+  currentUserId: string;
 }
-
-type TransactionType = "purchase" | "sale" | "return";
-type TransactionStatus = "completed" | "pending" | "cancelled" | "processing";
 
 export default function TransactionForm({
   transaction,
@@ -28,29 +27,27 @@ export default function TransactionForm({
   inventoryItems,
   suppliers,
   users,
+  currentUserId,
 }: TransactionFormProps) {
-  const [formData, setFormData] = useState<Partial<InventoryTransaction>>(
-    transaction || {
-      item_id: "",
-      supplier_id: "",
-      receiver_id: "",
-      supplier_receiver: "",
-      transaction_type: "purchase",
-      qty_in: 0,
-      qty_out: 0,
-      in_cost: 0,
-      out_cost: 0,
-      status: "completed",
-      reference_no: "",
-      notes: "",
-      transaction_date: new Date().toISOString(),
-      created_by: "",
-    }
-  );
+  const [formData, setFormData] = useState<CreateInventoryTransactionInput>({
+    item_id: transaction?.item_id || "",
+    supplier_id: transaction?.supplier_id || "",
+    receiver_id: transaction?.receiver_id || "",
+    supplier_receiver: transaction?.supplier_receiver || "",
+    transaction_type: transaction?.transaction_type || "purchase",
+    qty_in: transaction?.qty_in || 0,
+    in_cost: transaction?.in_cost || 0,
+    qty_out: transaction?.qty_out || 0,
+    out_cost: transaction?.out_cost || 0,
+    status: transaction?.status || "completed",
+    reference_no: transaction?.reference_no || "",
+    notes: transaction?.notes || "",
+    transaction_date: transaction?.transaction_date || new Date().toISOString(),
+    created_by: transaction?.created_by || currentUserId,
+  });
 
-  const type = formData.transaction_type ?? "";
-  const isInTransaction = type === "purchase" || type === "return";
-  const isOutTransaction = type === "sale";
+  const isPurchase = formData.transaction_type === "purchase";
+  const isSale = formData.transaction_type === "sale";
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -58,38 +55,40 @@ export default function TransactionForm({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name.includes("qty") || name.includes("cost") ? Number(value) : value,
+      [name]:
+        ["qty_in", "qty_out", "in_cost", "out_cost"].includes(name)
+          ? Number(value)
+          : value,
     }));
   };
 
-  const handleCostChange = (name: "in_cost" | "out_cost", value: string) => {
-    const numeric = value.replace(/[^\d.]/g, "");
-    setFormData((prev) => ({ ...prev, [name]: Number(numeric) }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Business rule: cannot have both qty_in and qty_out > 0
-    if (formData.qty_in && formData.qty_out && formData.qty_in > 0 && formData.qty_out > 0) {
-      toast.error("Both Quantity In and Quantity Out cannot be greater than 0 in a single transaction.");
+    if (isPurchase && (!formData.qty_in || formData.qty_in <= 0)) {
+      toast.error("Quantity In must be greater than 0 for a purchase");
+      return;
+    }
+    if (isSale && (!formData.qty_out || formData.qty_out <= 0)) {
+      toast.error("Quantity Out must be greater than 0 for a sale");
       return;
     }
 
-    onSubmit(formData);
+    await onSubmit(formData);
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 overflow-y-auto max-h-[90vh] relative">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 overflow-y-auto max-h-[90vh]">
+        <h2 className="text-2xl font-bold mb-6">{transaction ? "Edit Transaction" : "Add Transaction"}</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Item */}
-            <div>
+            <div className="pb-4">
               <label className="block font-medium mb-1">Item</label>
               <select
                 name="item_id"
-                value={formData.item_id ?? ""}
+                value={formData.item_id}
                 onChange={handleChange}
                 required
                 className="w-full border border-gray-300 rounded-lg p-2"
@@ -104,26 +103,84 @@ export default function TransactionForm({
             </div>
 
             {/* Transaction Type */}
-            <div>
+            <div className="pb-4">
               <label className="block font-medium mb-1">Transaction Type</label>
               <select
                 name="transaction_type"
-                value={formData.transaction_type ?? ""}
+                value={formData.transaction_type}
                 onChange={handleChange}
+                required
                 className="w-full border border-gray-300 rounded-lg p-2"
               >
                 <option value="purchase">Purchase</option>
                 <option value="sale">Sale</option>
-                <option value="return">Return</option>
               </select>
             </div>
 
+            {/* Quantity */}
+            {isPurchase && (
+              <div className="pb-4">
+                <label className="block font-medium mb-1">Quantity In</label>
+                <input
+                  type="number"
+                  min={1}
+                  name="qty_in"
+                  value={formData.qty_in}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg p-2"
+                  required
+                />
+              </div>
+            )}
+            {isSale && (
+              <div className="pb-4">
+                <label className="block font-medium mb-1">Quantity Out</label>
+                <input
+                  type="number"
+                  min={1}
+                  name="qty_out"
+                  value={formData.qty_out}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg p-2"
+                  required
+                />
+              </div>
+            )}
+
+            {/* Costs */}
+            {isPurchase && (
+              <div className="pb-4">
+                <label className="block font-medium mb-1">In Cost</label>
+                <input
+                  type="number"
+                  min={0}
+                  name="in_cost"
+                  value={formData.in_cost}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg p-2"
+                />
+              </div>
+            )}
+            {isSale && (
+              <div className="pb-4">
+                <label className="block font-medium mb-1">Out Cost</label>
+                <input
+                  type="number"
+                  min={0}
+                  name="out_cost"
+                  value={formData.out_cost}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg p-2"
+                />
+              </div>
+            )}
+
             {/* Supplier */}
-            <div>
+            <div className="pb-4">
               <label className="block font-medium mb-1">Supplier</label>
               <select
                 name="supplier_id"
-                value={formData.supplier_id ?? ""}
+                value={formData.supplier_id}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-2"
               >
@@ -137,132 +194,48 @@ export default function TransactionForm({
             </div>
 
             {/* Receiver */}
-            <div>
+            <div className="pb-4">
               <label className="block font-medium mb-1">Receiver</label>
               <select
                 name="receiver_id"
-                value={formData.receiver_id ?? ""}
+                value={formData.receiver_id}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-2"
               >
                 <option value="">Select Receiver</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.username || u.email}
+                    {u.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Supplier / Receiver Name */}
-            <div>
-              <label className="block font-medium mb-1">Supplier / Receiver Name</label>
+            {/* Supplier / Receiver Text */}
+            <div className="pb-4">
+              <label className="block font-medium mb-1">Supplier / Receiver</label>
               <input
                 type="text"
                 name="supplier_receiver"
-                value={formData.supplier_receiver ?? ""}
+                value={formData.supplier_receiver}
                 onChange={handleChange}
-                placeholder="Supplier or receiver name"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
-            </div>
-
-            {/* Reference Number */}
-            <div>
-              <label className="block font-medium mb-1">Reference No</label>
-              <input
-                type="text"
-                name="reference_no"
-                value={formData.reference_no ?? ""}
-                onChange={handleChange}
-                placeholder="Enter reference number"
-                className="w-full border border-gray-300 rounded-lg p-2"
-              />
-            </div>
-
-            {/* Quantity In */}
-            <div>
-              <label className="block font-medium mb-1">Quantity In</label>
-              <input
-                type="number"
-                name="qty_in"
-                min={0}
-                disabled={isOutTransaction}
-                value={formData.qty_in ?? 0}
-                onChange={handleChange}
-                className={`w-full border border-gray-300 rounded-lg p-2 ${
-                  isOutTransaction ? "bg-gray-100 cursor-not-allowed" : ""
-                }`}
-              />
-            </div>
-
-            {/* Quantity Out */}
-            <div>
-              <label className="block font-medium mb-1">Quantity Out</label>
-              <input
-                type="number"
-                name="qty_out"
-                min={0}
-                disabled={isInTransaction}
-                value={formData.qty_out ?? 0}
-                onChange={handleChange}
-                className={`w-full border border-gray-300 rounded-lg p-2 ${
-                  isInTransaction ? "bg-gray-100 cursor-not-allowed" : ""
-                }`}
-              />
-            </div>
-
-            {/* In Cost */}
-            <div>
-              <label className="block font-medium mb-1">In Cost (₦)</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
-                <input
-                  type="text"
-                  name="in_cost"
-                  disabled={isOutTransaction}
-                  value={formData.in_cost ?? ""}
-                  onChange={(e) => handleCostChange("in_cost", e.target.value)}
-                  placeholder="Enter cost price"
-                  className={`w-full border border-gray-300 rounded-lg pl-7 p-2 ${
-                    isOutTransaction ? "bg-gray-100 cursor-not-allowed" : ""
-                  }`}
-                />
-              </div>
-            </div>
-
-            {/* Out Cost */}
-            <div>
-              <label className="block font-medium mb-1">Out Cost (₦)</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
-                <input
-                  type="text"
-                  name="out_cost"
-                  disabled={isInTransaction}
-                  value={formData.out_cost ?? ""}
-                  onChange={(e) => handleCostChange("out_cost", e.target.value)}
-                  placeholder="Enter selling price"
-                  className={`w-full border border-gray-300 rounded-lg pl-7 p-2 ${
-                    isInTransaction ? "bg-gray-100 cursor-not-allowed" : ""
-                  }`}
-                />
-              </div>
             </div>
 
             {/* Status */}
-            <div>
+            <div className="pb-4">
               <label className="block font-medium mb-1">Status</label>
               <select
                 name="status"
-                value={formData.status ?? ""}
+                value={formData.status}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-2"
               >
                 <option value="completed">Completed</option>
                 <option value="pending">Pending</option>
                 <option value="cancelled">Cancelled</option>
-                <option value="processing">Processing</option>
+                <option value="deleted">Deleted</option>
               </select>
             </div>
 
@@ -272,23 +245,35 @@ export default function TransactionForm({
               <input
                 type="datetime-local"
                 name="transaction_date"
-                value={formData.transaction_date?.slice(0, 16) ?? ""}
+                value={(formData.transaction_date || new Date().toISOString()).slice(0, 16)}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
             </div>
-          </div>
 
-          {/* Notes */}
-          <div>
-            <label className="block font-medium mb-1">Notes</label>
-            <textarea
-              name="notes"
-              value={formData.notes ?? ""}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-2"
-              rows={3}
-            />
+            {/* Reference No */}
+            <div>
+              <label className="block font-medium mb-1">Reference No</label>
+              <input
+                type="text"
+                name="reference_no"
+                value={formData.reference_no}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-2"
+              />
+            </div>
+
+            {/* Notes */}
+            <div className="md:col-span-2">
+              <label className="block font-medium mb-1">Notes</label>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                rows={3}
+                className="w-full border border-gray-300 rounded-lg p-2"
+              />
+            </div>
           </div>
 
           {/* Buttons */}
@@ -305,7 +290,9 @@ export default function TransactionForm({
               disabled={isSubmitting}
               className="px-4 py-2 rounded-lg bg-[#3D4C63] text-white hover:bg-[#495C79] disabled:opacity-50"
             >
-              {isSubmitting ? "Saving..." : "Save Transaction"}
+              {isSubmitting ? <span className="flex gap-2">
+                <SmallLoader /> <p className="text-sm">Saving...</p>
+              </span> : "Save Transaction"}
             </button>
           </div>
         </form>

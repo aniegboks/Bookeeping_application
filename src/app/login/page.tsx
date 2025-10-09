@@ -8,16 +8,9 @@ export default function LoginPage() {
   return (
     <div className="h-[100dvh] flex items-center justify-center bg-[#F3F4F7]">
       <Container>
-        <div className="grid grid-cols-1 md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-white overflow-hidden shadow-lg">
           {/* Left Side - Image */}
-          <div className="hidden md:block md:relative bg-gray-100 flex flex-col items-center justify-center">
-            <Image
-              src="/images/img3.png"
-              alt="login_img1"
-              className="w-full h-[25vh] md:h-full object-cover"
-              width={500}
-              height={500}
-            />
+          <div className="hidden md:block md:relative bg-gray-100 flex flex-col items-center justify-center min-h-[100vh]" style={{ backgroundImage: "url('/images/img4.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
           </div>
 
           {/* Right Side - Form */}

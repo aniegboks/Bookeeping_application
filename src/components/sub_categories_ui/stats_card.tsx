@@ -10,57 +10,83 @@ interface StatsCardsProps {
 }
 
 export default function StatsCards({ total, addedToday, searchResults, viewMode }: StatsCardsProps) {
+  const addedTodayPercent = total ? (addedToday / total) * 100 : 0;
+  const searchResultsPercent = total ? (searchResults / total) * 100 : 0;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      {/* Total Categories */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200">
-        <div className="flex items-center">
-          <div className="p-3 rounded-full bg-purple-100 mr-4">
-            <FolderOpen className="h-6 w-6 text-purple-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Total Categories</p>
-            <p className="text-2xl font-semibold text-[#171D26]">{total}</p>
-          </div>
-        </div>
-      </div>
+      <Card
+        icon={<FolderOpen className="h-6 w-6 text-purple-600" />}
+        title="Total Categories"
+        value={total}
+        description="All categories in the system."
+        color="purple"
+        progress={100}
+      />
+      <Card
+        icon={<Plus className="h-6 w-6 text-green-600" />}
+        title="Added Today"
+        value={addedToday}
+        description={`${addedTodayPercent.toFixed(0)}% of total categories added today.`}
+        color="green"
+        progress={addedTodayPercent}
+      />
+      <Card
+        icon={<Search className="h-6 w-6 text-blue-600" />}
+        title="Search Results"
+        value={searchResults}
+        description={`${searchResultsPercent.toFixed(0)}% of total categories match your search.`}
+        color="blue"
+        progress={searchResultsPercent}
+      />
+      <Card
+        icon={<Grid className="h-6 w-6 text-orange-600" />}
+        title="View Mode"
+        value={0}
+        description={`Current view mode: ${viewMode}`}
+        color="orange"
+        progress={0}
+        isTextOnly
+      />
+    </div>
+  );
+}
 
-      {/* Added Today */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200">
-        <div className="flex items-center">
-          <div className="p-3 rounded-full bg-green-100 mr-4">
-            <Plus className="h-6 w-6 text-green-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Added Today</p>
-            <p className="text-2xl font-semibold text-[#171D26]">{addedToday}</p>
-          </div>
-        </div>
-      </div>
+function Card({
+  icon,
+  title,
+  value,
+  description,
+  color,
+  progress,
+  isTextOnly = false,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  value: number;
+  description: string;
+  color: string;
+  progress: number;
+  isTextOnly?: boolean;
+}) {
+  return (
+    <div className="bg-white rounded-sm p-6 border border-gray-200 hover:shadow-sm transition">
+      <div className="flex items-center gap-4">
+        <div className={`p-3 rounded-full bg-${color}-100`}>{icon}</div>
+        <div className="flex flex-col">
+          <p className="text-sm text-gray-600 font-medium">{title}</p>
+          {value > 0 && <p className="text-2xl font-bold text-[#171D26]">{value}</p>}
+          <p className="text-xs text-gray-500 mt-1 mb-2">{description}</p>
 
-      {/* Search Results */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200">
-        <div className="flex items-center">
-          <div className="p-3 rounded-full bg-blue-100 mr-4">
-            <Search className="h-6 w-6 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Search Results</p>
-            <p className="text-2xl font-semibold text-[#171D26]">{searchResults}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* View Mode */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200">
-        <div className="flex items-center">
-          <div className="p-3 rounded-full bg-orange-100 mr-4">
-            <Grid className="h-6 w-6 text-orange-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">View Mode</p>
-            <p className="text-sm font-semibold capitalize text-[#171D26]">{viewMode}</p>
-          </div>
+          {/* Dimmed progress bar only */}
+          {!isTextOnly && (
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full bg-${color}-500`}
+                style={{ width: `${progress}%`, opacity: 0.4 }}
+              ></div>
+            </div>
+          )}
         </div>
       </div>
     </div>

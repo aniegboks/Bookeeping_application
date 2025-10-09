@@ -1,6 +1,7 @@
 "use client";
 
 import { FC } from "react";
+import { Trash2 } from "lucide-react";
 
 interface DeleteBrandModalProps {
   brandName: string;
@@ -16,7 +17,7 @@ const DeleteBrandModal: FC<DeleteBrandModalProps> = ({
   isDeleting,
 }) => {
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/70 animate-fadeIn"
@@ -24,21 +25,29 @@ const DeleteBrandModal: FC<DeleteBrandModalProps> = ({
       ></div>
 
       {/* Modal Content */}
-      <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full p-6 z-10 animate-fadeIn">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Delete Brand</h3>
+      <div className="relative z-10 bg-white rounded-sm shadow-lg max-w-sm w-full p-6 animate-fadeIn">
+        <div className="flex items-start gap-3 mb-4">
+          {/* Icon */}
+          <div className="p-3 rounded-full bg-red-100">
+            <Trash2 className="w-6 h-6 text-red-600" />
+          </div>
+
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Delete Brand
+            </h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">{brandName}</span>? This action
+              cannot be undone.
+            </p>
+          </div>
         </div>
 
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to delete{" "}
-          <span className="font-semibold">{brandName}</span>? This action
-          cannot be undone.
-        </p>
-
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700"
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             disabled={isDeleting}
           >
             Cancel
@@ -46,7 +55,7 @@ const DeleteBrandModal: FC<DeleteBrandModalProps> = ({
 
           <button
             onClick={onConfirm}
-            className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center justify-center gap-2 disabled:opacity-50"
             disabled={isDeleting}
           >
             {isDeleting ? (
@@ -74,9 +83,11 @@ const DeleteBrandModal: FC<DeleteBrandModalProps> = ({
                 Deleting
               </span>
             ) : (
-              "Delete"
+              <>
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </>
             )}
-
           </button>
         </div>
       </div>

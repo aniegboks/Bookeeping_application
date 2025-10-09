@@ -18,12 +18,12 @@ export default function Controls({
   onAdd,
 }: ControlsProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+    <div className="bg-white rounded-sm border border-gray-200 p-4 border-b-0">
       <div className="flex flex-col lg:flex-row gap-4 items-center">
         {/* Search */}
-        <div className="flex-1 w-full">
+        <div className="flex w-full">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 rounded-sm" />
             <input
               type="text"
               placeholder="Search by email, class ID, or teacher ID..."
@@ -37,7 +37,7 @@ export default function Controls({
         {/* Status Filter */}
         <div className="w-full lg:w-48">
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 rounded-sm" />
             <select
               value={statusFilter}
               onChange={(e) => onStatusFilterChange(e.target.value)}

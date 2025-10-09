@@ -108,7 +108,7 @@ export default function EntitlementForm({
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-lg max-w-md w-full p-6"
+        className="bg-white rounded-sm max-w-3xl w-full px-8 py-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-semibold mb-4 text-[#171D26]">
@@ -124,12 +124,12 @@ export default function EntitlementForm({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Class */}
-            <div>
+            <div className="pb-4">
               <label
                 htmlFor="class_id"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Class <span className="text-red-500">*</span>
+                Class <span className="text-gray-500">*</span>
               </label>
               <select
                 id="class_id"
@@ -151,12 +151,12 @@ export default function EntitlementForm({
             </div>
 
             {/* Inventory Item */}
-            <div>
+            <div className="pb-4">
               <label
                 htmlFor="inventory_item_id"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Inventory Item <span className="text-red-500">*</span>
+                Inventory Item <span className="text-gray-500">*</span>
               </label>
               <select
                 id="inventory_item_id"
@@ -178,12 +178,12 @@ export default function EntitlementForm({
             </div>
 
             {/* Session Term */}
-            <div>
+            <div className="pb-4">
               <label
                 htmlFor="session_term_id"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Session Term <span className="text-red-500">*</span>
+                Session Term <span className="text-gray-500">*</span>
               </label>
               <select
                 id="session_term_id"
@@ -205,12 +205,12 @@ export default function EntitlementForm({
             </div>
 
             {/* Quantity */}
-            <div>
+            <div className="pb-4">
               <label
                 htmlFor="quantity"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Quantity <span className="text-red-500">*</span>
+                Quantity <span className="text-gray-500">*</span>
               </label>
               <input
                 id="quantity"
@@ -231,12 +231,12 @@ export default function EntitlementForm({
             </div>
 
             {/* Created By */}
-            <div className="md:col-span-2">
+            <div className="pb-4 md:col-span-2">
               <label
                 htmlFor="created_by"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Created By (User) <span className="text-red-500">*</span>
+                Created By (User) <span className="text-gray-500">*</span>
               </label>
               <select
                 id="created_by"

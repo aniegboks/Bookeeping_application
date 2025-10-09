@@ -11,6 +11,11 @@ import Controls from "@/components/user_id/controls";
 import UserTable from "@/components/user_id/table";
 import UserForm from "@/components/user_id/form";
 import DeleteModal from "@/components/user_id/delete_modal";
+import Trends from "@/components/user_id/trends";
+
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { Download } from "lucide-react";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -134,6 +139,41 @@ export default function UsersPage() {
         setShowForm(true);
     };
 
+    // ✅ EXPORT AS SPREADSHEET
+    const handleExport = () => {
+        if (filteredUsers.length === 0) {
+            toast.error("No users to export!");
+            return;
+        }
+
+        // Map user data for export
+        const dataToExport = filteredUsers.map((u) => ({
+            ID: u.id,
+            Name: u.phone || "",
+            Email: u.email || "",
+            Phone: u.phone || "",
+            Role: u.roles || "",
+            CreatedAt: u.created_at ? new Date(u.created_at).toLocaleString() : "",
+            UpdatedAt: u.updated_at ? new Date(u.updated_at).toLocaleString() : "",
+          }));
+          
+        // Create worksheet and workbook
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+
+        // Convert to Excel buffer and save
+        const excelBuffer = XLSX.write(workbook, {
+            bookType: "xlsx",
+            type: "array",
+        });
+        const blob = new Blob([excelBuffer], {
+            type: "application/octet-stream",
+        });
+        saveAs(blob, `users_export_${new Date().toISOString()}.xlsx`);
+
+        toast.success("Spreadsheet exported successfully!");
+    };
 
     // Initial loading screen
     if (initialLoading) {
@@ -145,22 +185,13 @@ export default function UsersPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F3F4F7]">
-            <div className="mx-6">
+        <div className="">
+            <div className="mx-8">
                 <Container>
-                    <div className="mt-24 pb-8">
-                        {/* Header */}
-                        <div className="mb-6">
-                            <h1 className="text-3xl font-bold text-[#171D26] mb-2">
-                                User Management
-                            </h1>
-                            <p className="text-gray-600">
-                                Manage system users and their information
-                            </p>
-                        </div>
-
+                    <div className="mt-4 pb-8">
                         {/* Stats Cards */}
                         <StatsCards users={users} filteredUsers={filteredUsers} />
+                        <Trends users={users} />
 
                         {/* Controls */}
                         <Controls
@@ -191,6 +222,19 @@ export default function UsersPage() {
                             onDelete={handleDeleteRequest}
                             loading={loading}
                         />
+
+                        {/* Export Button */}
+                        <div className="mt-4 flex justify-start">
+                            <button
+                                onClick={handleExport}
+                                className="bg-[#3D4C63] hover:bg-[#495C79] text-white font-medium py-2 px-4 rounded-sm shadow-sm transition-all"
+                            >
+                              <span className="flex gap-2">
+                                <Download className="w-5 h-5" />
+                                Export
+                              </span>
+                            </button>
+                        </div>
 
                         {/* Delete Modal */}
                         {showDeleteModal && deletingUser && (

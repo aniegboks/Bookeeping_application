@@ -1,6 +1,6 @@
 // lib/types/inventory_transaction.ts
 
-export type TransactionType = "purchase" | "sale" | "return";
+export type TransactionType = "purchase" | "sale" ;
 export type TransactionStatus = "pending" | "completed" | "cancelled" | "on_hold";
 
 export interface InventoryTransaction {

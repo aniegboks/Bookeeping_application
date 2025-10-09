@@ -1,47 +1,102 @@
-import React from 'react';
-import { Supplier } from '@/lib/types/suppliers';
-import { MapPin, Plus, Globe } from 'lucide-react';
+"use client";
+
+import React from "react";
+import { Supplier } from "@/lib/types/suppliers";
+import { MapPin, Plus, Globe, Users } from "lucide-react";
 
 interface Props {
-  suppliers: Supplier[];
+  suppliers?: Supplier[];
 }
 
-export default function StatsCards({ suppliers }: Props) {
-  const stats = {
-    total: suppliers.length,
-    countries: new Set(suppliers.map(s => s.country)).size,
-    recentlyAdded: suppliers.filter(s => {
-      const created = new Date(s.created_at);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return created > thirtyDaysAgo;
-    }).length,
-    withWebsite: suppliers.filter(s => s.website).length
-  };
+export default function StatsCards({ suppliers = [] }: Props) {
+  const totalSuppliers = suppliers.length;
+  const countries = new Set(suppliers.map((s) => s.country)).size;
+  const recentlyAdded = suppliers.filter((s) => {
+    const created = new Date(s.created_at);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return created > thirtyDaysAgo;
+  }).length;
+  const withWebsite = suppliers.filter((s) => s.website).length;
+
+  const stats = [
+    {
+      title: "Total Suppliers",
+      value: totalSuppliers,
+      icon: <Users className="text-blue-600" size={20} />,
+      colorBg: "bg-blue-100", // use Tailwind directly
+      barColor: "#93C5FD",
+      description: "Active suppliers in database",
+      progress: 100,
+    },
+    {
+      title: "Countries",
+      value: countries,
+      icon: <MapPin className="text-green-600" size={20} />,
+      colorBg: "bg-green-100",
+      barColor: "#86EFAC",
+      description: "Geographic coverage",
+      progress: totalSuppliers ? (countries / totalSuppliers) * 100 : 0,
+    },
+    {
+      title: "Recently Added",
+      value: recentlyAdded,
+      icon: <Plus className="text-purple-600" size={20} />,
+      colorBg: "bg-purple-100",
+      barColor: "#C4B5FD",
+      description: "Added in the last 30 days",
+      progress: totalSuppliers ? (recentlyAdded / totalSuppliers) * 100 : 0,
+    },
+    {
+      title: "With Website",
+      value: withWebsite,
+      icon: <Globe className="text-orange-600" size={20} />,
+      colorBg: "bg-orange-100",
+      barColor: "#FDBA74",
+      description: "Online presence",
+      progress: totalSuppliers ? (withWebsite / totalSuppliers) * 100 : 0,
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card title="Total Suppliers" value={stats.total} color="blue" icon={<div className="w-6 h-6 bg-blue-600 rounded"></div>} subtitle="Active suppliers in database" />
-      <Card title="Countries" value={stats.countries} color="green" icon={<MapPin className="text-green-600" size={24} />} subtitle="Geographic coverage" />
-      <Card title="Recently Added" value={stats.recentlyAdded} color="purple" icon={<Plus className="text-purple-600" size={24} />} subtitle="Last 30 days" />
-      <Card title="With Website" value={stats.withWebsite} color="orange" icon={<Globe className="text-orange-600" size={24} />} subtitle="Online presence" />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {stats.map((stat, idx) => (
+        <Card key={idx} {...stat} />
+      ))}
     </div>
   );
 }
 
-function Card({ title, value, color, icon, subtitle }: any) {
+function Card({ title, value, icon, colorBg, barColor, progress, description }: any) {
   return (
-    <div className="bg-white rounded-xl p-6 border border-slate-200">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-slate-600 text-sm font-medium">{title}</p>
-          <p className="text-3xl font-bold text-slate-900 mt-2">{value}</p>
-        </div>
-        <div className={`w-12 h-12 bg-${color}-100 rounded-lg flex items-center justify-center`}>
+    <div className="bg-white rounded-sm p-6 border border-slate-200 hover:shadow-sm transition">
+      <div className="flex items-center">
+        {/* Circular background for icon */}
+        <div
+          className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 flex-shrink-0 ${colorBg}`}
+        >
           {icon}
         </div>
+
+        {/* Text content */}
+        <div className="flex flex-col">
+          <p className="text-slate-600 text-sm font-medium">{title}</p>
+          <p className="text-3xl font-bold text-slate-900 mt-1">{value}</p>
+          <p className="text-xs text-slate-500 mt-1">{description}</p>
+
+          {/* Progress bar */}
+          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+            <div
+              className="h-1.5 rounded-full transition-all"
+              style={{
+                width: `${progress}%`,
+                backgroundColor: barColor,
+                opacity: 0.8,
+              }}
+            ></div>
+          </div>
+        </div>
       </div>
-      <p className="text-xs text-slate-500 mt-4">{subtitle}</p>
     </div>
   );
 }

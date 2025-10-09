@@ -61,7 +61,7 @@ export default function CategoryModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
               disabled={isSubmitting}
             >
               Cancel
@@ -70,7 +70,7 @@ export default function CategoryModal({
               type="button"
               onClick={onSubmit}
               disabled={isSubmitting || !formData.name.trim()}
-              className={`px-4 py-2 text-white rounded-lg  flex items-center gap-2 ${
+              className={`px-4 py-2 text-white rounded-sm text-sm bg-[#3D4C63] hover:bg-[#495C79]  flex items-center gap-2 ${
                 isSubmitting || !formData.name.trim()
                   ? "opacity-50 cursor-not-allowed"
                   : ""
@@ -83,7 +83,7 @@ export default function CategoryModal({
                   : "Creating..."
                 : editingCategory
                 ? "Update"
-                : "Create"}
+                : "Create"}s
             </button>
           </div>
         </div>

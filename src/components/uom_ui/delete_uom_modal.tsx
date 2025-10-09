@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import { FC } from "react";
+import { Trash2, TriangleAlert } from "lucide-react";
 
 interface DeleteUOMModalProps {
   uomName: string;
@@ -16,7 +17,7 @@ const DeleteUOMModal: FC<DeleteUOMModalProps> = ({
   isDeleting,
 }) => {
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/70 animate-fadeIn"
@@ -24,21 +25,29 @@ const DeleteUOMModal: FC<DeleteUOMModalProps> = ({
       ></div>
 
       {/* Modal Content */}
-      <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full p-6 z-10 animate-fadeIn">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Delete UOM</h3>
+      <div className="relative bg-white rounded-sm shadow-lg max-w-sm w-full p-6 z-10 animate-fadeIn">
+        <div className="flex items-start gap-3 mb-4">
+          {/* Icon */}
+          <div className="p-3 rounded-full bg-red-100">
+            <TriangleAlert className="w-6 h-6 text-red-600" />
+          </div>
+
+          {/* Text Content */}
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900">Delete UOM</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">{uomName}</span>? This action
+              cannot be undone.
+            </p>
+          </div>
         </div>
 
-        <p className="text-gray-600 mb-6">
-          Are you sure you want to delete{" "}
-          <span className="font-semibold">{uomName}</span>? This action
-          cannot be undone.
-        </p>
-
-        <div className="flex justify-end gap-3">
+        {/* Actions */}
+        <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700"
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors"
             disabled={isDeleting}
           >
             Cancel
@@ -46,10 +55,39 @@ const DeleteUOMModal: FC<DeleteUOMModalProps> = ({
 
           <button
             onClick={onConfirm}
-            className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
             disabled={isDeleting}
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            {isDeleting ? (
+              <span className="flex items-center gap-2">
+                <svg
+                  className="animate-spin h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 108 8h-4l3 3-3 3h4a8 8 0 01-8 8v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+                  ></path>
+                </svg>
+                Deleting
+              </span>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -10,6 +10,7 @@ import SessionModal from "@/components/academic_session_ui/session_modal";
 import Loader from "@/components/ui/loading_spinner";
 import Container from "@/components/ui/container";
 import { Download } from "lucide-react";
+import AcademicSessionsTrend from "@/components/academic_session_ui/trends";
 
 export default function Dashboard() {
   const [sessions, setSessions] = useState<AcademicSession[]>([]);
@@ -66,16 +67,10 @@ export default function Dashboard() {
   if (loading) return <Loader />;
 
   return (
-    <div className="min-h-screen bg-[#F3F4F7] p-6">
+    <div className="p-6">
       <Container>
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center mt-12">
-          <div>
-            <h1 className="text-3xl font-bold text-[#171D26] mb-2">
-              Academic Sessions Dashboard
-            </h1>
-            <p className="text-gray-600">Manage your academic sessions and terms</p>
-          </div>
+        <div className="mb-8 flex justify-between items-center mt-2">
 
           {/* Excel Download Button */}
 
@@ -83,6 +78,7 @@ export default function Dashboard() {
 
         {/* Stats */}
         <StatsCards sessions={sessions} />
+        <AcademicSessionsTrend sessions={sessions} />
 
         {/* Table */}
         <SessionsTable
@@ -109,7 +105,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-start mt-4">
           <button
             onClick={downloadSpreadsheet}
-            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+            className="bg-[#3D4C63] text-white flex items-center gap-2 hover:bg-[#495C79] transition-colors px-4 py-2 rounded-sm text-sm"
           >
             <Download className="w-5 h-5" />
             <span>Export</span>

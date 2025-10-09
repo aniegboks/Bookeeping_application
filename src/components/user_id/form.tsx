@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { User, CreateUserInput } from "@/lib/types/user";
+import SmallLoader from "../ui/small_loader";
 
 interface UserFormProps {
     user?: User;
@@ -75,7 +76,7 @@ export default function UserForm({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Email <span className="text-red-500">*</span>
+                                Email <span className="text-gray-500">*</span>
                             </label>
                             <input
                                 type="email"
@@ -92,7 +93,7 @@ export default function UserForm({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Name <span className="text-red-500">*</span>
+                                Name <span className="text-gray-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -111,7 +112,7 @@ export default function UserForm({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Phone <span className="text-red-500">*</span>
+                                Phone <span className="text-gray-500">*</span>
                             </label>
                             <input
                                 type="tel"
@@ -128,7 +129,7 @@ export default function UserForm({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Password <span className="text-red-500">*</span>
+                                Password <span className="text-gray-500">*</span>
                             </label>
                             <input
                                 type="password"
@@ -151,7 +152,7 @@ export default function UserForm({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Roles <span className="text-red-500">*</span>
+                            Roles <span className="text-gray-500">*</span>
                         </label>
                         <div className="flex flex-wrap gap-3">
                             {VALID_ROLES.map((role) => (
@@ -194,7 +195,7 @@ export default function UserForm({
                         >
                             {isSubmitting ? (
                                 <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    <SmallLoader />
                                     Saving...
                                 </>
                             ) : (

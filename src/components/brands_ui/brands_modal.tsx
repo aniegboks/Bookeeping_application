@@ -22,7 +22,7 @@ export default function BrandModal({
 }: BrandModalProps) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-sm max-w-md w-full p-6">
         <h3 className="text-lg font-semibold text-[#171D26] mb-4">
           {editingBrand ? "Edit Brand" : "Create New Brand"}
         </h3>

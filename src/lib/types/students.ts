@@ -1,7 +1,12 @@
-// lib/types/student.ts
-
 export type Gender = "male" | "female" | "other";
-export type StudentStatus = "active" | "inactive" | "graduated" | "transferred";
+
+export type StudentStatus =
+  | "active"
+  | "inactive"
+  | "graduated"
+  | "transferred"
+  | "suspended"
+  | "archived";
 
 export interface Student {
   id: string;
@@ -21,6 +26,7 @@ export interface Student {
   updated_at: string;
 }
 
+// Input for creating a student
 export interface CreateStudentInput {
   admission_number: string;
   first_name: string;
@@ -32,10 +38,11 @@ export interface CreateStudentInput {
   guardian_name: string;
   guardian_contact: string;
   address?: string;
-  status?: StudentStatus;
+  status?: StudentStatus; // optional, but can be suspended/archived now
   created_by: string;
 }
 
+// Input for updating a student
 export interface UpdateStudentInput {
   admission_number?: string;
   first_name?: string;
@@ -47,10 +54,11 @@ export interface UpdateStudentInput {
   guardian_name?: string;
   guardian_contact?: string;
   address?: string;
-  status?: StudentStatus;
+  status?: StudentStatus; // can update to suspended/archived
   created_by?: string;
 }
 
+// Optional filters for querying students
 export interface StudentFilters {
   status?: StudentStatus;
   class_id?: string;

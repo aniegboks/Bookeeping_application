@@ -105,20 +105,26 @@ export default function UOMForm({ uom, onSubmit, onCancel, isSubmitting }: UOMFo
             <button
               type="submit"
               disabled={isSubmitting || !formData.name.trim() || !formData.symbol.trim()}
-              className={`px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors flex items-center gap-2 ${
-                isSubmitting || !formData.name.trim() || !formData.symbol.trim()
-                  ? 'opacity-50 cursor-not-allowed'
-                  : ''
+              className={`px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-white transition-all duration-200 ${
+                isSubmitting
+                  ? 'bg-[#3D4C63]/70 cursor-not-allowed'
+                  : 'bg-[#3D4C63] hover:bg-[#495C79]'
               }`}
             >
-              {isSubmitting && <SmallLoader />}
-              {isSubmitting
-                ? uom
-                  ? 'Updating...'
-                  : 'Creating...'
-                : uom
-                ? 'Update'
-                : 'Create'}
+              {isSubmitting && (
+                <div className="w-4 h-4">
+                  <SmallLoader />
+                </div>
+              )}
+              <span>
+                {isSubmitting
+                  ? uom
+                    ? 'Updating...'
+                    : 'Creating...'
+                  : uom
+                  ? 'Update'
+                  : 'Create'}
+              </span>
             </button>
           </div>
         </div>

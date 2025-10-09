@@ -24,12 +24,12 @@ export default function SuppliersFilters({
     const countries = ["all", ...new Set(suppliers.map((s) => s.country))];
 
     return (
-        <div className="bg-white mt-8 p-4 border border-slate-200">
+        <div className="bg-white mt-8 p-4 border border-gray-200 border-b-0">
             {/* Flex row with space between */}
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
 
                 {/* Search bar */}
-                <div className="relative w-full md:w-64">
+                <div className="relative w-full md:w-64 mr-4">
                     <Search
                         className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400"
                         size={16}
@@ -44,7 +44,7 @@ export default function SuppliersFilters({
                     />
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 mr-4">
                     <div className="my-4 flex">
                         <button
                             onClick={() => setShowAddModal(true)}

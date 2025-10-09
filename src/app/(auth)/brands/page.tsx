@@ -10,6 +10,7 @@ import DeleteBrandModal from "@/components/brands_ui/delete_brand_modal";
 import Container from "@/components/ui/container";
 import LoadingSpinner from "@/components/ui/loading_spinner";
 import { Download } from "lucide-react";
+import Trends from "@/components/brands_ui/trends";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -146,20 +147,13 @@ export default function BrandsManagement() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen p-6 bg-[#F3F4F7]">
+    <div className="px-8">
       <Container>
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-24">
-          <div>
-            <h1 className="text-3xl font-bold text-[#171D26] mb-2">
-              Brands Management
-            </h1>
-            <p className="text-gray-600">
-              Manage product brands in your inventory system
-            </p>
-          </div>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
         </div>
 
         <StatsCards brands={brands} filteredBrands={filteredBrands} />
+        <Trends brands={brands} />
 
         <BrandsTable
           brands={filteredBrands}
@@ -194,7 +188,7 @@ export default function BrandsManagement() {
         <div className="flex items-center justify-start mt-4">
           <button
             onClick={exportToExcel}
-            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm hover:opacity-90 transition"
           >
             <Download className="w-5 h-5" />
             <span>Export</span>

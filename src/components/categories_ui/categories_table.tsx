@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { FolderOpen, PenSquare, Trash2 } from "lucide-react";
+import {
+  FolderOpen,
+  PenSquare,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Dock,
+  Plus,
+} from "lucide-react";
 import DeleteCategoriesModal from "./delete_categories_modal";
 
 interface Category {
@@ -16,28 +24,34 @@ interface CategoriesTableProps {
   openEditModal: (cat: Category) => void;
   handleDelete: (id: string, name: string) => void;
   formatDate: (date: string) => string;
+  openCreateModal: () => void;
 }
 
 export default function CategoriesTable({
   categories,
   openEditModal,
+  openCreateModal,
   handleDelete,
   formatDate,
 }: CategoriesTableProps) {
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  // Single state for modal + selected category
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
-  const openDeleteModal = (cat: Category) => {
-    setSelectedCategory(cat);
-    setShowDeleteModal(true);
-  };
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(categories.length / itemsPerPage);
+
+  const paginatedCategories = categories.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const confirmDelete = () => {
-    if (selectedCategory) {
-      handleDelete(selectedCategory.id, selectedCategory.name);
+    if (deleteTarget) {
+      handleDelete(deleteTarget.id, deleteTarget.name);
+      setDeleteTarget(null);
     }
-    setShowDeleteModal(false);
-    setSelectedCategory(null);
   };
 
   return (
@@ -59,8 +73,9 @@ export default function CategoriesTable({
             </th>
           </tr>
         </thead>
+
         <tbody className="bg-white divide-y divide-gray-200">
-          {categories.map((c) => (
+          {paginatedCategories.map((c) => (
             <tr key={c.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
@@ -84,22 +99,67 @@ export default function CategoriesTable({
                   <PenSquare className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => openDeleteModal(c)}
+                  onClick={() => handleDelete(c.id, c.name)}
                   className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50 transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
+
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
+      {/* Empty state */}
+      {categories.length === 0 && (
+        <div className="text-center py-12">
+          <Dock className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No categories</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Get started by creating a new category.
+          </p>
+          <div className="mt-6">
+            <button
+              onClick={openCreateModal}
+              className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
+            >
+              <Plus size={16} /> Create Category
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {categories.length > itemsPerPage && (
+        <div className="flex justify-end items-center gap-2 px-6 py-4">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-100"
+          >
+            <ChevronLeft className="w-4 h-4 inline" />
+          </button>
+          <span className="px-3 py-1">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-100"
+          >
+            <ChevronRight className="w-4 h-4 inline" />
+          </button>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
+      {deleteTarget && (
         <DeleteCategoriesModal
-          selectedCategory={selectedCategory}
-          setShowDeleteModal={setShowDeleteModal}
+          selectedCategory={deleteTarget}
+          setShowDeleteModal={(show) => {
+            if (!show) setDeleteTarget(null);
+          }}
           confirmDelete={confirmDelete}
         />
       )}

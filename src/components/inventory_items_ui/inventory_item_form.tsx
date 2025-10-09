@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { inventoryItemApi } from "@/lib/inventory_item";
 import { Brand } from "@/lib/brands";
 import { Category } from "@/lib/types/categories";
 import { SubCategory } from "@/lib/types/sub_categories";
 import { UOM } from "@/lib/types/uom";
 import { InventoryItem } from "@/lib/types/inventory_item";
+import SmallLoader from "../ui/small_loader";
 
 interface InventoryItemFormProps {
   item?: InventoryItem;
   onSuccess: () => void;
-  onCancel: () => void; // <-- added cancel callback
+  onCancel: () => void;
   brands: Brand[];
   categories: Category[];
   subCategories: SubCategory[];
@@ -84,7 +86,11 @@ export default function InventoryItemForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+
+    if (!validateForm()) {
+      toast.error("Please fix the form errors before submitting.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -96,7 +102,6 @@ export default function InventoryItemForm({
         uom_id: formData.uom_id,
         cost_price: parseFloat(formData.cost_price),
         selling_price: parseFloat(formData.selling_price),
-        //created_by: userId,
       };
       if (formData.sku.trim()) payload.sku = formData.sku.trim();
       if (formData.sub_category_id) payload.sub_category_id = formData.sub_category_id;
@@ -104,16 +109,19 @@ export default function InventoryItemForm({
 
       if (item) {
         await inventoryItemApi.update(item.id, payload);
+        toast.success("Inventory item updated successfully!");
       } else {
         await inventoryItemApi.create(payload);
+        toast.success("Inventory item created successfully!");
       }
 
       onSuccess();
     } catch (err: any) {
-      console.log("Error saving inventory item:", err);
-      setErrors({
-        submit: err.message || "Failed to save inventory item. Please check all required fields.",
-      });
+      console.error("Error saving inventory item:", err);
+      const message =
+        err?.response?.data?.error || err.message || "Failed to save inventory item.";
+      toast.error(message);
+      setErrors({ submit: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -127,25 +135,10 @@ export default function InventoryItemForm({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 overflow-y-auto max-h-[90vh] relative">
-        {/* Cancel button */}
-        <button
-          type="button"
-          onClick={onCancel}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
-        >
-          &times;
-        </button>
-
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-sm shadow-xl max-w-4xl w-full p-6 overflow-y-auto max-h-[90vh] relative">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6 py-4">
           {item ? "Edit Inventory Item" : "Create Inventory Item"}
         </h2>
-
-        {errors.submit && (
-          <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded mb-4">
-            {errors.submit}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -167,7 +160,7 @@ export default function InventoryItemForm({
             {/* Name */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Name <span className="text-red-500">*</span>
+                Name <span className="text-gray-400">*</span>
               </label>
               <input
                 type="text"
@@ -178,13 +171,12 @@ export default function InventoryItemForm({
                   errors.name ? "border-red-500" : ""
                 }`}
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
 
             {/* Category */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Category <span className="text-red-500">*</span>
+                Category <span className="text-gray-400">*</span>
               </label>
               <select
                 name="category_id"
@@ -201,14 +193,13 @@ export default function InventoryItemForm({
                   </option>
                 ))}
               </select>
-              {errors.category_id && (
-                <p className="text-red-500 text-xs mt-1">{errors.category_id}</p>
-              )}
             </div>
 
             {/* Sub-Category */}
             <div>
-              <label className="block text-sm font-medium mb-1">Sub-Category</label>
+              <label className="block text-sm font-medium mb-1">
+                Sub-Category <span className="text-gray-400">*</span>
+              </label>
               <select
                 name="sub_category_id"
                 value={formData.sub_category_id}
@@ -230,7 +221,7 @@ export default function InventoryItemForm({
             {/* Brand */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Brand <span className="text-red-500">*</span>
+                Brand <span className="text-gray-400">*</span>
               </label>
               <select
                 name="brand_id"
@@ -247,15 +238,12 @@ export default function InventoryItemForm({
                   </option>
                 ))}
               </select>
-              {errors.brand_id && (
-                <p className="text-red-500 text-xs mt-1">{errors.brand_id}</p>
-              )}
             </div>
 
             {/* UOM */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Unit of Measure <span className="text-red-500">*</span>
+                Unit of Measure <span className="text-gray-400">*</span>
               </label>
               <select
                 name="uom_id"
@@ -272,7 +260,6 @@ export default function InventoryItemForm({
                   </option>
                 ))}
               </select>
-              {errors.uom_id && <p className="text-red-500 text-xs mt-1">{errors.uom_id}</p>}
             </div>
 
             {/* Barcode */}
@@ -292,7 +279,7 @@ export default function InventoryItemForm({
             {/* Cost Price */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Cost Price <span className="text-red-500">*</span>
+                Cost Price <span className="text-gray-400">*</span>
               </label>
               <input
                 type="number"
@@ -304,15 +291,12 @@ export default function InventoryItemForm({
                   errors.cost_price ? "border-red-500" : ""
                 }`}
               />
-              {errors.cost_price && (
-                <p className="text-red-500 text-xs mt-1">{errors.cost_price}</p>
-              )}
             </div>
 
             {/* Selling Price */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Selling Price <span className="text-red-500">*</span>
+                Selling Price <span className="text-gray-400">*</span>
               </label>
               <input
                 type="number"
@@ -324,31 +308,29 @@ export default function InventoryItemForm({
                   errors.selling_price ? "border-red-500" : ""
                 }`}
               />
-              {errors.selling_price && (
-                <p className="text-red-500 text-xs mt-1">{errors.selling_price}</p>
-              )}
             </div>
           </div>
 
-          {/* Submit Button */}
+          {/* Buttons */}
           <div className="flex justify-end mt-4 gap-3">
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-2 border border-gray-300 rounded hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-sm text-sm hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-6 py-2 rounded text-white ${
-                isSubmitting
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[#3D4C63] hover:bg-[#495C79]"
+              className={`px-6 py-2 rounded-sm text-sm text-white ${
+                isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#3D4C63] hover:bg-[#495C79]"
               }`}
             >
-              {isSubmitting ? "Saving..." : item ? "Update Item" : "Create Item"}
+              {isSubmitting ? <span className="flex gap-2">
+                <SmallLoader />
+                <p className="text-sm font-semibold">Saving...</p>
+              </span> : item ? "Update Item" : "Create Item"}
             </button>
           </div>
         </form>

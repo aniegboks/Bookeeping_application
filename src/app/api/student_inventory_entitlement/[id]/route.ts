@@ -1,26 +1,31 @@
+// src/app/api/student_inventory_entitlement/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const BASE_URL =
   process.env.BACKEND_API_URL ||
   "https://inventory-backend-hm7r.onrender.com/api/v1/student_inventory_collection";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+interface Params {
+  params: Promise<{ id: string }>;
+}
+
+export async function GET(req: NextRequest, { params }: Params) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/${params.id}`, {
+    const { id } = await params;
+    
+    const res = await fetch(`${BASE_URL}/${id}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
+      cache: "no-store",
     });
 
     const data = await res.json();
@@ -34,19 +39,17 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: NextRequest, { params }: Params) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const { id } = await params;
     const body = await req.json();
 
-    const res = await fetch(`${BASE_URL}/${params.id}`, {
+    const res = await fetch(`${BASE_URL}/${id}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -54,6 +57,7 @@ export async function PUT(
         Accept: "application/json",
       },
       body: JSON.stringify(body),
+      cache: "no-store",
     });
 
     const data = await res.json();
@@ -67,22 +71,22 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const token = req.cookies.get("token")?.value;
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/${params.id}`, {
+    const { id } = await params;
+    
+    const res = await fetch(`${BASE_URL}/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
+      cache: "no-store",
     });
 
     // Handle 204 No Content explicitly

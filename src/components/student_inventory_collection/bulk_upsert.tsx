@@ -39,7 +39,11 @@ export default function BulkUploadForm({
     classes,
 }: BulkUploadFormProps) {
     const [rows, setRows] = useState<CollectionRow[]>([
-        {
+        createEmptyRow(),
+    ]);
+
+    function createEmptyRow(): CollectionRow {
+        return {
             tempId: crypto.randomUUID(),
             student_id: "",
             class_id: "",
@@ -50,25 +54,11 @@ export default function BulkUploadForm({
             received: false,
             received_date: null,
             given_by: "",
-        },
-    ]);
+        };
+    }
 
     const handleAddRow = () => {
-        setRows([
-            ...rows,
-            {
-                tempId: crypto.randomUUID(),
-                student_id: "",
-                class_id: "",
-                session_term_id: "",
-                inventory_item_id: "",
-                qty: 1,
-                eligible: true,
-                received: false,
-                received_date: null,
-                given_by: "",
-            },
-        ]);
+        setRows([...rows, createEmptyRow()]);
     };
 
     const handleRemoveRow = (tempId: string) => {
@@ -89,10 +79,7 @@ export default function BulkUploadForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Remove tempId before submitting
-        const submitData = rows.map(
-            ({ tempId, ...rest }) => rest
-        );
+        const submitData = rows.map(({ tempId, ...rest }) => rest);
         await onSubmit(submitData);
     };
 

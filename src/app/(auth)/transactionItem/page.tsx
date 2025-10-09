@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
 import Container from "@/components/ui/container";
@@ -72,8 +72,8 @@ export default function InventoryTransactionsPage() {
         else toast.error(`${prefix}: Unexpected error`);
     };
 
-    // --- Load All Data ---
-    const loadAllData = async () => {
+    // --- Load All Data (useCallback) ---
+    const loadAllData = useCallback(async () => {
         setLoading(true);
         try {
             const [
@@ -122,9 +122,12 @@ export default function InventoryTransactionsPage() {
             setLoading(false);
             setInitialLoading(false);
         }
-    };
+    }, []);
 
-    useEffect(() => { loadAllData(); }, []);
+    // --- useEffect calling loadAllData ---
+    useEffect(() => {
+        loadAllData();
+    }, [loadAllData]);
 
     // --- Filters ---
     const filteredTransactions = transactions.filter(t => {

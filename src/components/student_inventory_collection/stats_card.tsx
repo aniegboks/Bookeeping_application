@@ -51,15 +51,14 @@ export default function StatsCards({
     totalCollections > 0 ? (eligibleCount / totalCollections) * 100 : 0;
   const filteredPercent =
     totalCollections > 0 ? (filteredCount / totalCollections) * 100 : 0;
-  const qtyPercent =
-    totalQtyAll > 0 ? (totalQty / totalQtyAll) * 100 : 0;
+  const qtyPercent = totalQtyAll > 0 ? (totalQty / totalQtyAll) * 100 : 0;
 
   // Tailwind color map (base -600 colors)
   const colorMap = {
-    blue: "#2563EB", 
-    green: "#16A34A", 
-    purple: "#9333EA", 
-    orange: "#EA580C", 
+    blue: "#2563EB",
+    green: "#16A34A",
+    purple: "#9333EA",
+    orange: "#EA580C",
   };
 
   const stats = [
@@ -86,6 +85,14 @@ export default function StatsCards({
       icon: Users,
       colorHex: colorMap.purple,
       progress: eligiblePercent,
+    },
+    {
+      title: "Filtered Collections",
+      value: filteredCount,
+      description: `${filteredPercent.toFixed(0)}% of collections filtered.`,
+      icon: Package,
+      colorHex: colorMap.blue,
+      progress: filteredPercent,
     },
     {
       title: "Total Quantity",
@@ -117,9 +124,7 @@ export default function StatsCards({
             <div className="flex flex-col">
               <p className="text-sm text-gray-600 font-medium">{stat.title}</p>
               <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-xs text-gray-500 mt-1 mb-2">
-                {stat.description}
-              </p>
+              <p className="text-xs text-gray-500 mt-1 mb-2">{stat.description}</p>
 
               {/* Light Tailwind-100–like progress bar */}
               <div

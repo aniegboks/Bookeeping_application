@@ -87,7 +87,7 @@ export default function SupplierModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full overflow-y-auto max-h-[90dvh]">
         {/* Header */}
         <div className="p-6 border-b border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">

@@ -96,7 +96,7 @@ export default function SupplierModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+        <form onSubmit={handleSubmit} className="p-6 space-y-8b overflow-y-auto">
           {/* === Basic Information === */}
           <div>
             <h3 className="text-lg font-semibold text-slate-800 mb-3">

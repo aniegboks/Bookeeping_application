@@ -56,18 +56,13 @@ export default function StudentsPage() {
       setUsers(usersData);
     } catch (err: unknown) {
       console.error("Failed to load data:", err);
-
-      if (err instanceof Error) {
-        toast.error("Failed to load data: " + err.message);
-      } else {
-        toast.error("Failed to load data");
-      }
+      if (err instanceof Error) toast.error("Failed to load data: " + err.message);
+      else toast.error("Failed to load data");
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
   };
-
 
   useEffect(() => {
     loadData();
@@ -88,30 +83,25 @@ export default function StudentsPage() {
     return matchesSearch && matchesStatus && matchesGender;
   });
 
-  // Export to Excel
+  // Export to Excel (matching table)
   const handleExport = () => {
     if (filteredStudents.length === 0) {
       toast("No students to export", { icon: "⚠️" });
       return;
     }
 
-    const exportData = filteredStudents.map((student) => {
-      const studentClass = classes.find((c) => c.id === student.class_id);
-      const createdByUser = users.find((u) => u.id === student.created_by);
-      return {
-        "First Name": student.first_name,
-        "Middle Name": student.middle_name || "",
-        "Last Name": student.last_name,
-        "Admission Number": student.admission_number,
-        "Gender": student.gender,
-        "Status": student.status,
-        "Guardian Name": student.guardian_name,
-        "Class": studentClass ? studentClass.name : "",
-        "Created By": createdByUser ? createdByUser.name : "",
-        "Created At": student.created_at,
-        "Updated At": student.updated_at,
-      };
-    });
+    const exportData = filteredStudents.map((student) => ({
+      "Full Name": `${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`.trim(),
+      "Admission Number": student.admission_number,
+      "Gender": student.gender,
+      "Date of Birth": student.date_of_birth
+        ? new Date(student.date_of_birth).toLocaleDateString()
+        : "-",
+      "Guardian Name": student.guardian_name,
+      "Guardian Contact": student.guardian_contact,
+      "Address": student.address || "-",
+      "Status": student.status,
+    }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -125,7 +115,6 @@ export default function StudentsPage() {
   };
 
   // Form submission
-
   const handleFormSubmit = async (
     data: CreateStudentInput | UpdateStudentInput
   ) => {
@@ -136,12 +125,10 @@ export default function StudentsPage() {
 
     try {
       if (editingStudent) {
-        // Type assertion is safe because update expects UpdateStudentInput
         await studentApi.update(editingStudent.id, data as UpdateStudentInput);
         toast.dismiss(loadingToast);
         toast.success("Student updated successfully!");
       } else {
-        // Type assertion is safe because create expects CreateStudentInput
         await studentApi.create(data as CreateStudentInput);
         toast.dismiss(loadingToast);
         toast.success("Student created successfully!");
@@ -153,12 +140,8 @@ export default function StudentsPage() {
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Form submission failed:", err);
-
-      if (err instanceof Error) {
-        toast.error("Failed to save student: " + err.message);
-      } else {
-        toast.error("Failed to save student");
-      }
+      if (err instanceof Error) toast.error("Failed to save student: " + err.message);
+      else toast.error("Failed to save student");
     } finally {
       setIsSubmitting(false);
     }
@@ -192,17 +175,12 @@ export default function StudentsPage() {
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Delete failed:", err);
-
-      if (err instanceof Error) {
-        toast.error("Failed to delete student: " + err.message);
-      } else {
-        toast.error("Failed to delete student");
-      }
+      if (err instanceof Error) toast.error("Failed to delete student: " + err.message);
+      else toast.error("Failed to delete student");
     } finally {
       setIsDeleting(false);
     }
   };
-
 
   const handleCancel = () => {
     setShowForm(false);
@@ -286,7 +264,6 @@ export default function StudentsPage() {
             </span>
           </button>
         </div>
-
       </Container>
     </div>
   );

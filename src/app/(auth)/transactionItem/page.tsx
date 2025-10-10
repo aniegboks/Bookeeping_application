@@ -41,7 +41,6 @@ import { Download } from "lucide-react";
 type FormType = "transaction" | "distribution" | null;
 
 export default function InventoryTransactionsPage() {
-    // --- State ---
     const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
     const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -72,7 +71,7 @@ export default function InventoryTransactionsPage() {
         else toast.error(`${prefix}: Unexpected error`);
     };
 
-    // --- Load All Data (useCallback) ---
+    // --- Load All Data ---
     const loadAllData = useCallback(async () => {
         setLoading(true);
         try {
@@ -92,29 +91,14 @@ export default function InventoryTransactionsPage() {
                 academicSessionsApi.getAll() as Promise<AcademicSession[]>,
             ]);
 
-            const normalizedClasses: SchoolClass[] = classesData.map(c => ({
-                ...c,
-                class_teacher_id: c.class_teacher_id || "",
-                status: c.status || "active",
-                created_by: c.created_by || "",
-                created_at: c.created_at || new Date().toISOString(),
-                updated_at: c.updated_at || new Date().toISOString(),
-            }));
-
-            const normalizedSessions: AcademicSession[] = sessionsData.map(s => ({
-                ...s,
-                name: s.name || s.session,
-            }));
-
             setTransactions(transactionsData);
             setInventoryItems(itemsData);
             setSuppliers(suppliersData);
             setUsers(usersData);
-            setClasses(normalizedClasses);
-            setAcademicSessions(normalizedSessions);
+            setClasses(classesData);
+            setAcademicSessions(sessionsData);
 
             if (usersData.length > 0) setCurrentUser(usersData[0]);
-
         } catch (err: unknown) {
             console.error(err);
             handleError(err, "Failed to load data");
@@ -124,7 +108,6 @@ export default function InventoryTransactionsPage() {
         }
     }, []);
 
-    // --- useEffect calling loadAllData ---
     useEffect(() => {
         loadAllData();
     }, [loadAllData]);
@@ -222,19 +205,19 @@ export default function InventoryTransactionsPage() {
         }
     };
 
+    // --- Export to Excel ---
     const exportToExcel = () => {
         if (!filteredTransactions.length) return toast.error("No transactions to export");
 
         const data = filteredTransactions.map(t => ({
-            ReferenceNo: t.reference_no,
-            Item: getItemName(t.item_id),
             Type: t.transaction_type,
-            SupplierReceiver: t.supplier_receiver,
-            Quantity: t.qty_in ?? t.qty_out ? t.qty_out ? -t.qty_out : 0 : 0,
-            Notes: t.notes,
+            Item: getItemName(t.item_id),
+            "Quantity In/Out": t.qty_in > 0 ? `+${t.qty_in}` : `-${t.qty_out || 0}`,
             Status: t.status,
-            CreatedAt: t.created_at,
-            UpdatedAt: t.updated_at,
+            Date: t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : "—",
+            ReferenceNo: t.reference_no || "",
+            Notes: t.notes || "",
+            SupplierReceiver: t.supplier_receiver || "",
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(data);

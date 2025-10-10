@@ -25,7 +25,6 @@ import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
 
 export default function ClassTeachersPage() {
-  // --- State ---
   const [teachers, setTeachers] = useState<ClassTeacher[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [academicSessions, setAcademicSessions] = useState<AcademicSessionType[]>([]);
@@ -131,15 +130,13 @@ export default function ClassTeachersPage() {
 
     try {
       if (editingTeacher) {
-        // Editing: data must match UpdateClassTeacherInput
         const updateData: UpdateClassTeacherInput = data;
         await classTeacherApi.update(editingTeacher.id, updateData);
         toast.dismiss(loadingToast);
         toast.success("Teacher assignment updated successfully!");
       } else {
-        // Creating: data must match CreateClassTeacherInput
         const { class_id, session_term_id, email, name, role, status, assigned_at, unassigned_at, created_by } =
-          data as CreateClassTeacherInput; // <--- safe because we are in 'create' branch
+          data as CreateClassTeacherInput;
         const createData: CreateClassTeacherInput = {
           class_id,
           session_term_id,
@@ -229,15 +226,18 @@ export default function ClassTeachersPage() {
 
     const data = filteredTeachers.map((t) => {
       const classInfo = classes.find((c) => c.id === t.class_id);
-      const userInfo = users.find((u) => u.id === t.teacher_id);
       const sessionInfo = academicSessions.find((s) => s.id === t.session_term_id);
 
       return {
-        "Teacher Name": userInfo?.name || "",
+        "Teacher ID": t.teacher_id,        // matches table
         "Email": t.email || "",
-        "Class": classInfo?.name || "",
-        "Session": sessionInfo?.name || "",
+        "Class ID": t.class_id,
+        "Class Name": classInfo?.name || "",
+        "Session Term ID": t.session_term_id,
+        "Session Name": sessionInfo?.name || "",
+        "Role": t.role,
         "Status": t.status,
+        "Assigned At": t.assigned_at ? new Date(t.assigned_at).toLocaleDateString() : "",
         "ID": t.id,
       };
     });

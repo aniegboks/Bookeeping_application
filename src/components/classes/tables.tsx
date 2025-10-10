@@ -30,14 +30,10 @@ export default function ClassTable({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedClasses = classes.slice(startIndex, startIndex + itemsPerPage);
 
-  // Get teacher display name
-  const getTeacherName = (teacherId: string) => {
-    const teacher = classTeachers.find((t) => t.id === teacherId);
-    if (!teacher) return teacherId;
-
-    const user = users.find((u) => u.id === teacher.teacher_id);
-
-    return user?.username ?? user?.name ?? teacher.name ?? teacher.email ?? teacher.id;
+  // Get creator display name
+  const getCreatorName = (userId: string) => {
+    const user = users.find((u) => u.id === userId);
+    return user?.username ?? user?.name ?? userId;
   };
 
   const handlePrevPage = () => setCurrentPage((p) => Math.max(p - 1, 1));
@@ -70,7 +66,7 @@ export default function ClassTable({
                 Class Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Class Teacher
+                Class Teacher ID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
@@ -108,7 +104,7 @@ export default function ClassTable({
 
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   <div className="max-w-[150px] truncate" title={schoolClass.class_teacher_id}>
-                    {getTeacherName(schoolClass.class_teacher_id)}
+                    {schoolClass.class_teacher_id}
                   </div>
                 </td>
 
@@ -125,7 +121,7 @@ export default function ClassTable({
                 </td>
 
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {schoolClass.created_by}
+                  {getCreatorName(schoolClass.created_by)}
                 </td>
 
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

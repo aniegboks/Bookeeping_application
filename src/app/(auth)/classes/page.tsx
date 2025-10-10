@@ -42,7 +42,6 @@ export default function SchoolClassesPage() {
     const loadData = async () => {
         try {
             setLoading(true);
-
             const [classData, teacherData, userData]: [SchoolClass[], ClassTeacher[], User[]] = await Promise.all([
                 schoolClassApi.getAll(),
                 classTeacherApi.getAll(),
@@ -72,7 +71,6 @@ export default function SchoolClassesPage() {
         loadData();
     }, []);
 
-    // Get teacher name for display
     const getTeacherName = (teacherId: string) => {
         const teacher = classTeachers.find((t) => t.id === teacherId);
         if (!teacher) return teacherId;
@@ -80,7 +78,6 @@ export default function SchoolClassesPage() {
         return user?.username ?? user?.name ?? teacher.name ?? teacher.email ?? teacher.id;
     };
 
-    // Filter classes
     const filteredClasses = classes.filter((schoolClass) => {
         const searchLower = searchTerm.toLowerCase();
         const teacherName = schoolClass.class_teacher_id
@@ -94,14 +91,12 @@ export default function SchoolClassesPage() {
         ) && (!statusFilter || schoolClass.status === statusFilter);
     });
 
-    // Form submission
     const handleFormSubmit = async (data: CreateSchoolClassInput | UpdateSchoolClassInput) => {
         setIsSubmitting(true);
         const loadingToast = toast.loading(editingClass ? "Updating class..." : "Creating class...");
 
         try {
             if (editingClass) {
-                // Type assertion ensures correct input for update
                 await schoolClassApi.update(editingClass.id, data as UpdateSchoolClassInput);
             } else {
                 await schoolClassApi.create(data as CreateSchoolClassInput);
@@ -114,14 +109,12 @@ export default function SchoolClassesPage() {
             await loadData();
         } catch (err: unknown) {
             toast.dismiss(loadingToast);
-
             const message =
                 err instanceof Error
                     ? err.message
                     : typeof err === "string"
                         ? err
                         : "Unknown error";
-
             console.error("Form submission failed:", err);
             toast.error("Failed to save class: " + message);
         } finally {
@@ -146,7 +139,6 @@ export default function SchoolClassesPage() {
 
         try {
             await schoolClassApi.delete(deletingClass.id);
-
             toast.success("Class deleted successfully!");
             toast.dismiss(loadingToast);
             setShowDeleteModal(false);
@@ -154,21 +146,18 @@ export default function SchoolClassesPage() {
             await loadData();
         } catch (err: unknown) {
             toast.dismiss(loadingToast);
-
             const message =
                 err instanceof Error
                     ? err.message
                     : typeof err === "string"
                         ? err
                         : "Unknown error";
-
             console.error("Delete failed:", err);
             toast.error("Failed to delete class: " + message);
         } finally {
             setIsDeleting(false);
         }
     };
-
 
     const handleCancel = () => {
         setShowForm(false);
@@ -181,7 +170,6 @@ export default function SchoolClassesPage() {
         setShowForm(true);
     };
 
-    // Export to Excel
     const exportToExcel = () => {
         if (filteredClasses.length === 0) {
             toast("No data to export", { icon: "ℹ️" });
@@ -191,14 +179,23 @@ export default function SchoolClassesPage() {
         const dataToExport = filteredClasses.map((schoolClass) => {
             const teacherName = schoolClass.class_teacher_id
                 ? getTeacherName(schoolClass.class_teacher_id)
-                : "";
+                : "—";
+
+            const createdByUser = users.find((u) => u.id === schoolClass.created_by);
+            const createdByName =
+                createdByUser?.username ??
+                createdByUser?.name ??
+                schoolClass.created_by;
+
             return {
-                ID: schoolClass.id,
-                Name: schoolClass.name,
-                Teacher: teacherName,
-                Status: schoolClass.status,
-                CreatedAt: new Date(schoolClass.created_at).toLocaleString(),
-                UpdatedAt: new Date(schoolClass.updated_at).toLocaleString(),
+                "Class Name": schoolClass.name,
+                "Class Teacher": teacherName,
+                Status:
+                    schoolClass.status.charAt(0).toUpperCase() +
+                    schoolClass.status.slice(1),
+                "Created By": createdByName,
+                "Created At": new Date(schoolClass.created_at).toLocaleString(),
+                "Updated At": new Date(schoolClass.updated_at).toLocaleString(),
             };
         });
 
@@ -258,12 +255,10 @@ export default function SchoolClassesPage() {
                         classTeachers={classTeachers}
                     />
 
-                    {/* Export Button */}
                     <div className="mt-4 flex justify-start">
                         <button
                             onClick={exportToExcel}
-                            className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm
-transition"
+                            className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition"
                         >
                             <span className="flex items-center gap-2">
                                 <Download className="w-5 h-5" />

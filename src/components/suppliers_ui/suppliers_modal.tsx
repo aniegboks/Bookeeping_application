@@ -42,7 +42,7 @@ export default function SupplierModal({
 
   useEffect(() => {
     if (supplier && mode === "edit") {
-      const {  ...rest } = supplier;
+      const { ...rest } = supplier;
       setFormData(rest);
     } else if (mode === "add") {
       setFormData({
@@ -86,18 +86,25 @@ export default function SupplierModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full overflow-y-auto max-h-[90dvh]">
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-slate-200">
+        <div className="p-6 border-b border-slate-200 flex-shrink-0">
           <h2 className="text-2xl font-bold text-slate-900">
             {mode === "add" ? "Add New Supplier" : "Edit Supplier"}
           </h2>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-8b overflow-y-auto">
-          {/* === Basic Information === */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-8 overflow-y-auto flex-1"
+        >
+          {/* Basic Information */}
           <div>
             <h3 className="text-lg font-semibold text-slate-800 mb-3">
               Basic Information
@@ -114,8 +121,7 @@ export default function SupplierModal({
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
 
@@ -129,8 +135,7 @@ export default function SupplierModal({
                   name="contact_name"
                   value={formData.contact_name}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
 
@@ -144,14 +149,13 @@ export default function SupplierModal({
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
             </div>
           </div>
 
-          {/* === Contact Details === */}
+          {/* Contact Details */}
           <div>
             <h3 className="text-lg font-semibold text-slate-800 mb-3">
               Contact Details
@@ -167,8 +171,7 @@ export default function SupplierModal({
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
 
@@ -182,20 +185,18 @@ export default function SupplierModal({
                   name="website"
                   value={formData.website}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
             </div>
           </div>
 
-          {/* === Address Information === */}
+          {/* Address Information */}
           <div>
             <h3 className="text-lg font-semibold text-slate-800 mb-3">
               Address Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Address */}
               <div>
                 <label className="block text-sm font-medium text-slate-700">
                   Address
@@ -205,12 +206,9 @@ export default function SupplierModal({
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
-
-              {/* City */}
               <div>
                 <label className="block text-sm font-medium text-slate-700">
                   City
@@ -220,12 +218,9 @@ export default function SupplierModal({
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
-
-              {/* State */}
               <div>
                 <label className="block text-sm font-medium text-slate-700">
                   State
@@ -235,12 +230,9 @@ export default function SupplierModal({
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
-
-              {/* Country */}
               <div>
                 <label className="block text-sm font-medium text-slate-700">
                   Country
@@ -250,14 +242,13 @@ export default function SupplierModal({
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-                  focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
             </div>
           </div>
 
-          {/* === Notes === */}
+          {/* Notes */}
           <div>
             <h3 className="text-lg font-semibold text-slate-800 mb-3">Notes</h3>
             <textarea
@@ -265,13 +256,12 @@ export default function SupplierModal({
               value={formData.notes}
               onChange={handleChange}
               rows={3}
-              className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 
-              focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+              className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
             />
           </div>
 
-          {/* === Buttons === */}
-          <div className="flex justify-end gap-3 pt-4">
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-4 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
@@ -283,21 +273,23 @@ export default function SupplierModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 bg-[#3D4C63] text-white rounded-lg hover:bg-[#2f3a4e] transition-colors 
-              focus:outline-none focus:ring-2 focus:ring-[#3D4C63] disabled:opacity-70"
+              className="px-5 py-2.5 bg-[#3D4C63] text-white rounded-lg hover:bg-[#2f3a4e] transition-colors focus:outline-none focus:ring-2 focus:ring-[#3D4C63] disabled:opacity-70"
             >
-              {isSubmitting
-                ? <span className="flex gap-2">
+              {isSubmitting ? (
+                <span className="flex gap-2">
                   <SmallLoader />
                   Sending...
                 </span>
-                : mode === "add"
-                ? "Add Supplier"
-                : "Save Changes"}
+              ) : mode === "add" ? (
+                "Add Supplier"
+              ) : (
+                "Save Changes"
+              )}
             </button>
           </div>
         </form>
       </div>
     </div>
+
   );
 }

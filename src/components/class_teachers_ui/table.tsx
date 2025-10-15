@@ -156,14 +156,14 @@ export default function TeacherTable({
           <button
             onClick={handlePrev}
             disabled={currentPage === 1}
-            className="px-3 py-1 bg-white border rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 bg-white"
+            className="px-3 py-1 border rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 bg-white"
           >
             Prev
           </button>
           <button
             onClick={handleNext}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 bg-white border rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 bg-white"
+            className="px-3 py-1 border rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 bg-white"
           >
             Next
           </button>

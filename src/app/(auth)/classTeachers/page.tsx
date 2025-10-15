@@ -264,7 +264,6 @@ export default function ClassTeachersPage() {
       <Container>
         <div className="mt-4 pb-8">
           <StatsCards teachers={teachers} filteredTeachers={filteredTeachers} />
-          <TeacherStatusChart teachers={teachers} />
 
           <Controls
             searchTerm={searchTerm}
@@ -304,6 +303,19 @@ export default function ClassTeachersPage() {
             onDelete={handleDeleteRequest}
             loading={loading}
           />
+          <div className="mt-4 flex justify-start">
+            <button
+              className="px-4 py-2 rounded bg-[#3D4C63] hover:bg-[#495C79] text-white transition"
+              onClick={exportToExcel}
+            >
+              <span className="flex gap-2">
+                <Download className="w-5 h-5" />
+                Export
+              </span>
+            </button>
+          </div>
+          <TeacherStatusChart teachers={teachers} />
+
 
           {showDeleteModal && deletingTeacher && (
             <DeleteModal
@@ -317,18 +329,6 @@ export default function ClassTeachersPage() {
               isDeleting={isDeleting}
             />
           )}
-
-          <div className="mt-4 flex justify-start">
-            <button
-              className="px-4 py-2 rounded bg-[#3D4C63] hover:bg-[#495C79] text-white transition"
-              onClick={exportToExcel}
-            >
-              <span className="flex gap-2">
-                <Download className="w-5 h-5" />
-                Export
-              </span>
-            </button>
-          </div>
         </div>
       </Container>
     </div>

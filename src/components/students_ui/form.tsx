@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Student, CreateStudentInput, Gender, StudentStatus } from "@/lib/types/students";
+import {
+  Student,
+  CreateStudentInput,
+  Gender,
+  StudentStatus,
+} from "@/lib/types/students";
 import { SchoolClass } from "@/lib/types/classes";
 import { User } from "@/lib/types/user";
 import SmallLoader from "../ui/small_loader";
@@ -28,10 +33,12 @@ export default function StudentForm({
     first_name: "",
     middle_name: "",
     last_name: "",
+    student_email: "",
     gender: "male",
     date_of_birth: "",
     class_id: "",
     guardian_name: "",
+    guardian_email: "",
     guardian_contact: "",
     address: "",
     status: "active",
@@ -45,10 +52,12 @@ export default function StudentForm({
         first_name: student.first_name,
         middle_name: student.middle_name || "",
         last_name: student.last_name,
+        student_email: student.student_email || "",
         gender: student.gender,
         date_of_birth: student.date_of_birth,
         class_id: student.class_id,
         guardian_name: student.guardian_name || "",
+        guardian_email: student.guardian_email || "",
         guardian_contact: student.guardian_contact || "",
         address: student.address || "",
         status: student.status,
@@ -68,7 +77,9 @@ export default function StudentForm({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Personal Information */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-6">Personal Information</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-6">
+              Personal Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-visible">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -77,7 +88,9 @@ export default function StudentForm({
                 <input
                   type="text"
                   value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, first_name: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                   required
                   disabled={isSubmitting}
@@ -85,11 +98,15 @@ export default function StudentForm({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Middle Name
+                </label>
                 <input
                   type="text"
                   value={formData.middle_name}
-                  onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, middle_name: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                   disabled={isSubmitting}
                 />
@@ -102,7 +119,9 @@ export default function StudentForm({
                 <input
                   type="text"
                   value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, last_name: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                   required
                   disabled={isSubmitting}
@@ -113,7 +132,9 @@ export default function StudentForm({
 
           {/* Admission & Demographics */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Admission & Demographics</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Admission & Demographics
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-visible">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -122,7 +143,12 @@ export default function StudentForm({
                 <input
                   type="text"
                   value={formData.admission_number}
-                  onChange={(e) => setFormData({ ...formData, admission_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      admission_number: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                   required
                   disabled={isSubmitting}
@@ -132,11 +158,32 @@ export default function StudentForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Student Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.student_email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, student_email: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                  disabled={isSubmitting}
+                  placeholder="student@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Gender <span className="text-gray-500">*</span>
                 </label>
                 <select
                   value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value as Gender })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      gender: e.target.value as Gender,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] bg-white"
                   required
                   disabled={isSubmitting}
@@ -154,40 +201,22 @@ export default function StudentForm({
                 <input
                   type="date"
                   value={formData.date_of_birth}
-                  onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, date_of_birth: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                   required
                   disabled={isSubmitting}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status <span className="text-gray-500">*</span>
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value as StudentStatus })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] bg-white"
-                  required
-                  disabled={isSubmitting}
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="graduated">Graduated</option>
-                  <option value="transferred">Transferred</option>
-                  <option value="suspended">Suspended</option>
-                  <option value="archived">Archived</option>
-                </select>
               </div>
             </div>
           </div>
 
           {/* Class & Guardian Information */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Class & Guardian Information</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Class & Guardian Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -195,7 +224,9 @@ export default function StudentForm({
                 </label>
                 <select
                   value={formData.class_id}
-                  onChange={(e) => setFormData({ ...formData, class_id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, class_id: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] bg-white"
                   required
                   disabled={isSubmitting}
@@ -203,7 +234,7 @@ export default function StudentForm({
                   <option value="">Select Class</option>
                   {classes.map((cls) => (
                     <option key={cls.id} value={cls.id}>
-                      {cls.name} ({cls.id})
+                      {cls.name}
                     </option>
                   ))}
                 </select>
@@ -215,7 +246,9 @@ export default function StudentForm({
                 </label>
                 <select
                   value={formData.created_by}
-                  onChange={(e) => setFormData({ ...formData, created_by: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, created_by: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] bg-white"
                   required
                   disabled={isSubmitting}
@@ -223,29 +256,62 @@ export default function StudentForm({
                   <option value="">Select User</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
-                      {user.name} ({user.id})
+                      {user.name}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Guardian Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Guardian Name
+                </label>
                 <input
                   type="text"
                   value={formData.guardian_name}
-                  onChange={(e) => setFormData({ ...formData, guardian_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      guardian_name: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                   disabled={isSubmitting}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Guardian Contact</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Guardian Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.guardian_email}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      guardian_email: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                  disabled={isSubmitting}
+                  placeholder="guardian@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Guardian Contact
+                </label>
                 <input
                   type="tel"
                   value={formData.guardian_contact}
-                  onChange={(e) => setFormData({ ...formData, guardian_contact: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      guardian_contact: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                   disabled={isSubmitting}
                   placeholder="+1234567890"
@@ -256,10 +322,14 @@ export default function StudentForm({
 
           {/* Address */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Address
+            </label>
             <textarea
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
               disabled={isSubmitting}

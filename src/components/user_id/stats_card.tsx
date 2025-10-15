@@ -12,10 +12,10 @@ interface StatsCardsProps {
 export default function StatsCards({ users }: StatsCardsProps) {
   const totalUsers = users.length;
 
-  const teachers = users.filter(
+  const regularUsers = users.filter(
     (u) =>
       Array.isArray(u.roles) &&
-      u.roles.some((r) => r.toLowerCase() === "teacher")
+      u.roles.some((r) => r.toLowerCase() === "user")
   ).length;
 
   const admins = users.filter(
@@ -40,12 +40,12 @@ export default function StatsCards({ users }: StatsCardsProps) {
       description: "All users in the system",
     },
     {
-      title: "Teachers",
-      value: teachers,
+      title: "Users",
+      value: regularUsers,
       icon: <UserCheck className="text-green-600" size={24} />,
       colorBg: "#E6FFEF",
-      progress: totalUsers ? (teachers / totalUsers) * 100 : 0,
-      description: "Users with the teacher role",
+      progress: totalUsers ? (regularUsers / totalUsers) * 100 : 0,
+      description: "Users with the 'user' role",
     },
     {
       title: "Admins",
@@ -53,7 +53,7 @@ export default function StatsCards({ users }: StatsCardsProps) {
       icon: <UserCog className="text-purple-600" size={24} />,
       colorBg: "#F0EBFF",
       progress: totalUsers ? (admins / totalUsers) * 100 : 0,
-      description: "Users with the admin role",
+      description: "Users with the 'admin' role",
     },
     {
       title: "Super Admins",
@@ -61,7 +61,7 @@ export default function StatsCards({ users }: StatsCardsProps) {
       icon: <Shield className="text-orange-600" size={24} />,
       colorBg: "#FFF4E6",
       progress: totalUsers ? (superadmins / totalUsers) * 100 : 0,
-      description: "Users with the superadmin role",
+      description: "Users with the 'superadmin' role",
     },
   ];
 
@@ -77,13 +77,20 @@ export default function StatsCards({ users }: StatsCardsProps) {
 interface CardProps {
   title: string;
   value: number;
-  icon: React.ReactNode; 
+  icon: React.ReactNode;
   colorBg: string;
   progress: number;
   description: string;
 }
 
-function Card({ title, value, icon, colorBg, progress, description }: CardProps) {
+function Card({
+  title,
+  value,
+  icon,
+  colorBg,
+  progress,
+  description,
+}: CardProps) {
   return (
     <div className="bg-white rounded-sm p-6 border border-gray-200 hover:shadow-md transition">
       <div className="flex items-center gap-4">

@@ -83,7 +83,17 @@ export default function InventoryItemList({
                 <td className="px-6 py-4 text-gray-900">{item.name}</td>
                 <td className="px-6 py-4 text-gray-700">{formatCurrency(Number(item.selling_price ?? 0))}</td>
                 <td className="px-6 py-4 text-gray-700">{formatCurrency(Number(item.cost_price ?? 0))}</td>
-                <td className="px-6 py-4 text-green-700 font-semibold">{formatCurrency(computeProfit(item))}</td>
+                <td className="px-2 py-1">
+                  <span
+                    className={`inline-block px-2 py-1 text-center font-semibold rounded-full text-xs ${computeProfit(item) > 0
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                      }`}
+                  >
+                    {formatCurrency(computeProfit(item))}
+                  </span>
+                </td>
+
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${computeProfit(item) > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                     {formatMargin(item)}%

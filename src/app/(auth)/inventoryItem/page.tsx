@@ -250,9 +250,6 @@ export default function InventoryPage() {
         {/* Stats */}
         <StatsCards items={inventoryItems} filteredItems={filteredInventoryItems} />
 
-        {/* Trends */}
-        <Trends items={inventoryItems} />
-
         {/* Form Section */}
         {showForm && canShowForm() ? (
           <InventoryItemForm
@@ -290,7 +287,6 @@ export default function InventoryPage() {
           onEdit={handleEdit}
           onDelete={handleDeleteRequest}
         />
-
         {/* Export as Spreadsheet */}
         <div className="flex justify-start mt-4">
           <button
@@ -303,6 +299,10 @@ export default function InventoryPage() {
             </span>
           </button>
         </div>
+        {/* Trends */}
+        <Trends items={inventoryItems} />
+
+
 
         {/* Delete Modal */}
         {showDeleteModal && itemToDelete && (

@@ -191,7 +191,6 @@ export default function UsersPage() {
         <Container>
           <div className="mt-4 pb-8">
             <StatsCards users={users} filteredUsers={filteredUsers} />
-            <Trends users={users} />
             <Controls
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -230,6 +229,8 @@ export default function UsersPage() {
                 </span>
               </button>
             </div>
+            <Trends users={users} />
+
 
             {showDeleteModal && deletingUser && (
               <DeleteModal

@@ -40,7 +40,6 @@ export default function CategoriesManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
-  // ✅ Single unified delete state
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const openDeleteModal = (id: string, name: string) => {
@@ -190,7 +189,6 @@ export default function CategoriesManagement() {
           searchResults={filteredCategories.length}
           viewMode={viewMode}
         />
-        <Trends categories={categories} />
 
         {/* CONTROLS */}
         <div className="bg-white rounded-sm border border-gray-200">
@@ -236,6 +234,18 @@ export default function CategoriesManagement() {
             )}
           </div>
         </div>
+        <Container>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={exportCategoriesToExcel}
+              className="flex text-sm items-center gap-2 bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-sm transition-colors"
+            >
+              <Download className="w-5 h-5" />
+              Export
+            </button>
+          </div>
+        </Container>
+        <Trends categories={categories} />
       </Container>
 
       {/* CATEGORY MODAL */}
@@ -261,18 +271,6 @@ export default function CategoriesManagement() {
           confirmDelete={confirmDelete}
         />
       )}
-
-      <Container>
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={exportCategoriesToExcel}
-            className="flex text-sm items-center gap-2 bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-sm transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            Export
-          </button>
-        </div>
-      </Container>
     </div>
   );
 }

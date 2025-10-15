@@ -239,8 +239,6 @@ export default function InventoryTransactionsPage() {
     return (
         <Container>
             <StatsCards transactions={transactions} filteredTransactions={filteredTransactions} />
-            <InventoryTransactionChart transactions={transactions} />
-
             <Controls
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -249,7 +247,6 @@ export default function InventoryTransactionsPage() {
                 statusFilter={statusFilter}
                 onStatusFilterChange={setStatusFilter}
                 onAddTransaction={() => { setEditingTransaction(null); setActiveForm("transaction"); }}
-                onAddDistribution={() => setActiveForm("distribution")}
             />
 
             {activeForm === "transaction" && (
@@ -285,6 +282,19 @@ export default function InventoryTransactionsPage() {
                 onDelete={handleDeleteRequest}
                 loading={loading}
             />
+            <div className="my-4 text-left">
+                <button
+                    onClick={exportToExcel}
+                    className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm"
+                >
+                    <span className="flex gap-2">
+                        <Download className="w-5 h-5" />
+                        Export
+                    </span>
+                </button>
+            </div>
+            <InventoryTransactionChart transactions={transactions} />
+
 
             {showDeleteModal && deletingTransaction && (
                 <DeleteModal
@@ -298,18 +308,6 @@ export default function InventoryTransactionsPage() {
                     isDeleting={isDeleting}
                 />
             )}
-
-            <div className="my-4 text-left">
-                <button
-                    onClick={exportToExcel}
-                    className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm"
-                >
-                    <span className="flex gap-2">
-                        <Download className="w-5 h-5" />
-                        Export
-                    </span>
-                </button>
-            </div>
         </Container>
     );
 }

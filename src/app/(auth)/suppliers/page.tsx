@@ -176,7 +176,6 @@ export default function SuppliersDashboard() {
             <div className="w-full">
                 <Container>
                     <StatsCards suppliers={suppliers} />
-                    <Trends suppliers={suppliers} />
 
                     <SuppliersFilters
                         searchTerm={searchTerm}
@@ -195,6 +194,20 @@ export default function SuppliersDashboard() {
                         onDelete={handleDelete}
                         loading={loading}
                     />
+                    <div className="flex justify-start mt-4">
+                        <button
+                            onClick={handleExport}
+                            className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition-all"
+                        >
+                            <span className='flex gap-2'>
+                                <Download className='h-5 w-5' />
+                                Export
+
+                            </span>
+                        </button>
+                    </div>
+                    <Trends suppliers={suppliers} />
+
 
                     {/* Pagination controls */}
                     {filteredSuppliers.length > 0 && (
@@ -232,20 +245,6 @@ export default function SuppliersDashboard() {
                             </div>
                         </div>
                     )}
-
-                    <div className="flex justify-start mt-4">
-                        <button
-                            onClick={handleExport}
-                            className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition-all"
-                        >
-                            <span className='flex gap-2'>
-                                <Download className='h-5 w-5' />
-                                Export
-
-                            </span>
-                        </button>
-                    </div>
-
                     {(showAddModal || showEditModal) && (
                         <SupplierModal
                             supplier={selectedSupplier}

@@ -56,7 +56,8 @@ export default function StudentsPage() {
       setUsers(usersData);
     } catch (err: unknown) {
       console.error("Failed to load data:", err);
-      if (err instanceof Error) toast.error("Failed to load data: " + err.message);
+      if (err instanceof Error)
+        toast.error("Failed to load data: " + err.message);
       else toast.error("Failed to load data");
     } finally {
       setLoading(false);
@@ -83,24 +84,32 @@ export default function StudentsPage() {
     return matchesSearch && matchesStatus && matchesGender;
   });
 
-  // Export to Excel (matching table)
   const handleExport = () => {
     if (filteredStudents.length === 0) {
       toast("No students to export", { icon: "⚠️" });
       return;
     }
 
+    console.log(classes)
+
     const exportData = filteredStudents.map((student) => ({
-      "Full Name": `${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`.trim(),
       "Admission Number": student.admission_number,
+      "First Name": student.first_name,
+      "Middle Name": student.middle_name || "-",
+      "Last Name": student.last_name,
       "Gender": student.gender,
       "Date of Birth": student.date_of_birth
         ? new Date(student.date_of_birth).toLocaleDateString()
         : "-",
+      "Class": student.class_id || "-",
       "Guardian Name": student.guardian_name,
-      "Guardian Contact": student.guardian_contact,
+      "Guardian Email": student.guardian_email || "-",
+      "Guardian Contact": student.guardian_contact || "-",
       "Address": student.address || "-",
       "Status": student.status,
+      "Created At": student.created_at
+        ? new Date(student.created_at).toLocaleDateString()
+        : "-",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -115,9 +124,7 @@ export default function StudentsPage() {
   };
 
   // Form submission
-  const handleFormSubmit = async (
-    data: CreateStudentInput | UpdateStudentInput
-  ) => {
+  const handleFormSubmit = async (data: CreateStudentInput | UpdateStudentInput) => {
     setIsSubmitting(true);
     const loadingToast = toast.loading(
       editingStudent ? "Updating student..." : "Creating student..."
@@ -140,7 +147,8 @@ export default function StudentsPage() {
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Form submission failed:", err);
-      if (err instanceof Error) toast.error("Failed to save student: " + err.message);
+      if (err instanceof Error)
+        toast.error("Failed to save student: " + err.message);
       else toast.error("Failed to save student");
     } finally {
       setIsSubmitting(false);
@@ -175,7 +183,8 @@ export default function StudentsPage() {
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Delete failed:", err);
-      if (err instanceof Error) toast.error("Failed to delete student: " + err.message);
+      if (err instanceof Error)
+        toast.error("Failed to delete student: " + err.message);
       else toast.error("Failed to delete student");
     } finally {
       setIsDeleting(false);
@@ -206,8 +215,6 @@ export default function StudentsPage() {
       <Container>
         <div className="mt-4 pb-8">
           <StatsCards students={students} filteredStudents={filteredStudents} />
-          <StudentStatusChart students={students} />
-
           <Controls
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -233,12 +240,27 @@ export default function StudentsPage() {
               />
             </div>
           )}
+
           <StudentTable
             students={filteredStudents}
             onEdit={handleEdit}
             onDelete={handleDeleteRequest}
             loading={loading}
           />
+
+          <div className="flex justify-start my-4">
+            <button
+              className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition"
+              onClick={handleExport}
+            >
+              <span className="flex gap-2">
+                <Download className="w-5 h-5" />
+                Export
+              </span>
+            </button>
+          </div>
+
+          <StudentStatusChart students={students} />
 
           {showDeleteModal && deletingStudent && (
             <DeleteModal
@@ -252,17 +274,6 @@ export default function StudentsPage() {
               isDeleting={isDeleting}
             />
           )}
-        </div>
-        <div className="flex justify-start mb-4">
-          <button
-            className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition"
-            onClick={handleExport}
-          >
-            <span className="flex gap-2">
-              <Download className="w-5 h-5" />
-              Export
-            </span>
-          </button>
         </div>
       </Container>
     </div>

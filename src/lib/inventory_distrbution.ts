@@ -21,7 +21,6 @@ async function fetchProxy(url: string, options: RequestInit = {}) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
 
-      // 401 check, handled by the server proxy response
       if (response.status === 401) {
         window.location.href = "/login";
       }
@@ -29,12 +28,8 @@ async function fetchProxy(url: string, options: RequestInit = {}) {
       throw new Error(errorData?.message || response.statusText);
     }
 
-    // Handle 204 No Content - don't try to parse JSON
-    if (response.status === 204) {
-      return null;
-    }
+    if (response.status === 204) return null;
 
-    // For all other successful responses, parse JSON
     return response.json();
   } catch (err) {
     console.error("Fetch failed:", err);
@@ -43,9 +38,26 @@ async function fetchProxy(url: string, options: RequestInit = {}) {
 }
 
 export const inventoryDistributionApi = {
-  /**
-   * Create a new inventory distribution
-   */
+  async getAll(filters?: {
+    class_id?: string;
+    session_term_id?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: InventoryDistribution[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const params = new URLSearchParams();
+
+    if (filters?.class_id) params.append("class_id", filters.class_id);
+    if (filters?.session_term_id) params.append("session_term_id", filters.session_term_id);
+    if (filters?.page) params.append("page", filters.page.toString());
+    if (filters?.limit) params.append("limit", filters.limit.toString());
+
+    const url = `${BASE_URL}/query?${params.toString()}`;
+    return fetchProxy(url);
+  },
+
   async create(
     data: CreateInventoryDistributionInput
   ): Promise<InventoryDistribution> {
@@ -55,9 +67,6 @@ export const inventoryDistributionApi = {
     });
   },
 
-  /**
-   * Update an existing inventory distribution
-   */
   async update(
     id: string,
     data: UpdateInventoryDistributionInput

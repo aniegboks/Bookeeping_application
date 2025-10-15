@@ -92,7 +92,6 @@ export default function ClassForm({
                                 value={formData.class_teacher_id}
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-gray-300 text-sm text-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-                                required
                                 disabled={isSubmitting}
                             >
                                 <option value="">Select a teacher</option>

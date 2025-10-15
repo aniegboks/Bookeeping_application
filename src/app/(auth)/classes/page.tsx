@@ -220,8 +220,6 @@ export default function SchoolClassesPage() {
             <Container>
                 <div className="mt-4 pb-8">
                     <StatsCards classes={classes} filteredClasses={filteredClasses} />
-                    <Trends classes={classes} />
-
                     <Controls
                         searchTerm={searchTerm}
                         onSearchChange={setSearchTerm}
@@ -266,6 +264,8 @@ export default function SchoolClassesPage() {
                             </span>
                         </button>
                     </div>
+                    <Trends classes={classes} />
+
 
                     {showDeleteModal && deletingClass && (
                         <DeleteModal

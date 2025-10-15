@@ -14,10 +14,12 @@ export interface Student {
   first_name: string;
   middle_name: string | null;
   last_name: string;
+  student_email: string | null;
   gender: Gender;
   date_of_birth: string;
   class_id: string;
   guardian_name: string;
+  guardian_email: string | null;
   guardian_contact: string;
   address: string | null;
   status: StudentStatus;
@@ -26,39 +28,40 @@ export interface Student {
   updated_at: string;
 }
 
-// Input for creating a student
 export interface CreateStudentInput {
   admission_number: string;
   first_name: string;
   middle_name?: string;
   last_name: string;
+  student_email?: string;
   gender: Gender;
   date_of_birth: string;
   class_id: string;
   guardian_name: string;
+  guardian_email?: string;
   guardian_contact: string;
   address?: string;
-  status?: StudentStatus; // optional, but can be suspended/archived now
+  status?: StudentStatus;
   created_by: string;
 }
 
-// Input for updating a student
 export interface UpdateStudentInput {
   admission_number?: string;
   first_name?: string;
   middle_name?: string;
   last_name?: string;
+  student_email?: string;
   gender?: Gender;
   date_of_birth?: string;
   class_id?: string;
   guardian_name?: string;
+  guardian_email?: string;
   guardian_contact?: string;
   address?: string;
-  status?: StudentStatus; // can update to suspended/archived
+  status?: StudentStatus;
   created_by?: string;
 }
 
-// Optional filters for querying students
 export interface StudentFilters {
   status?: StudentStatus;
   class_id?: string;

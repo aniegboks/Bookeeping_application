@@ -18,14 +18,14 @@ interface AcademicSessionsTrendProps {
 }
 
 // --- DIMMED COLOR PALETTE & STROKE SETTINGS ---
-const activeColorMuted = "#34D399"; // Emerald-400 (Softer Green)
-const inactiveColorMuted = "#FBBF24"; // Amber-400 (Softer Yellow/Amber)
+const activeColorMuted = "#34D399"; 
+const inactiveColorMuted = "#FBBF24"; 
 
 const THIN_STROKE_WIDTH = 1.5;
 
 // Define soft gradient fill colors (very transparent)
-const activeGradientStart = "rgba(52, 211, 153, 0.1)"; // Emerald-400 at 10% opacity
-const inactiveGradientStart = "rgba(251, 191, 36, 0.1)"; // Amber-400 at 10% opacity
+const activeGradientStart = "rgba(52, 211, 153, 0.1)"; 
+const inactiveGradientStart = "rgba(251, 191, 36, 0.1)"; 
 
 
 export default function AcademicSessionsTrend({ sessions }: AcademicSessionsTrendProps) {

@@ -158,7 +158,6 @@ export default function UOMsPage() {
 
             {!showForm && <StatsCards uoms={uoms} filteredUOMs={filteredUOMs} />}
 
-            <Trends uoms={uoms} />
 
             {showForm ? (
               <UOMForm
@@ -177,15 +176,6 @@ export default function UOMsPage() {
               />
             )}
 
-            {showDeleteModal && deletingUOM && (
-              <DeleteUOMModal
-                uomName={deletingUOM.name}
-                onConfirm={confirmDelete}
-                onCancel={() => setShowDeleteModal(false)}
-                isDeleting={isDeleting}
-              />
-            )}
-
             {!showForm && (
               <div className="flex justify-start rounded-sm mt-4">
                 <button
@@ -198,6 +188,18 @@ export default function UOMsPage() {
                   </span>
                 </button>
               </div>
+            )}
+
+            <Trends uoms={uoms} />
+
+
+            {showDeleteModal && deletingUOM && (
+              <DeleteUOMModal
+                uomName={deletingUOM.name}
+                onConfirm={confirmDelete}
+                onCancel={() => setShowDeleteModal(false)}
+                isDeleting={isDeleting}
+              />
             )}
           </div>
         )}

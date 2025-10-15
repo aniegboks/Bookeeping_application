@@ -38,7 +38,7 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
-  
+
 
   useEffect(() => {
     fetchSessions();
@@ -78,7 +78,6 @@ export default function Dashboard() {
 
         {/* Stats */}
         <StatsCards sessions={sessions} />
-        <AcademicSessionsTrend sessions={sessions} />
 
         {/* Table */}
         <SessionsTable
@@ -100,18 +99,21 @@ export default function Dashboard() {
             });
           }}
         />
+        <Container>
+          <div className="flex items-center justify-start mt-4">
+            <button
+              onClick={downloadSpreadsheet}
+              className="bg-[#3D4C63] text-white flex items-center gap-2 hover:bg-[#495C79] transition-colors px-4 py-2 rounded-sm text-sm"
+            >
+              <Download className="w-5 h-5" />
+              <span>Export</span>
+            </button>
+          </div>
+        </Container>
+        <AcademicSessionsTrend sessions={sessions} />
+
       </Container>
-      <Container>
-        <div className="flex items-center justify-start mt-4">
-          <button
-            onClick={downloadSpreadsheet}
-            className="bg-[#3D4C63] text-white flex items-center gap-2 hover:bg-[#495C79] transition-colors px-4 py-2 rounded-sm text-sm"
-          >
-            <Download className="w-5 h-5" />
-            <span>Export</span>
-          </button>
-        </div>
-      </Container>
+
 
       {/* Modal */}
       {showModal && (

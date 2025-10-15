@@ -24,7 +24,6 @@ export default function RolePieChart({ users }: RolePieChartProps) {
   const roleData = [
     { name: "Super Admin", value: users.filter(u => u.roles?.includes("super_admin")).length },
     { name: "Admin", value: users.filter(u => u.roles?.includes("admin")).length },
-    { name: "Teacher", value: users.filter(u => u.roles?.includes("teacher")).length },
     { name: "User", value: users.filter(u => u.roles?.includes("user")).length },
   ];
 

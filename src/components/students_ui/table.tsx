@@ -7,7 +7,7 @@ interface StudentTableProps {
   onEdit: (student: Student) => void;
   onDelete: (student: Student) => void;
   loading?: boolean;
-  pageSize?: number; // Optional, default to 10
+  pageSize?: number;
 }
 
 export default function StudentTable({
@@ -47,12 +47,15 @@ export default function StudentTable({
         return "bg-purple-100 text-purple-800";
       case "transferred":
         return "bg-blue-100 text-blue-800";
+      case "suspended":
+        return "bg-yellow-100 text-yellow-800";
+      case "archived":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  // Slice students for current page
   const paginatedStudents = students.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
@@ -66,6 +69,9 @@ export default function StudentTable({
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Student
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Admission No
@@ -103,13 +109,21 @@ export default function StudentTable({
                     </div>
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {student.first_name} {student.middle_name && `${student.middle_name} `}{student.last_name}
+                        {student.first_name}{" "}
+                        {student.middle_name && `${student.middle_name} `}
+                        {student.last_name}
                       </div>
-                      <div className="text-xs text-gray-500 max-w-[150px] truncate" title={student.id}>
+                      <div
+                        className="text-xs text-gray-500 max-w-[150px] truncate"
+                        title={student.id}
+                      >
                         ID: {student.id}
                       </div>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900 truncate max-w-[180px]" title={student.student_email || "-"}>
+                  {student.student_email || "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {student.admission_number}
@@ -122,11 +136,21 @@ export default function StudentTable({
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <div className="max-w-[200px]">
-                    <div className="font-medium truncate">{student.guardian_name}</div>
-                    <div className="text-gray-500 text-xs truncate">{student.guardian_contact}</div>
+                    <div className="font-medium truncate">
+                      {student.guardian_name}
+                    </div>
+                    <div className="text-gray-500 text-xs truncate">
+                      {student.guardian_contact}
+                    </div>
+                    <div className="text-gray-400 text-xs truncate" title={student.guardian_email || "-"}>
+                      {student.guardian_email || "-"}
+                    </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate" title={student.address || "-"}>
+                <td
+                  className="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate"
+                  title={student.address || "-"}
+                >
                   {student.address || "-"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -162,9 +186,7 @@ export default function StudentTable({
         </table>
       </div>
 
-      {/* Pagination Controls */}
       <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
-
         <span className="text-sm text-gray-700">
           Page {currentPage} of {totalPages}
         </span>

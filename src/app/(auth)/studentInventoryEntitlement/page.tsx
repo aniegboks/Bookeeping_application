@@ -298,8 +298,6 @@ export default function StudentInventoryCollectionPage() {
       <Container>
         <div className="mt-2 pb-8">
           <StatsCards collections={collections} filteredCollections={filteredCollections} />
-          <Trends collections={collections} />
-
           <Controls
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -355,7 +353,7 @@ export default function StudentInventoryCollectionPage() {
             users={users}
           />
 
-          <div className="mt-6 flex justify-start">
+          <div className="my-4 flex justify-start">
             <button
               onClick={handleExport}
               className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-5 py-2 rounded-sm transition"
@@ -366,6 +364,7 @@ export default function StudentInventoryCollectionPage() {
               </span>
             </button>
           </div>
+          <Trends collections={collections} />
 
           {showDeleteModal && deletingCollection && (
             <DeleteModal

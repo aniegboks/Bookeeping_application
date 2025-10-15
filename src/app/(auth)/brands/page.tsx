@@ -153,7 +153,6 @@ export default function BrandsManagement() {
         </div>
 
         <StatsCards brands={brands} filteredBrands={filteredBrands} />
-        <Trends brands={brands} />
 
         <BrandsTable
           brands={filteredBrands}
@@ -163,6 +162,18 @@ export default function BrandsManagement() {
           openEditModal={openEditModal}
           handleDelete={openDeleteModal} // now opens modal
         />
+
+        <div className="flex items-center justify-start mt-4">
+          <button
+            onClick={exportToExcel}
+            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm hover:opacity-90 transition"
+          >
+            <Download className="w-5 h-5" />
+            <span>Export</span>
+          </button>
+        </div>
+        <Trends brands={brands} />
+
 
         {showModal && (
           <BrandModal
@@ -184,16 +195,6 @@ export default function BrandsManagement() {
             isDeleting={isDeleting}
           />
         )}
-
-        <div className="flex items-center justify-start mt-4">
-          <button
-            onClick={exportToExcel}
-            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm hover:opacity-90 transition"
-          >
-            <Download className="w-5 h-5" />
-            <span>Export</span>
-          </button>
-        </div>
       </Container>
     </div>
   );

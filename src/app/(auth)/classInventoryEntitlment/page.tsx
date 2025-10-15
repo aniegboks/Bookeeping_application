@@ -292,7 +292,6 @@ export default function ClassInventoryEntitlementsPage() {
         <div className="mt-2 pb-8">
           {/* Stats */}
           <StatsCards entitlements={entitlements} filteredEntitlements={filteredEntitlements} />
-          <EntitlementBarChart entitlements={entitlements} />
 
           {/* Controls */}
           <Controls
@@ -356,6 +355,9 @@ export default function ClassInventoryEntitlementsPage() {
               </span>
             </button>
           </div>
+
+          <EntitlementBarChart entitlements={entitlements} />
+
 
           {/* Delete Modal */}
           {showDeleteModal && deletingEntitlement && (

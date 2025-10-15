@@ -193,101 +193,100 @@ export default function SubCategoriesPage() {
   return (
     <div className="">
       <div className="mx-6">
-      <Container>
-        <div className="bg mt-6">
-          <StatsCards
-            total={categories.length}
-            addedToday={subCategories.length}
-            searchResults={filteredSubCategories.length}
-            viewMode={viewMode}
-          />
-
-          <Trends
-            subCategories={subCategories}
-          />
-
-          <div className="bg-white rounded-lgborder border border-gray-200">
-            <Controls
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              filterCategory={filterCategory}
-              onFilterChange={setFilterCategory}
-              categories={categories}
-              onAdd={() => {
-                setEditingItem(null);
-                setFormData({ name: "", category_id: "" });
-                setIsModalOpen(true);
-              }}
+        <Container>
+          <div className="bg mt-6">
+            <StatsCards
+              total={categories.length}
+              addedToday={subCategories.length}
+              searchResults={filteredSubCategories.length}
               viewMode={viewMode}
-              setViewMode={setViewMode}
             />
 
-            {viewMode === "list" ? (
-              <SubCategoriesTable
-                subCategories={filteredSubCategories}
+
+            <div className="bg-white rounded-lgborder border border-gray-200">
+              <Controls
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                filterCategory={filterCategory}
+                onFilterChange={setFilterCategory}
                 categories={categories}
-                loading={loading}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
                 onAdd={() => {
                   setEditingItem(null);
                   setFormData({ name: "", category_id: "" });
                   setIsModalOpen(true);
                 }}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
               />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pb-6">
-                {filteredSubCategories.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
-                  >
-                    <div className="flex items-center mb-2">
-                      <div className="p-2 rounded-full bg-purple-100 mr-3">
-                        <FolderOpen className="h-4 w-4 text-purple-600" />
+
+              {viewMode === "list" ? (
+                <SubCategoriesTable
+                  subCategories={filteredSubCategories}
+                  categories={categories}
+                  loading={loading}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onAdd={() => {
+                    setEditingItem(null);
+                    setFormData({ name: "", category_id: "" });
+                    setIsModalOpen(true);
+                  }}
+                />
+              ) : (
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pb-6">
+                  {filteredSubCategories.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
+                    >
+                      <div className="flex items-center mb-2">
+                        <div className="p-2 rounded-full bg-purple-100 mr-3">
+                          <FolderOpen className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <div className="font-medium text-gray-900">{item.name}</div>
                       </div>
-                      <div className="font-medium text-gray-900">{item.name}</div>
+                      <div className="text-xs text-gray-500 mb-2">
+                        {categories.find((c) => c.id === item.category_id)?.name ||
+                          "Unknown Category"}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Created: {new Date(item.created_at).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Updated: {new Date(item.updated_at).toLocaleDateString()}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 mb-2">
-                      {categories.find((c) => c.id === item.category_id)?.name ||
-                        "Unknown Category"}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Created: {new Date(item.created_at).toLocaleDateString()}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Updated: {new Date(item.updated_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </div>
+            <Container>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={exportSubCategoriesToExcel}
+                  className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm hover:bg-[#495C79] transition-colors btn-color"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
               </div>
-            )}
+            </Container>
+            <Trends subCategories={subCategories} />
+            <SubCategoryModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              onSubmit={handleSubmit}
+              loading={loading}
+              formData={formData}
+              setFormData={setFormData}
+              editingItem={editingItem}
+              categories={categories}
+            />
           </div>
+        </Container>
 
-          <SubCategoryModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onSubmit={handleSubmit}
-            loading={loading}
-            formData={formData}
-            setFormData={setFormData}
-            editingItem={editingItem}
-            categories={categories}
-          />
-        </div>
-      </Container>
 
-      <Container>
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={exportSubCategoriesToExcel}
-            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm hover:bg-[#495C79] transition-colors btn-color"
-          >
-            <Download className="w-5 h-5" />
-            Export
-          </button>
-        </div>
-      </Container>
       </div>
     </div>
   );

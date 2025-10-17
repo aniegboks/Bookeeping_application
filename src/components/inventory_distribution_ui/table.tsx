@@ -1,22 +1,40 @@
-// components/inventory_distribution_ui/distribution_table.tsx
-
+import { useState, useMemo } from "react";
 import { Edit, Package } from "lucide-react";
 import { InventoryDistribution } from "@/lib/types/inventory_distribution";
+import { SchoolClass } from "@/lib/types/classes";
+import { InventoryItem } from "@/lib/types/inventory_item";
 
 interface DistributionTableProps {
   distributions: InventoryDistribution[];
   onEdit: (distribution: InventoryDistribution) => void;
   loading?: boolean;
+  classes: SchoolClass[];
+  inventoryItems: InventoryItem[];
+  itemsPerPage?: number;
 }
 
 export default function DistributionTable({
   distributions,
   onEdit,
   loading = false,
+  classes,
+  inventoryItems,
+  itemsPerPage = 10,
 }: DistributionTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(distributions.length / itemsPerPage);
+
+  const currentDistributions = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return distributions.slice(startIndex, startIndex + itemsPerPage);
+  }, [distributions, currentPage, itemsPerPage]);
+
+  const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-white to-gray-50 rounded-sm border border-gray-200 p-12 text-center ">
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-sm border border-gray-200 p-12 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-500 mx-auto"></div>
         <p className="mt-4 text-gray-500 font-medium">Loading distributions...</p>
       </div>
@@ -31,8 +49,14 @@ export default function DistributionTable({
     );
   }
 
+  const getClassName = (classId: string) =>
+    classes.find((cls) => cls.id === classId)?.name || classId;
+
+  const getItemName = (itemId: string) =>
+    inventoryItems.find((item) => item.id === itemId)?.name || itemId;
+
   return (
-    <div className="bg-gradient-to-br from-white to-gray-50/50 rounded-sm  border border-gray-200 overflow-hidden">
+    <div className="bg-gradient-to-br from-white to-gray-50/50 rounded-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200 py-4">
@@ -41,10 +65,10 @@ export default function DistributionTable({
                 Distribution
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Class ID
+                Class
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Item ID
+                Item
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Quantity
@@ -61,7 +85,7 @@ export default function DistributionTable({
             </tr>
           </thead>
           <tbody className="bg-white/50 backdrop-blur-sm divide-y divide-gray-100">
-            {distributions.map((distribution) => (
+            {currentDistributions.map((distribution) => (
               <tr
                 key={distribution.id}
                 className="hover:bg-white/80 transition-all duration-200 group"
@@ -69,7 +93,7 @@ export default function DistributionTable({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl group-hover:scale-110 transition-transform duration-200">
-                      <Package size={20} className="text-blue-600" />
+                      <Package className="text-blue-600 h-4 w-4" />
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-gray-900">
@@ -81,21 +105,25 @@ export default function DistributionTable({
                     </div>
                   </div>
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  <div className="max-w-[120px] truncate" title={distribution.class_id}>
-                    {distribution.class_id}
+                  <div className="max-w-[120px] truncate" title={getClassName(distribution.class_id)}>
+                    {getClassName(distribution.class_id)}
                   </div>
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  <div className="max-w-[120px] truncate" title={distribution.inventory_item_id}>
-                    {distribution.inventory_item_id}
+                  <div className="max-w-[120px] truncate" title={getItemName(distribution.inventory_item_id)}>
+                    {getItemName(distribution.inventory_item_id)}
                   </div>
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-3 py-1.5 bg-gradient-to-r from-emerald-100 to-teal-100 text-teal-500 text-sm font-semibold rounded-lg">
                     {distribution.distributed_quantity}
                   </span>
                 </td>
+
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <div className="max-w-[150px]">
                     <div className="font-medium truncate">{distribution.receiver_name}</div>
@@ -104,13 +132,15 @@ export default function DistributionTable({
                     </div>
                   </div>
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                   {new Date(distribution.distribution_date).toLocaleDateString()}
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <button
                     onClick={() => onEdit(distribution)}
-                    className="p-2.5  text-[#3D4C63] hover:text-[#495C79] rounded-lg  transition-all duration-200 hover:scale-110"
+                    className="p-2.5 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-all duration-200 hover:scale-110"
                     title="Edit Distribution"
                   >
                     <Edit className="h-4 w-4" />
@@ -120,6 +150,29 @@ export default function DistributionTable({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-between items-center p-4 bg-gray-50 border-t border-gray-200 text-sm gap-4">
+        <span>
+          {currentPage} / {totalPages}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrev}
+            disabled={currentPage === 1}
+            className="px-3 py-1 border rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 bg-white"
+          >
+            Prev
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 border rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 bg-white"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

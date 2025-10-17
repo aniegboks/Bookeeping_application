@@ -9,19 +9,54 @@ interface StatsCardsProps {
 }
 
 interface CardProps {
-  title: string,
-  value: string | number,
-  icon: React.ReactNode,
-  colorBg: string,
-  progress: number,
-  description: string,
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  colorBg: string;
+  progress: number;
+  description: string;
 }
 
 export default function StatsCards({ transactions }: StatsCardsProps) {
   const totalTransactions = transactions.length || 0;
-  const purchaseCount = transactions.filter((t) => t.transaction_type === "purchase").length || 0;
-  const saleCount = transactions.filter((t) => t.transaction_type === "sale").length || 0;
-  const totalValue = transactions.reduce((sum, t) => sum + (t.in_cost || 0) + (t.out_cost || 0), 0) || 0;
+
+  // Purchases and Sales
+  const purchaseCount = transactions.filter(
+    (t) => t.transaction_type === "purchase"
+  ).length;
+  const saleCount = transactions.filter(
+    (t) => t.transaction_type === "sale"
+  ).length;
+
+  // Compute total value of transactions
+  const totalValue =
+    transactions.reduce(
+      (sum, t) => sum + (t.in_cost || 0) + (t.out_cost || 0),
+      0
+    ) || 0;
+
+  // --- Compute stock remaining ---
+  // Group all transactions to figure out total qty_in and qty_out
+  const totalQtyIn = transactions.reduce(
+    (sum, t) => sum + (t.qty_in || 0),
+    0
+  );
+  const totalQtyOut = transactions.reduce(
+    (sum, t) => sum + (t.qty_out || 0),
+    0
+  );
+
+  const remainingQty = totalQtyIn - totalQtyOut;
+
+  // Estimate remaining stock value = remainingQty * avg cost per item
+  const totalPurchaseValue = transactions
+    .filter((t) => t.transaction_type === "purchase")
+    .reduce((sum, t) => sum + (t.in_cost || 0), 0);
+
+  const avgCostPerItem =
+    totalQtyIn > 0 ? totalPurchaseValue / totalQtyIn : 0;
+
+  const remainingValue = remainingQty * avgCostPerItem;
 
   const stats = [
     {
@@ -37,24 +72,28 @@ export default function StatsCards({ transactions }: StatsCardsProps) {
       value: purchaseCount,
       icon: <TrendingDown className="text-green-600" size={24} />,
       colorBg: "#E6FFEF",
-      progress: totalTransactions ? (purchaseCount / totalTransactions) * 100 : 0,
+      progress: totalTransactions
+        ? (purchaseCount / totalTransactions) * 100
+        : 0,
       description: "Purchase transactions",
     },
     {
-      title: "Sales",
-      value: saleCount,
+      title: "Stock Remaining",
+      value: remainingQty,
       icon: <TrendingUp className="text-purple-600" size={24} />,
       colorBg: "#F0EBFF",
-      progress: totalTransactions ? (saleCount / totalTransactions) * 100 : 0,
-      description: "Sale transactions",
+      progress: 100,
+      description: "Total items left in stock",
     },
     {
-      title: "Total Value",
-      value: `₦ ${totalValue.toLocaleString()}`,
+      title: "Remaining Stock Value",
+      value: `₦ ${remainingValue.toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+      })}`,
       icon: <Wallet className="text-orange-600" size={24} />,
       colorBg: "#FFF4E6",
       progress: 100,
-      description: "Total transaction value",
+      description: "Total value of stock available",
     },
   ];
 
@@ -67,8 +106,14 @@ export default function StatsCards({ transactions }: StatsCardsProps) {
   );
 }
 
-function Card({ title, value, icon, colorBg, progress, description }: CardProps) {
-
+function Card({
+  title,
+  value,
+  icon,
+  colorBg,
+  progress,
+  description,
+}: CardProps) {
   return (
     <div className="bg-white rounded-sm p-6 border border-gray-200 hover:shadow-md transition">
       <div className="flex items-center gap-4">
@@ -82,7 +127,11 @@ function Card({ title, value, icon, colorBg, progress, description }: CardProps)
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="h-2 rounded-full"
-              style={{ width: `${progress}%`, backgroundColor: colorBg, opacity: 0.4 }}
+              style={{
+                width: `${progress}%`,
+                backgroundColor: colorBg,
+                opacity: 0.4,
+              }}
             ></div>
           </div>
         </div>

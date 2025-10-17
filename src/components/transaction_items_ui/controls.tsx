@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Filter } from "lucide-react";
+import { useEffect } from "react";
+import { Search, Filter, Plus } from "lucide-react";
 
 interface ControlsProps {
   searchTerm: string;
@@ -22,6 +22,12 @@ export default function Controls({
   onStatusFilterChange,
   onAddTransaction,
 }: ControlsProps) {
+  useEffect(() => {
+    if (!typeFilter) {
+      onTypeFilterChange("purchase");
+    }
+  }, [typeFilter, onTypeFilterChange]);
+
   return (
     <div className="bg-white rounded-sm border border-gray-200 border-b-0 p-4 relative">
       <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -80,7 +86,8 @@ export default function Controls({
               onClick={onAddTransaction}
               className="bg-[#3D4C63] text-white px-6 py-2 rounded-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap w-full lg:w-auto justify-center"
             >
-              Add Transaction
+              <Plus className="h-4 w-4" />
+              New Purchase
             </button>
           </div>
         </div>

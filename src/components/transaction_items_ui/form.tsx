@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { InventoryTransaction, CreateInventoryTransactionInput } from "@/lib/types/inventory_transactions";
+import {
+  InventoryTransaction,
+  CreateInventoryTransactionInput,
+} from "@/lib/types/inventory_transactions";
 import { InventoryItem } from "@/lib/types/inventory_item";
 import { Supplier } from "@/lib/types/suppliers";
 import { User } from "@/lib/types/user";
 import SmallLoader from "../ui/small_loader";
 
 interface TransactionFormProps {
-  transaction?: InventoryTransaction; // optional, for edit
+  transaction?: InventoryTransaction;
   onSubmit: (data: CreateInventoryTransactionInput) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
@@ -39,10 +42,11 @@ export default function TransactionForm({
     in_cost: transaction?.in_cost || 0,
     qty_out: transaction?.qty_out || 0,
     out_cost: transaction?.out_cost || 0,
-    status: transaction?.status || "completed",
+    status: "completed" as const, // ✅ locked to completed
     reference_no: transaction?.reference_no || "",
     notes: transaction?.notes || "",
-    transaction_date: transaction?.transaction_date || new Date().toISOString(),
+    transaction_date:
+      transaction?.transaction_date || new Date().toISOString(),
     created_by: transaction?.created_by || currentUserId,
   });
 
@@ -50,37 +54,46 @@ export default function TransactionForm({
   const isSale = formData.transaction_type === "sale";
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        ["qty_in", "qty_out", "in_cost", "out_cost"].includes(name)
-          ? Number(value)
-          : value,
+      [name]: ["qty_in", "qty_out", "in_cost", "out_cost"].includes(name)
+        ? Number(value)
+        : value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isPurchase && (!formData.qty_in || formData.qty_in <= 0)) {
+    const dataToSubmit: CreateInventoryTransactionInput = {
+      ...formData,
+      status: "completed" as const,
+    };
+
+    if (isPurchase && (!dataToSubmit.qty_in || dataToSubmit.qty_in <= 0)) {
       toast.error("Quantity In must be greater than 0 for a purchase");
       return;
     }
-    if (isSale && (!formData.qty_out || formData.qty_out <= 0)) {
+    if (isSale && (!dataToSubmit.qty_out || dataToSubmit.qty_out <= 0)) {
       toast.error("Quantity Out must be greater than 0 for a sale");
       return;
     }
 
-    await onSubmit(formData);
+    await onSubmit(dataToSubmit);
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 overflow-y-auto max-h-[90vh]">
-        <h2 className="text-2xl font-bold mb-6">{transaction ? "Edit Transaction" : "Add Transaction"}</h2>
+        <h2 className="text-2xl font-bold mb-6">
+          {transaction ? "Edit Purchase" : "Add Purchase"}
+        </h2>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Item */}
@@ -213,7 +226,9 @@ export default function TransactionForm({
 
             {/* Supplier / Receiver Text */}
             <div className="pb-4">
-              <label className="block font-medium mb-1">Supplier / Receiver</label>
+              <label className="block font-medium mb-1">
+                Supplier / Receiver
+              </label>
               <input
                 type="text"
                 name="supplier_receiver"
@@ -221,22 +236,6 @@ export default function TransactionForm({
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
-            </div>
-
-            {/* Status */}
-            <div className="pb-4">
-              <label className="block font-medium mb-1">Status</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-2"
-              >
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="deleted">Deleted</option>
-              </select>
             </div>
 
             {/* Transaction Date */}
@@ -290,9 +289,13 @@ export default function TransactionForm({
               disabled={isSubmitting}
               className="px-4 py-2 rounded-lg bg-[#3D4C63] text-white hover:bg-[#495C79] disabled:opacity-50"
             >
-              {isSubmitting ? <span className="flex gap-2">
-                <SmallLoader /> <p className="text-sm">Saving...</p>
-              </span> : "Save Transaction"}
+              {isSubmitting ? (
+                <span className="flex gap-2">
+                  <SmallLoader /> <p className="text-sm">Saving...</p>
+                </span>
+              ) : (
+                "Save Purchase"
+              )}
             </button>
           </div>
         </form>

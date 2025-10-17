@@ -22,5 +22,6 @@ export const AcademicSessionTerms: NavItem[] = [
   { label: "Students", link: "/students", description: "View and manage students" },
   { label: "Student Collection", link: "/studentInventoryEntitlement", description: "Assign inventory to students" },
   { label: "Inventory Distributions", link: "/inventoryDistrbution", description: "Distribute inventory to classes and students" },
-  //{ label: "Inventory Summary", link: "/inventorySummary", description: "View and manage inventory summary" },
+  { label: "Inventory Summary", link: "/inventorySummary", description: "View and manage inventory summary" },
+  { label: "Reports", link: "/studentsReport", description: "Generate reports and analytics" },
 ];

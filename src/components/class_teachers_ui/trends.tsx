@@ -92,7 +92,7 @@ export default function TeacherStatusChart({ teachers }: TeacherStatusChartProps
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="mb-8 bg-white rounded-sm border border-gray-200 transition-shadow duration-300"
+      className="my-4 bg-white rounded-sm border border-gray-200 transition-shadow duration-300"
     >
       <CardHeader className="px-6 pt-6 pb-2">
         <CardTitle className="text-lg font-semibold text-gray-800">

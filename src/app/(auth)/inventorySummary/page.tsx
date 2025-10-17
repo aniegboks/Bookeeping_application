@@ -27,10 +27,16 @@ export default function InventorySummaryPage() {
       // Fetch low-stock inventory items
       const data = await inventorySummaryApi.getLowStock();
       setSummaries(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching inventory summaries:", err);
 
-      const message = err instanceof Error ? err.message : String(err);
+      let message = "An unknown error occurred";
+
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === "string") {
+        message = err;
+      }
 
       // Gracefully handle 404s (no low-stock data)
       if (message.toLowerCase().includes("not found")) {
@@ -118,6 +124,7 @@ export default function InventorySummaryPage() {
       {!loading && summaries.length === 0 && (
         <div className="p-4 mb-6 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-green-800 font-medium">
+            All items are sufficiently stocked — no low stock alerts.
           </p>
         </div>
       )}

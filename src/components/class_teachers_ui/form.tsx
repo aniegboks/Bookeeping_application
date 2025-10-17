@@ -1,4 +1,4 @@
-// components/class_teacher_ui/teacher_form.tsx
+"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -7,18 +7,7 @@ import {
   ClassTeacherStatus,
 } from "@/lib/types/class_teacher";
 import { SchoolClass } from "@/lib/types/classes";
-import { AcademicSession } from "@/lib/types/academic_session";
 import { User } from "@/lib/types/user";
-
-interface TeacherFormProps {
-  teacher?: ClassTeacher;
-  onSubmit: (data: CreateClassTeacherInput) => Promise<void>;
-  onCancel: () => void;
-  isSubmitting: boolean;
-  classes: SchoolClass[];
-  academicSessions: AcademicSession[];
-  users: User[];
-}
 
 // Helper to format date for datetime-local input
 const toDateTimeLocal = (dateString: string | undefined): string => {
@@ -30,33 +19,38 @@ const toDateTimeLocal = (dateString: string | undefined): string => {
   }
 };
 
+interface TeacherFormProps {
+  teacher?: ClassTeacher;
+  onSubmit: (data: CreateClassTeacherInput) => Promise<void>;
+  onCancel: () => void;
+  isSubmitting: boolean;
+  classes: SchoolClass[];
+  users: User[];
+}
+
 export default function TeacherForm({
   teacher,
   onSubmit,
   onCancel,
   isSubmitting,
   classes,
-  academicSessions,
   users,
 }: TeacherFormProps) {
   const [formData, setFormData] = useState<CreateClassTeacherInput>({
     class_id: "",
-    session_term_id: "",
     email: "",
-    name: "", // <-- added name
+    name: "",
     role: "class_teacher",
     status: "active",
     assigned_at: new Date().toISOString(),
+    unassigned_at: undefined,
     created_by: "",
   });
 
   useEffect(() => {
     if (teacher) {
-      const sessionTermId = teacher.session_term_id ?? ""; 
-
       setFormData({
         class_id: teacher.class_id,
-        session_term_id: sessionTermId,
         email: teacher.email,
         name: teacher.name || "",
         role: teacher.role,
@@ -66,16 +60,15 @@ export default function TeacherForm({
         created_by: teacher.created_by,
       });
     } else {
-      // Defaults when creating
       setFormData((prev) => ({
         ...prev,
         class_id: classes.length > 0 ? classes[0].id : "",
-        session_term_id:
-          academicSessions.length > 0 ? academicSessions[0].id : "",
         created_by: users.length > 0 ? users[0].id : "",
+        name: users.length > 0 ? users[0].name || users[0].username || "" : "",
+        email: users.length > 0 ? users[0].email || "" : "",
       }));
     }
-  }, [teacher, classes, academicSessions, users]);
+  }, [teacher, classes, users]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -102,8 +95,7 @@ export default function TeacherForm({
     await onSubmit(formData);
   };
 
-  const hasData =
-    classes.length > 0 && academicSessions.length > 0 && users.length > 0;
+  const hasData = classes.length > 0 && users.length > 0;
 
   const FormContent = (
     <>
@@ -155,31 +147,7 @@ export default function TeacherForm({
             </select>
           </div>
 
-          {/* 3. Academic Session */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Academic Session/Term <span className="text-gray-500">*</span>
-            </label>
-            <select
-              name="session_term_id"
-              value={formData.session_term_id}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              required
-              disabled={isSubmitting}
-            >
-              <option value="" disabled>
-                Select Session/Term
-              </option>
-              {academicSessions.map((session) => (
-                <option key={session.id} value={session.id}>
-                  {session.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 4. Status */}
+          {/* 3. Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
               Status <span className="text-gray-500">*</span>
@@ -199,44 +167,44 @@ export default function TeacherForm({
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
             </select>
           </div>
 
-          {/* 5. Teacher Name */}
+          {/* 4 & 5. Teacher Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Teacher Name <span className="text-gray-500">*</span>
+              Teacher <span className="text-gray-500">*</span>
             </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
+            <select
+              name="teacher_id"
+              value={formData.created_by}
+              onChange={(e) => {
+                const selectedUser = users.find(u => u.id === e.target.value);
+                if (!selectedUser) return;
+                setFormData(prev => ({
+                  ...prev,
+                  created_by: selectedUser.id,
+                  name: selectedUser.name || selectedUser.username || "",
+                  email: selectedUser.email || "",
+                }));
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              placeholder="Enter full name"
               required
               disabled={isSubmitting}
-            />
+            >
+              <option value="" disabled>
+                Select a Teacher
+              </option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.name || u.username || u.email}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* 6. Teacher Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Teacher (Email) <span className="text-gray-500">*</span>
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              placeholder="teacher@example.com"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* 7. Assigned At */}
+          {/* 6. Assigned At */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
               Assigned At <span className="text-gray-500">*</span>
@@ -251,7 +219,7 @@ export default function TeacherForm({
             />
           </div>
 
-          {/* 8. Unassigned At */}
+          {/* 7. Unassigned At */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
               Unassigned At
@@ -265,30 +233,6 @@ export default function TeacherForm({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
               disabled={isSubmitting}
             />
-          </div>
-
-          {/* 9. Created By */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Created By (User) <span className="text-gray-500">*</span>
-            </label>
-            <select
-              name="created_by"
-              value={formData.created_by}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              required
-              disabled={isSubmitting}
-            >
-              <option value="" disabled>
-                Select a User
-              </option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.username || u.name || u.email || u.id}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
@@ -327,7 +271,7 @@ export default function TeacherForm({
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
         {!hasData && !teacher ? (
           <div className="text-gray-500 py-8 text-center">
-            Loading classes, sessions, and teachers...
+            Loading classes and teachers...
           </div>
         ) : (
           FormContent

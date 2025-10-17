@@ -11,8 +11,6 @@ import Controls from "@/components/class_teachers_ui/control";
 import TeacherTable from "@/components/class_teachers_ui/table";
 import TeacherForm from "@/components/class_teachers_ui/form";
 import DeleteModal from "@/components/class_teachers_ui/modal";
-import { AcademicSession as AcademicSessionType } from "@/lib/types/academic_session";
-import { academicSessionsApi } from "@/lib/academic_session";
 import { SchoolClass } from "@/lib/types/classes";
 import { schoolClassApi } from "@/lib/classes";
 import { User } from "@/lib/types/user";
@@ -27,7 +25,6 @@ import { Download } from "lucide-react";
 export default function ClassTeachersPage() {
   const [teachers, setTeachers] = useState<ClassTeacher[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [academicSessions, setAcademicSessions] = useState<AcademicSessionType[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,18 +69,6 @@ export default function ClassTeachersPage() {
     }
   };
 
-  const loadAcademicSessions = async () => {
-    try {
-      const data = await academicSessionsApi.getAll();
-      setAcademicSessions(data);
-    } catch (err: unknown) {
-      console.error("Failed to load academic sessions:", err);
-      let errorMessage = "Failed to load academic sessions.";
-      if (err instanceof Error) errorMessage += " " + err.message;
-      toast.error(errorMessage);
-    }
-  };
-
   const loadUsers = async () => {
     try {
       const data = await userApi.getAll();
@@ -101,7 +86,7 @@ export default function ClassTeachersPage() {
     const loadInitialData = async () => {
       setInitialLoading(true);
       setDependenciesLoading(true);
-      await Promise.all([loadTeachers(), loadClasses(), loadAcademicSessions(), loadUsers()]);
+      await Promise.all([loadTeachers(), loadClasses(), loadUsers()]);
       setDependenciesLoading(false);
       setInitialLoading(false);
     };
@@ -114,8 +99,7 @@ export default function ClassTeachersPage() {
       teacher.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       teacher.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       teacher.class_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      teacher.teacher_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      teacher.session_term_id?.toLowerCase().includes(searchTerm.toLowerCase());
+      (teacher.teacher_id ?? "").toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = !statusFilter || teacher.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -135,19 +119,7 @@ export default function ClassTeachersPage() {
         toast.dismiss(loadingToast);
         toast.success("Teacher assignment updated successfully!");
       } else {
-        const { class_id, session_term_id, email, name, role, status, assigned_at, unassigned_at, created_by } =
-          data as CreateClassTeacherInput;
-        const createData: CreateClassTeacherInput = {
-          class_id,
-          session_term_id,
-          email,
-          name,
-          role,
-          status,
-          assigned_at,
-          unassigned_at,
-          created_by,
-        };
+        const createData: CreateClassTeacherInput = data as CreateClassTeacherInput;
         await classTeacherApi.create(createData);
         toast.dismiss(loadingToast);
         toast.success("Teacher assignment created successfully!");
@@ -158,13 +130,9 @@ export default function ClassTeachersPage() {
       await loadTeachers();
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
-      if (err instanceof Error) {
-        console.error("Form submission failed:", err);
-        toast.error("Failed to save teacher assignment: " + err.message);
-      } else {
-        console.error("Form submission failed:", err);
-        toast.error("Failed to save teacher assignment");
-      }
+      const message = err instanceof Error ? err.message : "Failed to save teacher assignment";
+      console.error("Form submission failed:", err);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -194,13 +162,9 @@ export default function ClassTeachersPage() {
       await loadTeachers();
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
-      if (err instanceof Error) {
-        console.error("Delete failed:", err);
-        toast.error("Failed to delete teacher assignment: " + err.message);
-      } else {
-        console.error("Delete failed:", err);
-        toast.error("Failed to delete teacher assignment");
-      }
+      const message = err instanceof Error ? err.message : "Failed to delete teacher assignment";
+      console.error("Delete failed:", err);
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
@@ -226,25 +190,21 @@ export default function ClassTeachersPage() {
 
     const data = filteredTeachers.map((t) => {
       const classInfo = classes.find((c) => c.id === t.class_id);
-      const sessionInfo = academicSessions.find((s) => s.id === t.session_term_id);
 
       return {
-        "Teacher ID": t.teacher_id,        // matches table
-        "Email": t.email || "",
-        "Class ID": t.class_id,
-        "Class Name": classInfo?.name || "",
-        "Session Term ID": t.session_term_id,
-        "Session Name": sessionInfo?.name || "",
-        "Role": t.role,
-        "Status": t.status,
+        "Teacher Name": t.name || "",
+        "Teacher Email": t.email || "",
+        "Class": classInfo?.name || "",
+        "Role": t.role || "",
+        "Status": t.status || "",
         "Assigned At": t.assigned_at ? new Date(t.assigned_at).toLocaleDateString() : "",
-        "ID": t.id,
       };
     });
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Teachers");
+
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(blob, `teachers_export_${new Date().toISOString()}.xlsx`);
@@ -279,7 +239,7 @@ export default function ClassTeachersPage() {
                 {editingTeacher ? "Edit Teacher Assignment" : "Create New Teacher Assignment"}
               </h2>
               {dependenciesLoading ? (
-                <span className="flex">
+                <span className="flex items-center gap-2">
                   <SmallLoader />
                   <p className="text-sm">Loading form dependencies...</p>
                 </span>
@@ -290,7 +250,6 @@ export default function ClassTeachersPage() {
                   onCancel={handleCancel}
                   isSubmitting={isSubmitting}
                   classes={classes}
-                  academicSessions={academicSessions}
                   users={users}
                 />
               )}
@@ -302,7 +261,9 @@ export default function ClassTeachersPage() {
             onEdit={handleEdit}
             onDelete={handleDeleteRequest}
             loading={loading}
+            classes={classes}
           />
+
           <div className="mt-4 flex justify-start">
             <button
               className="px-4 py-2 rounded bg-[#3D4C63] hover:bg-[#495C79] text-white transition"
@@ -314,8 +275,8 @@ export default function ClassTeachersPage() {
               </span>
             </button>
           </div>
-          <TeacherStatusChart teachers={teachers} />
 
+          <TeacherStatusChart teachers={teachers} />
 
           {showDeleteModal && deletingTeacher && (
             <DeleteModal

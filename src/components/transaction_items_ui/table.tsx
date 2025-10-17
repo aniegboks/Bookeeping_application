@@ -11,7 +11,7 @@ interface TransactionTableProps {
   onEdit: (transaction: InventoryTransaction) => void;
   onDelete: (transaction: InventoryTransaction) => void;
   loading?: boolean;
-  itemsPerPage?: number; // optional prop to control pagination size
+  itemsPerPage?: number;
 }
 
 export default function TransactionTable({
@@ -23,13 +23,30 @@ export default function TransactionTable({
   itemsPerPage = 10,
 }: TransactionTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
-
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
 
-  // Ensure currentPage is within bounds if transactions array changes
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages || 1);
   }, [transactions.length, totalPages, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((p) => Math.max(p - 1, 1));
+  const handleNextPage = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
+
+  const paginatedTransactions = transactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const getItemName = (id: string) => items.find((i) => i.id === id)?.name || id;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed": return "bg-green-100 text-green-800";
+      case "pending": return "bg-yellow-100 text-yellow-800";
+      case "cancelled": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
 
   if (loading) {
     return (
@@ -48,122 +65,84 @@ export default function TransactionTable({
     );
   }
 
-  const paginatedTransactions = transactions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      case "on_hold":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getItemName = (id: string) => {
-    const item = items.find((i) => i.id === id);
-    return item ? item.name : id;
-  };
-
-  const handlePrevPage = () => setCurrentPage((p) => Math.max(p - 1, 1));
-  const handleNextPage = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
-
   return (
     <div className="bg-white rounded-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Item
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Quantity In/Out
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Cost</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Out Cost</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
+
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedTransactions.map((transaction) => (
-              <tr
-                key={transaction.id}
-                className="hover:bg-gray-50 transition-colors"
-              >
+            {paginatedTransactions.map((tx) => (
+              <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
+                {/* Transaction Type */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    {transaction.transaction_type === "purchase" ? (
+                    {tx.transaction_type === "purchase" ? (
                       <ArrowDownCircle className="text-green-600 w-4 h-4" />
                     ) : (
                       <ArrowUpCircle className="text-purple-600 w-4 h-4" />
                     )}
                     <span className="text-sm font-medium text-gray-900 capitalize">
-                      {transaction.transaction_type}
+                      {tx.transaction_type}
                     </span>
                   </div>
                 </td>
+
+                {/* Item Name */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div
-                    className="max-w-[150px] truncate"
-                    title={getItemName(transaction.item_id)}
-                  >
-                    {getItemName(transaction.item_id)}
+                  <div className="max-w-[150px] truncate" title={getItemName(tx.item_id)}>
+                    {getItemName(tx.item_id)}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {transaction.qty_in > 0 ? (
-                    <span className="text-green-600 font-medium">
-                      +{transaction.qty_in}
-                    </span>
-                  ) : (
-                    <span className="text-purple-600 font-medium">
-                      -{transaction.qty_out}
-                    </span>
-                  )}
+
+                {/* Quantity */}
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  {tx.transaction_type === "purchase" ? tx.qty_in : tx.qty_out}
                 </td>
+
+                {/* In Cost */}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">{tx.in_cost}</td>
+
+                {/* Out Cost */}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-medium">{tx.out_cost}</td>
+
+                {/* Status */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                      transaction.status
-                    )}`}
+                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(tx.status)}`}
                   >
-                    {transaction.status}
+                    {tx.status}
                   </span>
                 </td>
+
+                {/* Date */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {transaction.transaction_date
-                    ? new Date(transaction.transaction_date).toLocaleDateString()
-                    : "—"}
+                  {tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString() : "—"}
                 </td>
+
+                {/* Actions */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => onEdit(transaction)}
+                      onClick={() => onEdit(tx)}
                       className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
                       title="Edit Transaction"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => onDelete(transaction)}
+                      onClick={() => onDelete(tx)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete Transaction"
                     >
@@ -181,9 +160,9 @@ export default function TransactionTable({
       <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
         <span className="text-sm text-gray-700">
           Showing {(currentPage - 1) * itemsPerPage + 1} –{" "}
-          {Math.min(currentPage * itemsPerPage, transactions.length)} of{" "}
-          {transactions.length}
+          {Math.min(currentPage * itemsPerPage, transactions.length)} of {transactions.length}
         </span>
+
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevPage}
@@ -192,7 +171,6 @@ export default function TransactionTable({
           >
             Previous
           </button>
-
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}

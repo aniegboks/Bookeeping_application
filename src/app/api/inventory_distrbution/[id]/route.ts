@@ -8,10 +8,12 @@ const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/inventory_transa
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const res = await fetch(`${API_BASE_URL}/${params.id}`, {
+    const { id } = await params;
+    
+    const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -45,12 +47,13 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
+    const { id } = await params;
     const body = await req.json();
 
-    const res = await fetch(`${API_BASE_URL}/${params.id}`, {
+    const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -87,10 +90,12 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const res = await fetch(`${API_BASE_URL}/${params.id}`, {
+    const { id } = await params;
+    
+    const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: req.headers.get("authorization") || "",

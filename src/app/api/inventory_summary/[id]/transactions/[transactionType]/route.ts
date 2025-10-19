@@ -4,12 +4,12 @@ import { cookies } from "next/headers";
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://inventory-backend-hm7r.onrender.com";
 
 /**
- * GET /api/proxy/inventory_summary/[inventoryId]/transactions/[transactionType]
+ * GET /api/proxy/inventory_summary/[id]/transactions/[transactionType]
  * Get transaction summary by type for an inventory item
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ inventoryId: string; transactionType: string }> }
+  { params }: { params: Promise<{ id: string; transactionType: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -22,9 +22,9 @@ export async function GET(
       );
     }
 
-    const { inventoryId, transactionType } = await params;
+    const { id, transactionType } = await params;
 
-    if (!inventoryId) {
+    if (!id) {
       return NextResponse.json(
         { message: "Inventory ID is required" },
         { status: 400 }
@@ -39,7 +39,7 @@ export async function GET(
     }
 
     const response = await fetch(
-      `${BACKEND_URL}/api/v1/inventory_summary/${inventoryId}/transactions/${transactionType}`,
+      `${BACKEND_URL}/api/v1/inventory_summary/${id}/transactions/${transactionType}`,
       {
         method: "GET",
         headers: {

@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
-import { InventoryDistribution } from "@/lib/types/inventory_distribution";
+import { 
+  InventoryDistribution, 
+  CreateInventoryDistributionInput,
+  UpdateInventoryDistributionInput 
+} from "@/lib/types/inventory_distribution";
 import { inventoryDistributionApi } from "@/lib/inventory_distrbution";
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
@@ -32,11 +36,11 @@ export default function ClassInventoryDistributionsPage() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [academicSessions, setAcademicSessions] = useState<AcademicSession[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser] = useState<User | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [initialLoading, setInitialLoading] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [editingDistribution, setEditingDistribution] = useState<InventoryDistribution | null>(null);
@@ -96,9 +100,11 @@ export default function ClassInventoryDistributionsPage() {
   }, [distributions]);
 
   // Handle form submission (create/update)
-  const handleFormSubmit = async (data: any) => {
-    if (currentUser) {
-      data.created_by = currentUser.id; // Auto-fill created_by
+  const handleFormSubmit = async (data: CreateInventoryDistributionInput | UpdateInventoryDistributionInput) => {
+    const formData = { ...data } as CreateInventoryDistributionInput | UpdateInventoryDistributionInput;
+    
+    if (currentUser && !editingDistribution) {
+      (formData as CreateInventoryDistributionInput).created_by = currentUser.id;
     }
 
     setIsSubmitting(true);
@@ -108,14 +114,17 @@ export default function ClassInventoryDistributionsPage() {
 
     try {
       if (editingDistribution) {
-        const updated = await inventoryDistributionApi.update(editingDistribution.id, data);
+        const updated = await inventoryDistributionApi.update(
+          editingDistribution.id, 
+          formData as UpdateInventoryDistributionInput
+        );
         toast.dismiss(loadingToast);
         toast.success("Distribution updated successfully!");
         setDistributions((prev) =>
           prev.map((d) => (d.id === updated.id ? updated : d))
         );
       } else {
-        const created = await inventoryDistributionApi.create(data);
+        const created = await inventoryDistributionApi.create(formData as CreateInventoryDistributionInput);
         toast.dismiss(loadingToast);
         toast.success("Distribution created successfully!");
         setDistributions((prev) => [...prev, created]);
@@ -123,10 +132,11 @@ export default function ClassInventoryDistributionsPage() {
 
       setShowForm(false);
       setEditingDistribution(null);
-    } catch (err: any) {
+    } catch (err) {
       toast.dismiss(loadingToast);
       console.error("Form submission failed:", err);
-      toast.error("Failed to save distribution: " + err.message);
+      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+      toast.error("Failed to save distribution: " + errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -187,6 +197,7 @@ export default function ClassInventoryDistributionsPage() {
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(blob, `distributions_export_${new Date().toISOString()}.xlsx`);
+    toast.success("Excel file exported successfully!");
   };
 
   if (initialLoading) {
@@ -240,7 +251,7 @@ export default function ClassInventoryDistributionsPage() {
               onClick={exportToExcel}
             >
               <Download className="w-5 h-5" />
-              Export
+              Export to Excel
             </button>
           </div>
 

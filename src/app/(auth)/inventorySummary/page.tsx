@@ -8,7 +8,6 @@ import { InventorySummaryStats } from "@/components/inventory_summary/stats_card
 import { InventorySummaryTable } from "@/components/inventory_summary/summary_table";
 import { BulkInventoryLoader } from "@/components/inventory_summary/bulk_inventory_loader";
 import { LowStockAlert } from "@/components/inventory_summary/low_stock_alert";
-import { Package, RefreshCw } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading_spinner";
 
 export default function InventorySummaryPage() {

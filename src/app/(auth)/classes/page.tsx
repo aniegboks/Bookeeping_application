@@ -72,11 +72,6 @@ export default function SchoolClassesPage() {
     return user?.username || user?.name || assignedTeacher?.name || "Unknown";
   };
 
-  const getUserName = (userId: string | null | undefined) => {
-    if (!userId) return "—";
-    const user = users.find((u) => u.id === userId);
-    return user?.username || user?.name || "Unknown User";
-  };
 
   // -------------------- FILTER & TABLE DATA --------------------
   const filteredClasses = classes.filter((schoolClass) => {

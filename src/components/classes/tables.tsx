@@ -34,14 +34,6 @@ export default function ClassTable({
   const handleNextPage = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
 
   // Helper to get teacher name for a class
-  const getTeacherName = (classId: string) => {
-    const assignedTeacher = classTeachers.find((t) => t.class_id === classId);
-    if (!assignedTeacher) return "Unassigned";
-    const user = users.find((u) => u.id === assignedTeacher.teacher_id);
-    return user?.username || user?.name || assignedTeacher?.name || "Unknown";
-  };
-
-  // Helper to get user name
   const getUserName = (userId: string | null | undefined) => {
     if (!userId) return "—";
     const user = users.find((u) => u.id === userId);

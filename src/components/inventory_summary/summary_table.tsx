@@ -43,8 +43,8 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
   const sortedSummaries = [...summaries]
     .filter(s => filter === "all" || (filter === "low_stock" && isLowStock(s)))
     .sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number | boolean | null;
+      let bValue: string | number | boolean | null;
 
       if (sortField === "avgCost") {
         aValue = getAvgCost(a);

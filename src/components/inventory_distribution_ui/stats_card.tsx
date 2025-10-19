@@ -12,7 +12,6 @@ interface StatsCardsProps {
 
 export default function StatsCards({
   distributions,
-  filteredDistributions,
 }: StatsCardsProps) {
   const totalDistributions = distributions.length;
   const totalQuantity = distributions.reduce((sum, d) => sum + d.distributed_quantity, 0);

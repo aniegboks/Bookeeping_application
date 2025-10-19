@@ -44,7 +44,9 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
     });
 
     const sorted = [...filtered].sort((a, b) => {
-      let aValue: any, bValue: any;
+      let aValue: string | number | boolean | null;
+      let bValue: string | number | boolean | null;
+      
       if (sortField === "avgCost") {
         aValue = getAvgCost(a);
         bValue = getAvgCost(b);
@@ -108,7 +110,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
             onClick={() => setFilter("all")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               filter === "all"
-                ? "bg-[#3D4C63]rounded-sm hover:bg-[#2f3a4e]  text-white"
+                ? "bg-[#3D4C63] rounded-sm hover:bg-[#2f3a4e] text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >

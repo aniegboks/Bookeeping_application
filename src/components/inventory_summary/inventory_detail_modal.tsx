@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { X, TrendingUp, TrendingDown, Package, Calendar, Download, FileText } from "lucide-react";
 import { InventorySummary, TransactionSummary } from "@/lib/types/inventory_summary";
 import { inventorySummaryApi } from "@/lib/inventory_summary";
@@ -21,13 +21,7 @@ export function InventoryDetailModal({
   const [saleSummary, setSaleSummary] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (isOpen && inventoryId) {
-      fetchDetails();
-    }
-  }, [isOpen, inventoryId]);
-
-  const fetchDetails = async () => {
+  const fetchDetails = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -39,8 +33,9 @@ export function InventoryDetailModal({
       try {
         const purchaseData = await inventorySummaryApi.getTransactionSummary(inventoryId, "purchase");
         setPurchaseSummary(purchaseData);
-      } catch (err: any) {
-        if (err?.message?.includes("404") || err?.message?.includes("not found")) {
+      } catch (err) {
+        const error = err as Error;
+        if (error?.message?.includes("404") || error?.message?.includes("not found")) {
           console.log("No purchase transactions found");
           setPurchaseSummary(null);
         } else {
@@ -51,8 +46,9 @@ export function InventoryDetailModal({
       try {
         const saleData = await inventorySummaryApi.getTransactionSummary(inventoryId, "sale");
         setSaleSummary(saleData);
-      } catch (err: any) {
-        if (err?.message?.includes("404") || err?.message?.includes("not found")) {
+      } catch (err) {
+        const error = err as Error;
+        if (error?.message?.includes("404") || error?.message?.includes("not found")) {
           console.log("No sale transactions found");
           setSaleSummary(null);
         } else {
@@ -64,7 +60,13 @@ export function InventoryDetailModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [inventoryId]);
+
+  useEffect(() => {
+    if (isOpen && inventoryId) {
+      fetchDetails();
+    }
+  }, [isOpen, inventoryId, fetchDetails]);
 
   const exportToPDF = () => {
     if (!summary) return;

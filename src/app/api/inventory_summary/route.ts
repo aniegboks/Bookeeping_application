@@ -8,7 +8,6 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://inventory-ba
  * Get all low stock inventory items
  */
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
   
   // Check if this is a low-stock request
   if (request.url.includes('/low-stock')) {

@@ -84,7 +84,7 @@ export function StockLevelForm({
           required
         />
         <p className="text-xs text-gray-500 mt-1">
-          You'll be alerted when stock falls below this level
+          You&apos;ll be alerted when stock falls below this level
         </p>
       </div>
 

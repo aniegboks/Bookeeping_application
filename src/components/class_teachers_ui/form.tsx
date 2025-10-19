@@ -1,11 +1,14 @@
 "use client";
 
-import { useState} from "react";
+import { useState, useEffect } from "react";
 import {
+  ClassTeacher,
   CreateClassTeacherInput,
+  UpdateClassTeacherInput,
   ClassTeacherStatus,
 } from "@/lib/types/class_teacher";
 import { SchoolClass } from "@/lib/types/classes";
+import { User } from "@/lib/types/user";
 
 // Helper to format date for datetime-local input
 const toDateTimeLocal = (dateString: string | undefined): string => {
@@ -18,28 +21,48 @@ const toDateTimeLocal = (dateString: string | undefined): string => {
 };
 
 interface TeacherFormProps {
-  onSubmit: (data: CreateClassTeacherInput) => Promise<void>;
+  initialTeacher?: ClassTeacher;
+  onSubmit: (data: CreateClassTeacherInput | UpdateClassTeacherInput) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   classes: SchoolClass[];
+  users: User[];
 }
 
 export default function TeacherForm({
+  initialTeacher,
   onSubmit,
   onCancel,
   isSubmitting,
   classes,
+  users,
 }: TeacherFormProps) {
   const [formData, setFormData] = useState<CreateClassTeacherInput>({
-    class_id: classes.length > 0 ? classes[0].id : "",
-    name: "",
-    email: "",
-    role: "class_teacher",
-    status: "active",
-    assigned_at: new Date().toISOString(),
-    unassigned_at: undefined,
+    class_id: initialTeacher?.class_id || (classes.length > 0 ? classes[0].id : ""),
+    name: initialTeacher?.name || "",
+    email: initialTeacher?.email || "",
+    role: initialTeacher?.role || "class_teacher",
+    status: initialTeacher?.status || "active",
+    assigned_at: initialTeacher?.assigned_at || new Date().toISOString(),
+    unassigned_at: initialTeacher?.unassigned_at || undefined,
     created_by: "", // backend should handle this
   });
+
+  // Update form data when initialTeacher changes
+  useEffect(() => {
+    if (initialTeacher) {
+      setFormData({
+        class_id: initialTeacher.class_id,
+        name: initialTeacher.name || "",
+        email: initialTeacher.email || "",
+        role: initialTeacher.role || "class_teacher",
+        status: initialTeacher.status || "active",
+        assigned_at: initialTeacher.assigned_at || new Date().toISOString(),
+        unassigned_at: initialTeacher.unassigned_at || undefined,
+        created_by: "",
+      });
+    }
+  }, [initialTeacher]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -68,7 +91,7 @@ export default function TeacherForm({
   const FormContent = (
     <>
       <h3 className="text-lg font-semibold text-[#171D26] mb-4 py-4">
-        Assign New Teacher
+        {initialTeacher ? "Edit Teacher Assignment" : "Assign New Teacher"}
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -221,7 +244,7 @@ export default function TeacherForm({
                 Saving...
               </>
             ) : (
-              "Create Assignment"
+              initialTeacher ? "Update Assignment" : "Create Assignment"
             )}
           </button>
         </div>

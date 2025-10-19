@@ -47,10 +47,11 @@ export default function ClassTeachersPage() {
     try {
       const data = await classTeacherApi.getAll();
       setTeachers(data);
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Failed to load class teachers:", err);
-      let errorMessage = "Failed to load class teachers.";
-      if (err instanceof Error) errorMessage += " " + err.message;
+      const errorMessage = err instanceof Error 
+        ? `Failed to load class teachers. ${err.message}`
+        : "Failed to load class teachers.";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -61,10 +62,11 @@ export default function ClassTeachersPage() {
     try {
       const data = await schoolClassApi.getAll();
       setClasses(data);
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Failed to load classes:", err);
-      let errorMessage = "Failed to load classes.";
-      if (err instanceof Error) errorMessage += " " + err.message;
+      const errorMessage = err instanceof Error 
+        ? `Failed to load classes. ${err.message}`
+        : "Failed to load classes.";
       toast.error(errorMessage);
     }
   };
@@ -73,10 +75,11 @@ export default function ClassTeachersPage() {
     try {
       const data = await userApi.getAll();
       setUsers(data);
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Failed to load users/teachers:", err);
-      let errorMessage = "Failed to load users/teachers.";
-      if (err instanceof Error) errorMessage += " " + err.message;
+      const errorMessage = err instanceof Error 
+        ? `Failed to load users/teachers. ${err.message}`
+        : "Failed to load users/teachers.";
       toast.error(errorMessage);
     }
   };
@@ -128,7 +131,7 @@ export default function ClassTeachersPage() {
       setShowForm(false);
       setEditingTeacher(null);
       await loadTeachers();
-    } catch (err: unknown) {
+    } catch (err) {
       toast.dismiss(loadingToast);
       const message = err instanceof Error ? err.message : "Failed to save teacher assignment";
       console.error("Form submission failed:", err);
@@ -160,7 +163,7 @@ export default function ClassTeachersPage() {
       setShowDeleteModal(false);
       setDeletingTeacher(null);
       await loadTeachers();
-    } catch (err: unknown) {
+    } catch (err) {
       toast.dismiss(loadingToast);
       const message = err instanceof Error ? err.message : "Failed to delete teacher assignment";
       console.error("Delete failed:", err);
@@ -245,7 +248,7 @@ export default function ClassTeachersPage() {
                 </span>
               ) : (
                 <TeacherForm
-                  teacher={editingTeacher || undefined}
+                  initialTeacher={editingTeacher || undefined}
                   onSubmit={handleFormSubmit}
                   onCancel={handleCancel}
                   isSubmitting={isSubmitting}

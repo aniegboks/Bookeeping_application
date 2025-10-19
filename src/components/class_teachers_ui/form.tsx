@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import {
-  ClassTeacher,
   CreateClassTeacherInput,
   ClassTeacherStatus,
 } from "@/lib/types/class_teacher";
 import { SchoolClass } from "@/lib/types/classes";
-import { User } from "@/lib/types/user";
 
 // Helper to format date for datetime-local input
 const toDateTimeLocal = (dateString: string | undefined): string => {
@@ -20,55 +18,28 @@ const toDateTimeLocal = (dateString: string | undefined): string => {
 };
 
 interface TeacherFormProps {
-  teacher?: ClassTeacher;
   onSubmit: (data: CreateClassTeacherInput) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   classes: SchoolClass[];
-  users: User[];
 }
 
 export default function TeacherForm({
-  teacher,
   onSubmit,
   onCancel,
   isSubmitting,
   classes,
-  users,
 }: TeacherFormProps) {
   const [formData, setFormData] = useState<CreateClassTeacherInput>({
-    class_id: "",
-    email: "",
+    class_id: classes.length > 0 ? classes[0].id : "",
     name: "",
+    email: "",
     role: "class_teacher",
     status: "active",
     assigned_at: new Date().toISOString(),
     unassigned_at: undefined,
-    created_by: "",
+    created_by: "", // backend should handle this
   });
-
-  useEffect(() => {
-    if (teacher) {
-      setFormData({
-        class_id: teacher.class_id,
-        email: teacher.email,
-        name: teacher.name || "",
-        role: teacher.role,
-        status: teacher.status,
-        assigned_at: teacher.assigned_at,
-        unassigned_at: teacher.unassigned_at || undefined,
-        created_by: teacher.created_by,
-      });
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        class_id: classes.length > 0 ? classes[0].id : "",
-        created_by: users.length > 0 ? users[0].id : "",
-        name: users.length > 0 ? users[0].name || users[0].username || "" : "",
-        email: users.length > 0 ? users[0].email || "" : "",
-      }));
-    }
-  }, [teacher, classes, users]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -80,10 +51,7 @@ export default function TeacherForm({
     }));
   };
 
-  const handleDateChange = (
-    name: keyof CreateClassTeacherInput,
-    value: string
-  ) => {
+  const handleDateChange = (name: keyof CreateClassTeacherInput, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value ? new Date(value).toISOString() : undefined,
@@ -95,12 +63,12 @@ export default function TeacherForm({
     await onSubmit(formData);
   };
 
-  const hasData = classes.length > 0 && users.length > 0;
+  const hasData = classes.length > 0;
 
   const FormContent = (
     <>
       <h3 className="text-lg font-semibold text-[#171D26] mb-4 py-4">
-        {teacher ? "Edit Assignment" : "Assign Teacher"}
+        Assign New Teacher
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -128,7 +96,39 @@ export default function TeacherForm({
             </select>
           </div>
 
-          {/* 2. Role */}
+          {/* 2. Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Teacher Name <span className="text-gray-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* 3. Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
+              Email <span className="text-gray-500">*</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* 4. Role */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
               Role <span className="text-gray-500">*</span>
@@ -147,7 +147,7 @@ export default function TeacherForm({
             </select>
           </div>
 
-          {/* 3. Status */}
+          {/* 5. Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
               Status <span className="text-gray-500">*</span>
@@ -168,39 +168,6 @@ export default function TeacherForm({
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="archived">Archived</option>
-            </select>
-          </div>
-
-          {/* 4 & 5. Teacher Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Teacher <span className="text-gray-500">*</span>
-            </label>
-            <select
-              name="teacher_id"
-              value={formData.created_by}
-              onChange={(e) => {
-                const selectedUser = users.find(u => u.id === e.target.value);
-                if (!selectedUser) return;
-                setFormData(prev => ({
-                  ...prev,
-                  created_by: selectedUser.id,
-                  name: selectedUser.name || selectedUser.username || "",
-                  email: selectedUser.email || "",
-                }));
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              required
-              disabled={isSubmitting}
-            >
-              <option value="" disabled>
-                Select a Teacher
-              </option>
-              {users.map(u => (
-                <option key={u.id} value={u.id}>
-                  {u.name || u.username || u.email}
-                </option>
-              ))}
             </select>
           </div>
 
@@ -227,9 +194,7 @@ export default function TeacherForm({
             <input
               type="datetime-local"
               value={toDateTimeLocal(formData.unassigned_at)}
-              onChange={(e) =>
-                handleDateChange("unassigned_at", e.target.value)
-              }
+              onChange={(e) => handleDateChange("unassigned_at", e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
               disabled={isSubmitting}
             />
@@ -255,8 +220,6 @@ export default function TeacherForm({
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 Saving...
               </>
-            ) : teacher ? (
-              "Update Assignment"
             ) : (
               "Create Assignment"
             )}
@@ -269,9 +232,9 @@ export default function TeacherForm({
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-        {!hasData && !teacher ? (
+        {!hasData ? (
           <div className="text-gray-500 py-8 text-center">
-            Loading classes and teachers...
+            Loading classes...
           </div>
         ) : (
           FormContent

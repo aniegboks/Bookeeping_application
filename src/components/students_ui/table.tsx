@@ -105,7 +105,7 @@ export default function StudentTable({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-full">
-                      <User size={20} className="text-blue-600" />
+                      <User className="text-blue-600 h-4 w-4" />
                     </div>
                     <div>
                       <div className="text-sm font-medium text-gray-900">

@@ -212,12 +212,12 @@ export default function StudentForm({
             </div>
           </div>
 
-          {/* Class & Guardian Information */}
+          {/* Class, Created By & Status */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               Class & Guardian Information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-visible">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Class <span className="text-gray-500">*</span>
@@ -264,59 +264,75 @@ export default function StudentForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Guardian Name
+                  Status <span className="text-gray-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={formData.guardian_name}
+                <select
+                  value={formData.status}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      guardian_name: e.target.value,
-                    })
+                    setFormData({ ...formData, status: e.target.value as StudentStatus })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] bg-white"
+                  required
                   disabled={isSubmitting}
-                />
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="graduated">Graduated</option>
+                  <option value="transferred">Transferred</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="archived">Archived</option>
+                </select>
               </div>
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Guardian Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.guardian_email}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      guardian_email: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-                  disabled={isSubmitting}
-                  placeholder="guardian@example.com"
-                />
-              </div>
+          {/* Guardian Information */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-visible">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Guardian Name
+              </label>
+              <input
+                type="text"
+                value={formData.guardian_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, guardian_name: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                disabled={isSubmitting}
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Guardian Contact
-                </label>
-                <input
-                  type="tel"
-                  value={formData.guardian_contact}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      guardian_contact: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-                  disabled={isSubmitting}
-                  placeholder="+1234567890"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Guardian Email
+              </label>
+              <input
+                type="email"
+                value={formData.guardian_email}
+                onChange={(e) =>
+                  setFormData({ ...formData, guardian_email: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                disabled={isSubmitting}
+                placeholder="guardian@example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Guardian Contact
+              </label>
+              <input
+                type="tel"
+                value={formData.guardian_contact}
+                onChange={(e) =>
+                  setFormData({ ...formData, guardian_contact: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                disabled={isSubmitting}
+                placeholder="+1234567890"
+              />
             </div>
           </div>
 

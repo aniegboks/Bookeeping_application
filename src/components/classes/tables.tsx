@@ -72,7 +72,6 @@ export default function ClassTable({
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class Teacher</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
@@ -94,10 +93,6 @@ export default function ClassTable({
                       <div className="text-xs text-gray-500 max-w-[200px] truncate" title={schoolClass.id}>{schoolClass.id}</div>
                     </div>
                   </div>
-                </td>
-
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {getTeacherName(schoolClass.id)}
                 </td>
 
                 <td className="px-6 py-4 whitespace-nowrap">

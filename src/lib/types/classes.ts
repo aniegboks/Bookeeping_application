@@ -14,3 +14,10 @@ export interface CreateSchoolClassInput {
   status: SchoolClassStatus;
   created_by: string;
 }
+
+// New type for updates (all fields optional except you must provide at least one)
+export interface UpdateSchoolClassInput {
+  name?: string;
+  status?: SchoolClassStatus;
+  created_by?: string;
+}

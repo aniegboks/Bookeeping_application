@@ -2,7 +2,7 @@
 export interface NavItem {
   label: string;
   link: string;
-  description?: string; // Optional description for dashboard cards
+  description?: string; 
 }
 
 // Export the menu items
@@ -23,5 +23,5 @@ export const AcademicSessionTerms: NavItem[] = [
   { label: "Student Collection", link: "/studentInventoryEntitlement", description: "Assign inventory to students" },
   { label: "Inventory Distributions", link: "/inventoryDistrbution", description: "Distribute inventory to classes and students" },
   { label: "Inventory Summary", link: "/inventorySummary", description: "View and manage inventory summary" },
-  { label: "Reports", link: "/studentsReport", description: "Generate reports and analytics" },
+  { label: "Students Report", link: "/studentsReport", description: "Generate reports and analytics" },
 ];

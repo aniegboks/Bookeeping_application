@@ -73,7 +73,7 @@ import {
      * Get all low-stock inventory items
      */
     async getLowStock(): Promise<InventorySummary[]> {
-      const url = `${BASE_URL}/low-stock`;
+      const url = `${BASE_URL}/low/stock`;
       return fetchProxy(url);
     },
   };

@@ -43,11 +43,8 @@ export default function SchoolClassesPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [classData, teacherData, userData]: [SchoolClass[], ClassTeacher[], User[]] = await Promise.all([
-        schoolClassApi.getAll(),
-        classTeacherApi.getAll(),
-        userApi.getAll(),
-      ]);
+      const [classData, teacherData, userData]: [SchoolClass[], ClassTeacher[], User[]] =
+        await Promise.all([schoolClassApi.getAll(), classTeacherApi.getAll(), userApi.getAll()]);
 
       setClasses(classData);
       setClassTeachers(teacherData);
@@ -185,9 +182,8 @@ export default function SchoolClassesPage() {
 
       return {
         "Class Name": schoolClass.name,
-        "Class Teacher": schoolClass.teacher_name || "—",
-        Status:
-          schoolClass.status.charAt(0).toUpperCase() + schoolClass.status.slice(1),
+        // Removed "Class Teacher"
+        Status: schoolClass.status.charAt(0).toUpperCase() + schoolClass.status.slice(1),
         "Created By": createdByName,
         "Created At": new Date(schoolClass.created_at).toLocaleString(),
         "Updated At": new Date(schoolClass.updated_at).toLocaleString(),
@@ -234,7 +230,6 @@ export default function SchoolClassesPage() {
                 onCancel={handleCancel}
                 isSubmitting={isSubmitting}
                 users={users}
-                classTeachers={classTeachers}
               />
             </div>
           )}

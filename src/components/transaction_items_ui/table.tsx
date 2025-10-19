@@ -75,7 +75,8 @@ export default function TransactionTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Cost</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Out Cost</th>
+              {/**               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Out Cost</th>
+*/}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -115,7 +116,8 @@ export default function TransactionTable({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">{tx.in_cost}</td>
 
                 {/* Out Cost */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-medium">{tx.out_cost}</td>
+                {/**     <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-medium">{tx.out_cost}</td>
+ */}
 
                 {/* Status */}
                 <td className="px-6 py-4 whitespace-nowrap">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { InventorySummary } from "@/lib/types/inventory_summary";
-import { AlertTriangle, ArrowUpDown, Eye } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, Eye, CheckCircle } from "lucide-react";
 import { InventoryDetailModal } from "@/components/inventory_summary/inventory_detail_modal";
 
 interface InventorySummaryTableProps {
@@ -33,8 +33,15 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
       : 0;
   };
 
+  // Check if item is low stock based on threshold
+  const isLowStock = (summary: InventorySummary) => {
+    const threshold = summary.low_stock_threshold || 0;
+    const currentStock = summary.current_stock || 0;
+    return currentStock <= threshold;
+  };
+
   const sortedSummaries = [...summaries]
-    .filter(s => filter === "all" || (filter === "low_stock" && s.is_low_stock))
+    .filter(s => filter === "all" || (filter === "low_stock" && isLowStock(s)))
     .sort((a, b) => {
       let aValue: any;
       let bValue: any;
@@ -63,7 +70,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow border border-gray-200">
+      <div className="bg-white rounded-sm border border-gray-200">
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -74,7 +81,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
                 onClick={() => setFilter("all")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filter === "all"
-                    ? "bg-blue-600 text-white"
+                    ? "bg-[#3D4C63] rounded-sm hover:bg-[#2f3a4e]  text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
@@ -82,7 +89,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
               </button>
               <button
                 onClick={() => setFilter("low_stock")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-sm text-sm font-medium transition-colors ${
                   filter === "low_stock"
                     ? "bg-red-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -173,6 +180,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
               {sortedSummaries.map((summary) => {
                 const avgCost = getAvgCost(summary);
                 const stockValue = summary.current_stock * avgCost;
+                const itemIsLowStock = isLowStock(summary);
 
                 return (
                   <tr key={summary.id} className="hover:bg-gray-50">
@@ -192,7 +200,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={`text-sm font-medium ${
-                        summary.is_low_stock ? "text-red-600" : "text-gray-900"
+                        itemIsLowStock ? "text-red-600" : "text-gray-900"
                       }`}>
                         {summary.current_stock} {summary.uom_name}
                       </span>
@@ -214,17 +222,22 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {summary.is_low_stock && (
+                      {itemIsLowStock ? (
                         <div className="flex items-center gap-1 text-red-600">
                           <AlertTriangle className="w-4 h-4" />
                           <span className="text-xs font-medium">Low Stock</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-xs font-medium">Adequate</span>
                         </div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => setSelectedInventoryId(summary.id)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[#495C79] hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <Eye className="w-4 h-4" />
                         View

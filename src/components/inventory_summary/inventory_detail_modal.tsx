@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, TrendingUp, TrendingDown, Package, Calendar } from "lucide-react";
+import { X, TrendingUp, TrendingDown, Package, Calendar, Download, FileText } from "lucide-react";
 import { InventorySummary, TransactionSummary } from "@/lib/types/inventory_summary";
 import { inventorySummaryApi } from "@/lib/inventory_summary";
 
@@ -30,19 +30,99 @@ export function InventoryDetailModal({
   const fetchDetails = async () => {
     try {
       setLoading(true);
-      const [summaryData, purchaseData, saleData] = await Promise.all([
-        inventorySummaryApi.getById(inventoryId),
-        inventorySummaryApi.getTransactionSummary(inventoryId, "purchase"),
-        inventorySummaryApi.getTransactionSummary(inventoryId, "sale"),
-      ]);
+      
+      // Fetch summary first
+      const summaryData = await inventorySummaryApi.getById(inventoryId);
       setSummary(summaryData);
-      setPurchaseSummary(purchaseData);
-      setSaleSummary(saleData);
+
+      // Fetch transactions, but handle 404 gracefully
+      try {
+        const purchaseData = await inventorySummaryApi.getTransactionSummary(inventoryId, "purchase");
+        setPurchaseSummary(purchaseData);
+      } catch (err: any) {
+        if (err?.message?.includes("404") || err?.message?.includes("not found")) {
+          console.log("No purchase transactions found");
+          setPurchaseSummary(null);
+        } else {
+          throw err;
+        }
+      }
+
+      try {
+        const saleData = await inventorySummaryApi.getTransactionSummary(inventoryId, "sale");
+        setSaleSummary(saleData);
+      } catch (err: any) {
+        if (err?.message?.includes("404") || err?.message?.includes("not found")) {
+          console.log("No sale transactions found");
+          setSaleSummary(null);
+        } else {
+          throw err;
+        }
+      }
     } catch (err) {
       console.error("Error fetching inventory details:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const exportToPDF = () => {
+    if (!summary) return;
+    window.print();
+  };
+
+  const exportToSpreadsheet = () => {
+    if (!summary) return;
+
+    const avgCost = summary.total_in_quantity > 0
+      ? summary.total_in_cost / summary.total_in_quantity
+      : 0;
+    const stockValue = summary.current_stock * avgCost;
+
+    const csvData = [
+      ["Inventory Details Report"],
+      [""],
+      ["Basic Information"],
+      ["Item Name", summary.name],
+      ["SKU", summary.sku],
+      ["Category", summary.category_name],
+      ["Brand", summary.brand_name],
+      ["Unit of Measure", summary.uom_name],
+      ["Status", summary.is_low_stock ? "Low Stock" : "In Stock"],
+      [""],
+      ["Stock Information"],
+      ["Current Stock", `${summary.current_stock} ${summary.uom_name}`],
+      ["Low Stock Threshold", summary.low_stock_threshold],
+      ["Total In Quantity", summary.total_in_quantity],
+      ["Total In Cost", `₦${summary.total_in_cost.toFixed(2)}`],
+      ["Total Out Quantity", summary.total_out_quantity],
+      ["Total Out Cost", `₦${summary.total_out_cost.toFixed(2)}`],
+      ["Average Cost", `₦${avgCost.toFixed(2)}`],
+      ["Stock Value", `₦${stockValue.toFixed(2)}`],
+      [""],
+      ["Purchase Summary"],
+      ["Total Quantity", purchaseSummary?.total_quantity || 0],
+      ["Total Cost", `₦${(purchaseSummary?.total_cost || 0).toFixed(2)}`],
+      ["Transaction Count", purchaseSummary?.transaction_count || 0],
+      ["Last Purchase", purchaseSummary?.last_transaction_date ? new Date(purchaseSummary.last_transaction_date).toLocaleDateString() : "N/A"],
+      [""],
+      ["Sale Summary"],
+      ["Total Quantity", saleSummary?.total_quantity || 0],
+      ["Total Revenue", `₦${(saleSummary?.total_cost || 0).toFixed(2)}`],
+      ["Transaction Count", saleSummary?.transaction_count || 0],
+      ["Last Sale", saleSummary?.last_transaction_date ? new Date(saleSummary.last_transaction_date).toLocaleDateString() : "N/A"],
+    ];
+
+    const csvContent = csvData.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `inventory_${summary.sku}_${Date.now()}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (!isOpen) return null;
@@ -56,22 +136,40 @@ export function InventoryDetailModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/70 transition-opacity" onClick={onClose} />
         
         <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900">Inventory Details</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={exportToSpreadsheet}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                title="Export to Spreadsheet"
+              >
+                <FileText className="w-4 h-4" />
+                CSV
+              </button>
+              <button
+                onClick={exportToPDF}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                title="Export to PDF"
+              >
+                <Download className="w-4 h-4" />
+                PDF
+              </button>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors ml-2"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3D4C63]"></div>
             </div>
           ) : summary ? (
             <div className="p-6">
@@ -209,7 +307,9 @@ export function InventoryDetailModal({
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No purchase records</p>
+                    <div className="text-center py-6">
+                      <p className="text-sm text-gray-500">No purchase records available</p>
+                    </div>
                   )}
                 </div>
 
@@ -252,7 +352,9 @@ export function InventoryDetailModal({
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No sale records</p>
+                    <div className="text-center py-6">
+                      <p className="text-sm text-gray-500">No sale records available</p>
+                    </div>
                   )}
                 </div>
               </div>

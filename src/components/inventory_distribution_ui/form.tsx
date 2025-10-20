@@ -97,9 +97,9 @@ export default function DistributionForm({
       return;
     }
 
-    const receiverUser = users.find((u) => u.id === formData.received_by);
-    if (!receiverUser) {
-      alert("Selected teacher does not have a valid user account");
+    const selectedTeacher = classTeachers.find((t) => t.id === formData.received_by);
+    if (!selectedTeacher) {
+      alert("Selected teacher is invalid");
       return;
     }
 
@@ -261,13 +261,13 @@ export default function DistributionForm({
               <select
                 value={formData.received_by}
                 onChange={(e) => {
-                  const selectedUserId = e.target.value;
+                  const selectedId = e.target.value;
                   const selectedTeacher = classTeachers.find(
-                    (t) => t.teacher_id === selectedUserId
+                    (t) => t.id === selectedId
                   );
                   setFormData({
                     ...formData,
-                    received_by: selectedUserId,
+                    received_by: selectedId,
                     receiver_name: selectedTeacher?.name || "",
                   });
                 }}
@@ -282,7 +282,7 @@ export default function DistributionForm({
                 </option>
 
                 {filteredTeachers.map((teacher) => (
-                  <option key={teacher.id} value={teacher.teacher_id}>
+                  <option key={teacher.id} value={teacher.id}>
                     {teacher.name} ({teacher.email})
                   </option>
                 ))}

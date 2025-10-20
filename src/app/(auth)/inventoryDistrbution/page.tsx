@@ -20,6 +20,8 @@ import { schoolClassApi } from "@/lib/classes";
 import { inventoryItemApi } from "@/lib/inventory_item";
 import { academicSessionsApi } from "@/lib/academic_session";
 import { userApi } from "@/lib/user";
+import { classTeacherApi } from "@/lib/class_teacher";
+import { ClassTeacher } from "@/lib/types/class_teacher";
 
 import { SchoolClass } from "@/lib/types/classes";
 import { InventoryItem } from "@/lib/types/inventory_item";
@@ -36,8 +38,7 @@ export default function ClassInventoryDistributionsPage() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [academicSessions, setAcademicSessions] = useState<AcademicSession[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser] = useState<User | null>(null);
-
+  const [classTeachers, setClassTeachers] = useState<ClassTeacher[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading] = useState(false);
@@ -57,22 +58,25 @@ export default function ClassInventoryDistributionsPage() {
     );
   });
 
-  // Load all data (classes, items, sessions, users, distributions)
+  // Load all data (classes, items, sessions, users, class teachers, distributions)
   useEffect(() => {
     const loadData = async () => {
       try {
         setInitialLoading(true);
 
-        const savedDistributions = localStorage.getItem("distributions");
-        if (savedDistributions) {
-          setDistributions(JSON.parse(savedDistributions));
-        }
-
-        const [classesRes, itemsRes, sessionsRes, usersRes, distributionsRes] = await Promise.all([
+        const [
+          classesRes, 
+          itemsRes, 
+          sessionsRes, 
+          usersRes, 
+          classTeachersRes,
+          distributionsRes
+        ] = await Promise.all([
           schoolClassApi.getAll(),
           inventoryItemApi.getAll(),
           academicSessionsApi.getAll(),
           userApi.getAll(),
+          classTeacherApi.getAll(),
           inventoryDistributionApi.getAll(),
         ]);
 
@@ -80,10 +84,12 @@ export default function ClassInventoryDistributionsPage() {
         setInventoryItems(itemsRes);
         setAcademicSessions(sessionsRes);
         setUsers(usersRes);
+        setClassTeachers(classTeachersRes);
         setDistributions(distributionsRes.data);
       } catch (err) {
         console.error("Failed to load initial data:", err);
-        toast.error("Failed to load initial data");
+        const errorMessage = err instanceof Error ? err.message : "Failed to load initial data";
+        toast.error(errorMessage);
       } finally {
         setInitialLoading(false);
       }
@@ -92,21 +98,8 @@ export default function ClassInventoryDistributionsPage() {
     loadData();
   }, []);
 
-  // Persist distributions to localStorage
-  useEffect(() => {
-    if (distributions.length > 0) {
-      localStorage.setItem("distributions", JSON.stringify(distributions));
-    }
-  }, [distributions]);
-
   // Handle form submission (create/update)
   const handleFormSubmit = async (data: CreateInventoryDistributionInput | UpdateInventoryDistributionInput) => {
-    const formData = { ...data } as CreateInventoryDistributionInput | UpdateInventoryDistributionInput;
-    
-    if (currentUser && !editingDistribution) {
-      (formData as CreateInventoryDistributionInput).created_by = currentUser.id;
-    }
-
     setIsSubmitting(true);
     const loadingToast = toast.loading(
       editingDistribution ? "Updating distribution..." : "Creating distribution..."
@@ -116,7 +109,7 @@ export default function ClassInventoryDistributionsPage() {
       if (editingDistribution) {
         const updated = await inventoryDistributionApi.update(
           editingDistribution.id, 
-          formData as UpdateInventoryDistributionInput
+          data as UpdateInventoryDistributionInput
         );
         toast.dismiss(loadingToast);
         toast.success("Distribution updated successfully!");
@@ -124,7 +117,7 @@ export default function ClassInventoryDistributionsPage() {
           prev.map((d) => (d.id === updated.id ? updated : d))
         );
       } else {
-        const created = await inventoryDistributionApi.create(formData as CreateInventoryDistributionInput);
+        const created = await inventoryDistributionApi.create(data as CreateInventoryDistributionInput);
         toast.dismiss(loadingToast);
         toast.success("Distribution created successfully!");
         setDistributions((prev) => [...prev, created]);
@@ -169,24 +162,16 @@ export default function ClassInventoryDistributionsPage() {
       const classInfo = classes.find((c) => c.id === d.class_id);
       const itemInfo = inventoryItems.find((i) => i.id === d.inventory_item_id);
       const sessionInfo = academicSessions.find((s) => s.id === d.session_term_id);
-      const userInfo = users.find((u) => u.id === d.received_by);
+      const teacherInfo = classTeachers.find((t) => t.id === d.received_by);
 
       return {
-        "Distribution ID": d.id,
-        "Class ID": d.class_id,
-        "Class Name": classInfo?.name || "",
-        "Inventory Item ID": d.inventory_item_id,
-        "Inventory Item Name": itemInfo?.name || "",
-        "Session Term ID": d.session_term_id,
-        "Session Name": sessionInfo?.name || "",
-        "Receiver ID": d.received_by,
-        "Receiver Name": d.receiver_name || userInfo?.name || "",
-        "Distributed Quantity": d.distributed_quantity,
-        "Distribution Date": d.distribution_date ? new Date(d.distribution_date).toLocaleDateString() : "",
+        "Class": classInfo?.name || "N/A",
+        "Item": itemInfo?.name || "N/A",
+        "Quantity": d.distributed_quantity,
+        "Receiver": d.receiver_name || teacherInfo?.name || "N/A",
+        "Date": d.distribution_date ? new Date(d.distribution_date).toLocaleDateString() : "",
+        "Session": sessionInfo?.name || "N/A",
         "Notes": d.notes || "",
-        "Created By": d.created_by,
-        "Created At": new Date(d.created_at).toLocaleDateString(),
-        "Updated At": new Date(d.updated_at).toLocaleDateString(),
       };
     });
 
@@ -232,8 +217,8 @@ export default function ClassInventoryDistributionsPage() {
               classes={classes}
               inventoryItems={inventoryItems}
               academicSessions={academicSessions}
+              classTeachers={classTeachers}
               users={users}
-              currentUser={currentUser}
             />
           )}
 
@@ -243,6 +228,7 @@ export default function ClassInventoryDistributionsPage() {
             loading={loading}
             classes={classes}
             inventoryItems={inventoryItems}
+            classTeachers={classTeachers}
           />
 
           <div className="mt-4 flex justify-start">

@@ -7,7 +7,10 @@ import { Brand } from "@/lib/brands";
 import { Category } from "@/lib/types/categories";
 import { SubCategory } from "@/lib/types/sub_categories";
 import { UOM } from "@/lib/types/uom";
-import { InventoryItem } from "@/lib/types/inventory_item";
+import {
+  InventoryItem,
+  CreateInventoryItemInput,
+} from "@/lib/types/inventory_item";
 import SmallLoader from "../ui/small_loader";
 
 interface InventoryItemFormProps {
@@ -30,18 +33,7 @@ interface InventoryItemFormData {
   barcode: string;
   cost_price: string;
   selling_price: string;
-}
-
-interface InventoryItemPayload {
-  name: string;
-  category_id: string;
-  brand_id: string;
-  uom_id: string;
-  cost_price: number;
-  selling_price: number;
-  sku?: string;
-  sub_category_id?: string;
-  barcode?: string;
+  low_stock_threshold: string;
 }
 
 export default function InventoryItemForm({
@@ -62,13 +54,15 @@ export default function InventoryItemForm({
     uom_id: item?.uom_id || "",
     barcode: item?.barcode || "",
     cost_price: item?.cost_price?.toString() || "",
-    selling_price: item?.selling_price?.toString() || "",
+    selling_price: item?.selling_price?.toString() || "0",
+    low_stock_threshold: item?.low_stock_threshold?.toString() || "0",
   });
 
   const [filteredSubCategories, setFilteredSubCategories] = useState<SubCategory[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Filter subcategories when category changes
   useEffect(() => {
     if (formData.category_id) {
       const filtered = subCategories.filter(
@@ -76,7 +70,10 @@ export default function InventoryItemForm({
       );
       setFilteredSubCategories(filtered);
 
-      if (formData.sub_category_id && !filtered.some((s) => s.id === formData.sub_category_id)) {
+      if (
+        formData.sub_category_id &&
+        !filtered.some((s) => s.id === formData.sub_category_id)
+      ) {
         setFormData((prev) => ({ ...prev, sub_category_id: "" }));
       }
     } else {
@@ -85,6 +82,7 @@ export default function InventoryItemForm({
     }
   }, [formData.category_id, subCategories, formData.sub_category_id]);
 
+  // Simple validation
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -94,21 +92,27 @@ export default function InventoryItemForm({
     if (!formData.uom_id) newErrors.uom_id = "Unit of measure is required";
     if (!formData.cost_price) newErrors.cost_price = "Cost price is required";
     if (!formData.selling_price) newErrors.selling_price = "Selling price is required";
+    if (!formData.low_stock_threshold)
+      newErrors.low_stock_threshold = "Low stock threshold is required";
 
     if (formData.cost_price && isNaN(Number(formData.cost_price)))
       newErrors.cost_price = "Cost price must be a number";
     if (formData.selling_price && isNaN(Number(formData.selling_price)))
       newErrors.selling_price = "Selling price must be a number";
-    if (formData.cost_price && Number(formData.cost_price) < 0)
+    if (formData.low_stock_threshold && isNaN(Number(formData.low_stock_threshold)))
+      newErrors.low_stock_threshold = "Low stock threshold must be a number";
+
+    if (Number(formData.cost_price) < 0)
       newErrors.cost_price = "Cost price cannot be negative";
-    if (formData.selling_price && Number(formData.selling_price) < 0)
+    if (Number(formData.selling_price) < 0)
       newErrors.selling_price = "Selling price cannot be negative";
+    if (Number(formData.low_stock_threshold) < 0)
+      newErrors.low_stock_threshold = "Low stock threshold cannot be negative";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Type-safe helper to extract API error messages
   const getApiErrorMessage = (err: unknown, fallback = "Failed to save inventory item"): string => {
     if (err instanceof Error) return err.message;
     if (typeof err === "object" && err !== null) {
@@ -129,18 +133,19 @@ export default function InventoryItemForm({
     setIsSubmitting(true);
 
     try {
-      const payload: InventoryItemPayload = {
+      // ✅ Correctly typed payload
+      const payload: CreateInventoryItemInput = {
+        sku: formData.sku.trim() || "",
         name: formData.name.trim(),
         category_id: formData.category_id,
         brand_id: formData.brand_id,
         uom_id: formData.uom_id,
         cost_price: parseFloat(formData.cost_price),
         selling_price: parseFloat(formData.selling_price),
+        low_stock_threshold: parseFloat(formData.low_stock_threshold),
+        sub_category_id: formData.sub_category_id || "",
+        barcode: formData.barcode.trim() || "",
       };
-
-      if (formData.sku.trim()) payload.sku = formData.sku.trim();
-      if (formData.sub_category_id) payload.sub_category_id = formData.sub_category_id;
-      if (formData.barcode.trim()) payload.barcode = formData.barcode.trim();
 
       if (item) {
         await inventoryItemApi.update(item.id, payload);
@@ -153,7 +158,6 @@ export default function InventoryItemForm({
       onSuccess();
     } catch (err: unknown) {
       console.error("Error saving inventory item:", err);
-
       const message = getApiErrorMessage(err);
       toast.error(message);
       setErrors({ submit: message });
@@ -344,6 +348,22 @@ export default function InventoryItemForm({
                 }`}
               />
             </div>
+
+            {/* Low Stock Threshold */}
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Low Stock Threshold <span className="text-gray-400">*</span>
+              </label>
+              <input
+                type="number"
+                name="low_stock_threshold"
+                value={formData.low_stock_threshold}
+                onChange={handleChange}
+                className={`w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.low_stock_threshold ? "border-red-500" : ""
+                }`}
+              />
+            </div>
           </div>
 
           {/* Buttons */}
@@ -359,7 +379,9 @@ export default function InventoryItemForm({
               type="submit"
               disabled={isSubmitting}
               className={`px-6 py-2 rounded-sm text-sm text-white ${
-                isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#3D4C63] hover:bg-[#495C79]"
+                isSubmitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#3D4C63] hover:bg-[#495C79]"
               }`}
             >
               {isSubmitting ? (

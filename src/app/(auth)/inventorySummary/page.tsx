@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { InventorySummary } from "@/lib/types/inventory_summary";
 import { inventorySummaryApi } from "@/lib/inventory_summary";
 import { InventorySummaryStats } from "@/components/inventory_summary/stats_card";
-import { InventorySummaryTable } from "@/components/inventory_summary/summary_table";
+import { InventorySummaryTable } from "@/components/inventory_summary/table";
 import { BulkInventoryLoader } from "@/components/inventory_summary/bulk_inventory_loader";
 import { LowStockAlert } from "@/components/inventory_summary/low_stock_alert";
 import LoadingSpinner from "@/components/ui/loading_spinner";

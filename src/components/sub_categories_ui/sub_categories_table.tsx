@@ -26,7 +26,7 @@ export default function SubCategoriesTable({
 
   // --- Pagination ---
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
   const totalPages = Math.ceil(subCategories.length / itemsPerPage);
 
   const paginatedSubCategories = subCategories.slice(

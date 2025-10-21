@@ -39,7 +39,7 @@ export default function CategoriesTable({
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
   const totalPages = Math.ceil(categories.length / itemsPerPage);
 
   const paginatedCategories = categories.slice(

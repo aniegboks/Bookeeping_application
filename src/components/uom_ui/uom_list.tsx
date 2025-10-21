@@ -23,7 +23,7 @@ export default function UOMList({
 }: UOMListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   // 🔍 Filter UOMs by search term
   const filteredUOMs = useMemo(() => {

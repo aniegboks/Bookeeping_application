@@ -30,7 +30,7 @@ export default function SuppliersTable({
   loading,
 }: Props) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [suppliersPerPage, setSuppliersPerPage] = useState(5);
+  const [suppliersPerPage, setSuppliersPerPage] = useState(10);
 
   // --- Filtering ---
   const filteredSuppliers = suppliers.filter((s) => {

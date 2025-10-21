@@ -22,7 +22,7 @@ export default function BrandsTable({
     handleDelete,
 }: BrandsTableProps) {
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5; // Brands per page
+    const itemsPerPage = 10; // Brands per page
     const totalPages = Math.ceil(brands.length / itemsPerPage);
 
     const paginatedBrands = brands.slice(

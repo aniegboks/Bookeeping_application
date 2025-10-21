@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Edit, Trash2, User } from "lucide-react";
 import { Student } from "@/lib/types/students";
+import { SchoolClass } from "@/lib/types/classes"; // ✅ import your class type
 
 interface StudentTableProps {
   students: Student[];
+  classes: SchoolClass[]; // ✅ added this
   onEdit: (student: Student) => void;
   onDelete: (student: Student) => void;
   loading?: boolean;
@@ -12,6 +14,7 @@ interface StudentTableProps {
 
 export default function StudentTable({
   students,
+  classes,
   onEdit,
   onDelete,
   loading = false,
@@ -76,6 +79,10 @@ export default function StudentTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Admission No
               </th>
+              {/* ✅ New Class Column */}
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Class
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Gender
               </th>
@@ -98,10 +105,7 @@ export default function StudentTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedStudents.map((student) => (
-              <tr
-                key={student.id}
-                className="hover:bg-gray-50 transition-colors"
-              >
+              <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-full">
@@ -113,27 +117,34 @@ export default function StudentTable({
                         {student.middle_name && `${student.middle_name} `}
                         {student.last_name}
                       </div>
-                      <div
-                        className="text-xs text-gray-500 max-w-[150px] truncate"
-                        title={student.id}
-                      >
+                      <div className="text-xs text-gray-500" title={student.id}>
                         ID: {student.id}
                       </div>
                     </div>
                   </div>
                 </td>
+
                 <td className="px-6 py-4 text-sm text-gray-900 truncate max-w-[180px]" title={student.student_email || "-"}>
                   {student.student_email || "-"}
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {student.admission_number}
                 </td>
+
+                {/* ✅ Class name resolved from class_id */}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {classes.find((cls) => cls.id === student.class_id)?.name || "-"}
+                </td>
+
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
                   {student.gender}
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(student.date_of_birth).toLocaleDateString()}
                 </td>
+
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <div className="max-w-[200px]">
                     <div className="font-medium truncate">
@@ -147,21 +158,17 @@ export default function StudentTable({
                     </div>
                   </div>
                 </td>
-                <td
-                  className="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate"
-                  title={student.address || "-"}
-                >
+
+                <td className="px-6 py-4 text-sm text-gray-900 max-w-[250px] truncate" title={student.address || "-"}>
                   {student.address || "-"}
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                      student.status
-                    )}`}
-                  >
+                  <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(student.status)}`}>
                     {student.status}
                   </span>
                 </td>
+
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <div className="flex items-center gap-2">
                     <button
@@ -186,6 +193,7 @@ export default function StudentTable({
         </table>
       </div>
 
+      {/* Pagination */}
       <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
         <span className="text-sm text-gray-700">
           Page {currentPage} of {totalPages}

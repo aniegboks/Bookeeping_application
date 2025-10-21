@@ -27,3 +27,23 @@ export interface TransactionSummary {
   transaction_count: number;
   last_transaction_date: string | null;
 }
+
+export interface DistributionSummary {
+  inventory_item_id: string;
+  total_received_quantity?: number; // Note: API shows both naming conventions
+  total_distributed_quantity?: number;
+  total_received?: number;
+  total_distributed?: number;
+  balance_quantity: number;
+  inventory_items: {
+    id: string;
+    name: string;
+    sku: string;
+    categories: {
+      id: string;
+      name: string;
+    };
+  };
+  item_name?: string;
+  last_distribution_date: string;
+}

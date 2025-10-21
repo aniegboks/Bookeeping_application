@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   StudentInventoryCollection,
   CreateStudentInventoryCollectionInput,
@@ -50,9 +50,11 @@ export default function CollectionForm({
     given_by: null,
   });
 
-  // Helper to get full name safely
-  const getFullName = (s: Student) => [s.first_name, s.middle_name, s.last_name].filter(Boolean).join(" ");
+  // Helper: get student full name
+  const getFullName = (s: Student) =>
+    [s.first_name, s.middle_name, s.last_name].filter(Boolean).join(" ");
 
+  // When editing an existing record
   useEffect(() => {
     if (collection) {
       setFormData({
@@ -69,6 +71,13 @@ export default function CollectionForm({
     }
   }, [collection]);
 
+  // Filter students based on selected class
+  const filteredStudents = useMemo(() => {
+    if (!formData.class_id) return [];
+    return students.filter((s) => s.class_id === formData.class_id);
+  }, [students, formData.class_id]);
+
+  // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(formData);
@@ -83,30 +92,7 @@ export default function CollectionForm({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Student Select */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Student <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.student_id}
-                onChange={(e) =>
-                  setFormData({ ...formData, student_id: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-                required
-                disabled={isSubmitting}
-              >
-                <option value="">Select student</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {getFullName(s)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Class Select */}
+            {/* Class Select (first) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Class <span className="text-red-500">*</span>
@@ -114,7 +100,11 @@ export default function CollectionForm({
               <select
                 value={formData.class_id}
                 onChange={(e) =>
-                  setFormData({ ...formData, class_id: e.target.value })
+                  setFormData({
+                    ...formData,
+                    class_id: e.target.value,
+                    student_id: "", // reset student when class changes
+                  })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                 required
@@ -124,6 +114,33 @@ export default function CollectionForm({
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Student Select (depends on class) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Student <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.student_id}
+                onChange={(e) =>
+                  setFormData({ ...formData, student_id: e.target.value })
+                }
+                disabled={!formData.class_id || isSubmitting}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+              >
+                <option value="">
+                  {formData.class_id
+                    ? "Select student"
+                    : "Select class first"}
+                </option>
+                {filteredStudents.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {getFullName(s)}
                   </option>
                 ))}
               </select>
@@ -160,7 +177,10 @@ export default function CollectionForm({
               <select
                 value={formData.inventory_item_id}
                 onChange={(e) =>
-                  setFormData({ ...formData, inventory_item_id: e.target.value })
+                  setFormData({
+                    ...formData,
+                    inventory_item_id: e.target.value,
+                  })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                 required
@@ -257,10 +277,7 @@ export default function CollectionForm({
                 className="w-4 h-4 text-[#3D4C63] border-gray-300 rounded focus:ring-[#3D4C63]"
                 disabled={isSubmitting}
               />
-              <label
-                htmlFor="eligible"
-                className="ml-2 text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="eligible" className="ml-2 text-sm font-medium text-gray-700">
                 Eligible
               </label>
             </div>
@@ -276,10 +293,7 @@ export default function CollectionForm({
                 className="w-4 h-4 text-[#3D4C63] border-gray-300 rounded focus:ring-[#3D4C63]"
                 disabled={isSubmitting}
               />
-              <label
-                htmlFor="received"
-                className="ml-2 text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="received" className="ml-2 text-sm font-medium text-gray-700">
                 Received
               </label>
             </div>

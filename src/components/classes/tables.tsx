@@ -24,7 +24,7 @@ export default function ClassTable({
   classTeachers,
 }: ClassTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const totalPages = Math.ceil(classes.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

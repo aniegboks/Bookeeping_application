@@ -90,27 +90,29 @@ export default function StudentsPage() {
       return;
     }
 
-    console.log(classes)
+    const exportData = filteredStudents.map((student) => {
+      const studentClass = classes.find((cls) => cls.id === student.class_id);
 
-    const exportData = filteredStudents.map((student) => ({
-      "Admission Number": student.admission_number,
-      "First Name": student.first_name,
-      "Middle Name": student.middle_name || "-",
-      "Last Name": student.last_name,
-      "Gender": student.gender,
-      "Date of Birth": student.date_of_birth
-        ? new Date(student.date_of_birth).toLocaleDateString()
-        : "-",
-      "Class": student.class_id || "-",
-      "Guardian Name": student.guardian_name,
-      "Guardian Email": student.guardian_email || "-",
-      "Guardian Contact": student.guardian_contact || "-",
-      "Address": student.address || "-",
-      "Status": student.status,
-      "Created At": student.created_at
-        ? new Date(student.created_at).toLocaleDateString()
-        : "-",
-    }));
+      return {
+        "Admission Number": student.admission_number,
+        "First Name": student.first_name,
+        "Middle Name": student.middle_name || "-",
+        "Last Name": student.last_name,
+        "Gender": student.gender,
+        "Date of Birth": student.date_of_birth
+          ? new Date(student.date_of_birth).toLocaleDateString()
+          : "-",
+        "Class": studentClass?.name || "-",
+        "Guardian Name": student.guardian_name,
+        "Guardian Email": student.guardian_email || "-",
+        "Guardian Contact": student.guardian_contact || "-",
+        "Address": student.address || "-",
+        "Status": student.status,
+        "Created At": student.created_at
+          ? new Date(student.created_at).toLocaleDateString()
+          : "-",
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -122,6 +124,7 @@ export default function StudentsPage() {
 
     toast.success("Students exported successfully!");
   };
+
 
   // Form submission
   const handleFormSubmit = async (data: CreateStudentInput | UpdateStudentInput) => {
@@ -244,6 +247,7 @@ export default function StudentsPage() {
           <StudentTable
             students={filteredStudents}
             onEdit={handleEdit}
+            classes={classes}
             onDelete={handleDeleteRequest}
             loading={loading}
           />

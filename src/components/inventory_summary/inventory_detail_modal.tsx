@@ -2,8 +2,78 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { X, TrendingUp, TrendingDown, Package, Calendar, Download, FileText } from "lucide-react";
-import { InventorySummary, TransactionSummary } from "@/lib/types/inventory_summary";
-import { inventorySummaryApi } from "@/lib/inventory_summary";
+
+// Types
+export type TransactionType = "purchase" | "sale";
+
+// Mock API - Replace with your actual API import
+const inventorySummaryApi = {
+  async getById(inventoryId: string) {
+    // Replace with: import { inventorySummaryApi } from "@/lib/inventory_summary";
+    const response = await fetch(`/api/proxy/inventory_summary/${inventoryId}`);
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+    return response.json();
+  },
+  async getTransactionSummary(inventoryId: string, type: TransactionType) {
+    const response = await fetch(`/api/proxy/inventory_summary/${inventoryId}/transactions/${type}`);
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+    return response.json();
+  },
+  async getDistributionCollection(params: { inventory_item_id: string }) {
+    const queryParams = new URLSearchParams();
+    if (params.inventory_item_id) queryParams.append("inventory_item_id", params.inventory_item_id);
+    const response = await fetch(`/api/proxy/inventory_summary/distribution-collection/query?${queryParams}`);
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+    return response.json();
+  },
+};
+
+export interface InventorySummary {
+  id: string;
+  name: string;
+  sku: string;
+  current_stock: number;
+  total_in_quantity: number;
+  total_out_quantity: number;
+  total_in_cost: number;
+  total_out_cost: number;
+  low_stock_threshold: number;
+  is_low_stock: boolean;
+  category_name: string;
+  brand_name: string;
+  uom_name: string;
+  last_transaction_date: string | null;
+  last_purchase_date: string | null;
+  last_sale_date: string | null;
+}
+
+export interface TransactionSummary {
+  transaction_type: TransactionType;
+  total_quantity: number;
+  total_cost: number;
+  transaction_count: number;
+  last_transaction_date: string | null;
+}
+
+export interface DistributionSummary {
+  inventory_item_id: string;
+  total_received_quantity?: number;
+  total_distributed_quantity?: number;
+  total_received?: number;
+  total_distributed?: number;
+  balance_quantity: number;
+  inventory_items: {
+    id: string;
+    name: string;
+    sku: string;
+    categories: {
+      id: string;
+      name: string;
+    };
+  };
+  item_name?: string;
+  last_distribution_date: string;
+}
 
 interface InventoryDetailModalProps {
   inventoryId: string;
@@ -18,7 +88,8 @@ export function InventoryDetailModal({
 }: InventoryDetailModalProps) {
   const [summary, setSummary] = useState<InventorySummary | null>(null);
   const [purchaseSummary, setPurchaseSummary] = useState<TransactionSummary | null>(null);
-  const [saleSummary, setSaleSummary] = useState<TransactionSummary | null>(null);
+  const [distributionSummary, setDistributionSummary] = useState<DistributionSummary[]>([]);
+  const [activeTab, setActiveTab] = useState<"purchase" | "distribution">("purchase");
   const [loading, setLoading] = useState(true);
 
   const fetchDetails = useCallback(async () => {
@@ -43,18 +114,10 @@ export function InventoryDetailModal({
         }
       }
 
-      try {
-        const saleData = await inventorySummaryApi.getTransactionSummary(inventoryId, "sale");
-        setSaleSummary(saleData);
-      } catch (err) {
-        const error = err as Error;
-        if (error?.message?.includes("404") || error?.message?.includes("not found")) {
-          console.log("No sale transactions found");
-          setSaleSummary(null);
-        } else {
-          throw err;
-        }
-      }
+      const distributionData = await inventorySummaryApi.getDistributionCollection({
+        inventory_item_id: inventoryId,
+      });
+      setDistributionSummary(distributionData);
     } catch (err) {
       console.error("Error fetching inventory details:", err);
     } finally {
@@ -108,12 +171,20 @@ export function InventoryDetailModal({
       ["Transaction Count", purchaseSummary?.transaction_count || 0],
       ["Last Purchase", purchaseSummary?.last_transaction_date ? new Date(purchaseSummary.last_transaction_date).toLocaleDateString() : "N/A"],
       [""],
-      ["Sale Summary"],
-      ["Total Quantity", saleSummary?.total_quantity || 0],
-      ["Total Revenue", `₦${(saleSummary?.total_cost || 0).toFixed(2)}`],
-      ["Transaction Count", saleSummary?.transaction_count || 0],
-      ["Last Sale", saleSummary?.last_transaction_date ? new Date(saleSummary.last_transaction_date).toLocaleDateString() : "N/A"],
+      ["Distribution Summary"],
+      ["Item Name", "Category", "Received Qty", "Distributed Qty", "Balance", "Last Distributed"],
     ];
+
+    distributionSummary.forEach((dist) => {
+      csvData.push([
+        dist.item_name || dist.inventory_items?.name || "—",
+        dist.inventory_items?.categories?.name || "—",
+        String(dist.total_received_quantity ?? 0),
+        String(dist.total_distributed_quantity ?? 0),
+        String(dist.balance_quantity ?? 0),
+        dist.last_distribution_date ? new Date(dist.last_distribution_date).toLocaleDateString() : "N/A",
+      ]);
+    });
 
     const csvContent = csvData.map(row => row.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -171,7 +242,7 @@ export function InventoryDetailModal({
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3D4C63]"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           ) : summary ? (
             <div className="p-6">
@@ -269,96 +340,133 @@ export function InventoryDetailModal({
               </div>
 
               {/* Transaction Summaries */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Purchase Summary */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
+              <div className="space-y-6">
+                {/* Tab Navigation */}
+                <div className="flex border-b border-gray-200">
+                  <button
+                    onClick={() => setActiveTab("purchase")}
+                    className={`px-4 py-2 font-medium text-sm transition-colors ${
+                      activeTab === "purchase"
+                        ? "border-b-2 border-green-600 text-green-600"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
                     Purchase Summary
-                  </h3>
-                  {purchaseSummary ? (
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Quantity</span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {purchaseSummary.total_quantity}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Cost</span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          ₦{purchaseSummary.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Transaction Count</span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {purchaseSummary.transaction_count}
-                        </span>
-                      </div>
-                      {purchaseSummary.last_transaction_date && (
-                        <div className="flex justify-between pt-2 border-t">
-                          <span className="text-sm text-gray-600 flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            Last Purchase
-                          </span>
-                          <span className="text-sm font-medium text-gray-900">
-                            {new Date(purchaseSummary.last_transaction_date).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <p className="text-sm text-gray-500">No purchase records available</p>
-                    </div>
-                  )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("distribution")}
+                    className={`px-4 py-2 font-medium text-sm transition-colors ${
+                      activeTab === "distribution"
+                        ? "border-b-2 border-orange-600 text-orange-600"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Distribution Summary
+                  </button>
                 </div>
 
-                {/* Sale Summary */}
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5 text-orange-600" />
-                    Sale Summary
-                  </h3>
-                  {saleSummary ? (
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Quantity</span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {saleSummary.total_quantity}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Revenue</span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          ₦{saleSummary.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Transaction Count</span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {saleSummary.transaction_count}
-                        </span>
-                      </div>
-                      {saleSummary.last_transaction_date && (
-                        <div className="flex justify-between pt-2 border-t">
-                          <span className="text-sm text-gray-600 flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            Last Sale
-                          </span>
-                          <span className="text-sm font-medium text-gray-900">
-                            {new Date(saleSummary.last_transaction_date).toLocaleDateString()}
+                {/* Purchase Summary */}
+                {activeTab === "purchase" && (
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                      Purchase Summary
+                    </h3>
+                    {purchaseSummary ? (
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Total Quantity</span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {purchaseSummary.total_quantity}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <p className="text-sm text-gray-500">No sale records available</p>
-                    </div>
-                  )}
-                </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Total Cost</span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            ₦{purchaseSummary.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Transaction Count</span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {purchaseSummary.transaction_count}
+                          </span>
+                        </div>
+                        {purchaseSummary.last_transaction_date && (
+                          <div className="flex justify-between pt-2 border-t">
+                            <span className="text-sm text-gray-600 flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              Last Purchase
+                            </span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(purchaseSummary.last_transaction_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-sm text-gray-500">No purchase records available</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Distribution Summary */}
+                {activeTab === "distribution" && (
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <TrendingDown className="w-5 h-5 text-orange-600" />
+                      Distribution Summary
+                    </h3>
+                    {distributionSummary.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border border-gray-200 text-sm">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="text-left px-3 py-2 border-b">Item Name</th>
+                              <th className="text-left px-3 py-2 border-b">Category</th>
+                              <th className="text-left px-3 py-2 border-b">Received Qty</th>
+                              <th className="text-left px-3 py-2 border-b">Distributed Qty</th>
+                              <th className="text-left px-3 py-2 border-b">Balance</th>
+                              <th className="text-left px-3 py-2 border-b">Last Distributed</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {distributionSummary.map((dist, index) => (
+                              <tr key={index} className="hover:bg-gray-50">
+                                <td className="px-3 py-2 border-b">
+                                  {dist.item_name || dist.inventory_items?.name || "—"}
+                                </td>
+                                <td className="px-3 py-2 border-b">
+                                  {dist.inventory_items?.categories?.name || "—"}
+                                </td>
+                                <td className="px-3 py-2 border-b">
+                                  {dist.total_received_quantity ?? 0}
+                                </td>
+                                <td className="px-3 py-2 border-b">
+                                  {dist.total_distributed_quantity ?? 0}
+                                </td>
+                                <td className="px-3 py-2 border-b">
+                                  {dist.balance_quantity ?? 0}
+                                </td>
+                                <td className="px-3 py-2 border-b">
+                                  {dist.last_distribution_date
+                                    ? new Date(dist.last_distribution_date).toLocaleDateString()
+                                    : "N/A"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-sm text-gray-500">No distribution records available</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Last Transaction Dates */}
@@ -377,14 +485,6 @@ export function InventoryDetailModal({
                         <p className="text-xs text-gray-600 mb-1">Last Purchase</p>
                         <p className="text-sm font-medium text-gray-900">
                           {new Date(summary.last_purchase_date).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                    {summary.last_sale_date && (
-                      <div>
-                        <p className="text-xs text-gray-600 mb-1">Last Sale</p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {new Date(summary.last_sale_date).toLocaleString()}
                         </p>
                       </div>
                     )}

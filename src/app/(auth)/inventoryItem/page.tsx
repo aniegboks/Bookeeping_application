@@ -291,7 +291,7 @@ export default function InventoryPage() {
         <div className="flex justify-start mt-4">
           <button
             onClick={handleExport}
-            className="px-5 py-2 font-medium rounded bg-[#3D4C63] hover:bg-[#495C79] text-white transition rounded-sm"
+            className="px-5 py-2 font-medium bg-[#3D4C63] hover:bg-[#495C79] text-white transition rounded-sm"
           >
             <span className="flex gap-2">
               <Download className="w-5 h-5" />

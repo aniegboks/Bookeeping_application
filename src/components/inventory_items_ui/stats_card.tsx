@@ -1,7 +1,7 @@
 "use client";
 
 import { InventoryItem } from "@/lib/types/inventory_item";
-import { Plus, Tag, Search, DollarSign } from "lucide-react";
+import { Plus, Tag, Search, DollarSign, HandCoins, Banknote } from "lucide-react";
 
 type StatsCardsProps = {
   items: InventoryItem[];
@@ -49,7 +49,7 @@ export default function StatsCards({ items, filteredItems }: StatsCardsProps) {
         progress={searchResultsPercent}
       />
       <Card
-        icon={<DollarSign className="h-6 w-6 text-blue-600" />}
+        icon={<Banknote className="h-6 w-6 text-blue-600" />}
         title="Avg Cost Price"
         value={avgCost}
         description="Average cost price of inventory"
@@ -58,7 +58,7 @@ export default function StatsCards({ items, filteredItems }: StatsCardsProps) {
         progress={50} // optional placeholder
       />
       <Card
-        icon={<DollarSign className="h-6 w-6 text-green-600" />}
+        icon={<HandCoins className="h-6 w-6 text-green-600" />}
         title="Avg Selling Price"
         value={avgSelling}
         description="Average selling price of inventory"

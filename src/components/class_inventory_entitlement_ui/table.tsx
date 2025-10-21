@@ -113,7 +113,7 @@ export default function EntitlementTable({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onEdit(entitlement)}
-                      className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg rounded-lg transition-colors"
+                      className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-sm transition-colors"
                       title="Edit"
                     >
                       <Edit className="h-4 w-4" />

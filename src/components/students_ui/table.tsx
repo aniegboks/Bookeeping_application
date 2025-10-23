@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Edit, Trash2, User } from "lucide-react";
 import { Student } from "@/lib/types/students";
-import { SchoolClass } from "@/lib/types/classes"; // ✅ import your class type
+import { SchoolClass } from "@/lib/types/classes"; 
 
 interface StudentTableProps {
   students: Student[];
-  classes: SchoolClass[]; // ✅ added this
+  classes: SchoolClass[]; 
   onEdit: (student: Student) => void;
   onDelete: (student: Student) => void;
   loading?: boolean;
@@ -79,7 +79,6 @@ export default function StudentTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Admission No
               </th>
-              {/* ✅ New Class Column */}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Class
               </th>
@@ -132,7 +131,6 @@ export default function StudentTable({
                   {student.admission_number}
                 </td>
 
-                {/* ✅ Class name resolved from class_id */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {classes.find((cls) => cls.id === student.class_id)?.name || "-"}
                 </td>

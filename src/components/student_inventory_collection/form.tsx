@@ -95,7 +95,7 @@ export default function CollectionForm({
             {/* Class Select (first) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Class <span className="text-red-500">*</span>
+                Class <span className="text-gray-500">*</span>
               </label>
               <select
                 value={formData.class_id}
@@ -122,7 +122,7 @@ export default function CollectionForm({
             {/* Student Select (depends on class) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Student <span className="text-red-500">*</span>
+                Student <span className="text-gray-500">*</span>
               </label>
               <select
                 value={formData.student_id}
@@ -149,7 +149,7 @@ export default function CollectionForm({
             {/* Session Term */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Session Term <span className="text-red-500">*</span>
+                Session Term <span className="text-gray-500">*</span>
               </label>
               <select
                 value={formData.session_term_id}
@@ -172,7 +172,7 @@ export default function CollectionForm({
             {/* Inventory Item */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Inventory Item <span className="text-red-500">*</span>
+                Inventory Item <span className="text-gray-500">*</span>
               </label>
               <select
                 value={formData.inventory_item_id}
@@ -198,7 +198,7 @@ export default function CollectionForm({
             {/* Quantity */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Quantity <span className="text-red-500">*</span>
+                Quantity <span className="text-gray-500">*</span>
               </label>
               <input
                 type="number"

@@ -144,54 +144,94 @@ export function InventoryDetailModal({
       : 0;
     const stockValue = summary.current_stock * avgCost;
 
-    const csvData = [
-      ["Inventory Details Report"],
-      [""],
-      ["Basic Information"],
-      ["Item Name", summary.name],
-      ["SKU", summary.sku],
-      ["Category", summary.category_name],
-      ["Brand", summary.brand_name],
-      ["Unit of Measure", summary.uom_name],
-      ["Status", summary.is_low_stock ? "Low Stock" : "In Stock"],
-      [""],
-      ["Stock Information"],
-      ["Current Stock", `${summary.current_stock} ${summary.uom_name}`],
-      ["Low Stock Threshold", summary.low_stock_threshold],
-      ["Total In Quantity", summary.total_in_quantity],
-      ["Total In Cost", `₦${summary.total_in_cost.toFixed(2)}`],
-      ["Total Out Quantity", summary.total_out_quantity],
-      ["Total Out Cost", `₦${summary.total_out_cost.toFixed(2)}`],
-      ["Average Cost", `₦${avgCost.toFixed(2)}`],
-      ["Stock Value", `₦${stockValue.toFixed(2)}`],
-      [""],
-      ["Purchase Summary"],
-      ["Total Quantity", purchaseSummary?.total_quantity || 0],
-      ["Total Cost", `₦${(purchaseSummary?.total_cost || 0).toFixed(2)}`],
-      ["Transaction Count", purchaseSummary?.transaction_count || 0],
-      ["Last Purchase", purchaseSummary?.last_transaction_date ? new Date(purchaseSummary.last_transaction_date).toLocaleDateString() : "N/A"],
-      [""],
-      ["Distribution Summary"],
-      ["Item Name", "Category", "Received Qty", "Distributed Qty", "Balance", "Last Distributed"],
-    ];
+    // Create Excel XML with multiple sheets
+    const excelXML = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Header">
+   <Font ss:Bold="1" ss:Size="12"/>
+   <Interior ss:Color="#4472C4" ss:Pattern="Solid"/>
+   <Font ss:Color="#FFFFFF"/>
+  </Style>
+  <Style ss:ID="SubHeader">
+   <Font ss:Bold="1"/>
+   <Interior ss:Color="#D9E1F2" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="Title">
+   <Font ss:Bold="1" ss:Size="14"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Overview">
+  <Table>
+   <Row><Cell ss:StyleID="Title"><Data ss:Type="String">Inventory Details Report</Data></Cell></Row>
+   <Row/>
+   <Row><Cell ss:StyleID="SubHeader"><Data ss:Type="String">Basic Information</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Item Name</Data></Cell><Cell><Data ss:Type="String">${summary.name}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">SKU</Data></Cell><Cell><Data ss:Type="String">${summary.sku}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Category</Data></Cell><Cell><Data ss:Type="String">${summary.category_name}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Brand</Data></Cell><Cell><Data ss:Type="String">${summary.brand_name}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Unit of Measure</Data></Cell><Cell><Data ss:Type="String">${summary.uom_name}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Status</Data></Cell><Cell><Data ss:Type="String">${summary.is_low_stock ? "Low Stock" : "In Stock"}</Data></Cell></Row>
+   <Row/>
+   <Row><Cell ss:StyleID="SubHeader"><Data ss:Type="String">Stock Information</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Current Stock</Data></Cell><Cell><Data ss:Type="Number">${summary.current_stock}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Low Stock Threshold</Data></Cell><Cell><Data ss:Type="Number">${summary.low_stock_threshold}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Total In Quantity</Data></Cell><Cell><Data ss:Type="Number">${summary.total_in_quantity}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Total In Cost (₦)</Data></Cell><Cell><Data ss:Type="Number">${summary.total_in_cost.toFixed(2)}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Total Out Quantity</Data></Cell><Cell><Data ss:Type="Number">${summary.total_out_quantity}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Total Out Cost (₦)</Data></Cell><Cell><Data ss:Type="Number">${summary.total_out_cost.toFixed(2)}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Average Cost (₦)</Data></Cell><Cell><Data ss:Type="Number">${avgCost.toFixed(2)}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Stock Value (₦)</Data></Cell><Cell><Data ss:Type="Number">${stockValue.toFixed(2)}</Data></Cell></Row>
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Purchase Summary">
+  <Table>
+   <Row><Cell ss:StyleID="Title"><Data ss:Type="String">Purchase Summary</Data></Cell></Row>
+   <Row/>
+   <Row>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Metric</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Value</Data></Cell>
+   </Row>
+   <Row><Cell><Data ss:Type="String">Total Quantity</Data></Cell><Cell><Data ss:Type="Number">${purchaseSummary?.total_quantity || 0}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Total Cost (₦)</Data></Cell><Cell><Data ss:Type="Number">${(purchaseSummary?.total_cost || 0).toFixed(2)}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Transaction Count</Data></Cell><Cell><Data ss:Type="Number">${purchaseSummary?.transaction_count || 0}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Last Purchase Date</Data></Cell><Cell><Data ss:Type="String">${purchaseSummary?.last_transaction_date ? new Date(purchaseSummary.last_transaction_date).toLocaleDateString() : "N/A"}</Data></Cell></Row>
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Distribution Summary">
+  <Table>
+   <Row><Cell ss:StyleID="Title"><Data ss:Type="String">Distribution Summary</Data></Cell></Row>
+   <Row/>
+   <Row>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Item Name</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Category</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Received Qty</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Distributed Qty</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Balance</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Last Distributed</Data></Cell>
+   </Row>
+   ${distributionSummary.map((dist) => `<Row>
+    <Cell><Data ss:Type="String">${(dist.item_name || dist.inventory_items?.name || "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</Data></Cell>
+    <Cell><Data ss:Type="String">${(dist.inventory_items?.categories?.name || "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</Data></Cell>
+    <Cell><Data ss:Type="Number">${dist.total_received_quantity ?? 0}</Data></Cell>
+    <Cell><Data ss:Type="Number">${dist.total_distributed_quantity ?? 0}</Data></Cell>
+    <Cell><Data ss:Type="Number">${dist.balance_quantity ?? 0}</Data></Cell>
+    <Cell><Data ss:Type="String">${dist.last_distribution_date ? new Date(dist.last_distribution_date).toLocaleDateString() : "N/A"}</Data></Cell>
+   </Row>`).join('\n   ')}
+  </Table>
+ </Worksheet>
+</Workbook>`;
 
-    distributionSummary.forEach((dist) => {
-      csvData.push([
-        dist.item_name || dist.inventory_items?.name || "—",
-        dist.inventory_items?.categories?.name || "—",
-        String(dist.total_received_quantity ?? 0),
-        String(dist.total_distributed_quantity ?? 0),
-        String(dist.balance_quantity ?? 0),
-        dist.last_distribution_date ? new Date(dist.last_distribution_date).toLocaleDateString() : "N/A",
-      ]);
-    });
-
-    const csvContent = csvData.map(row => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([excelXML], { type: "application/vnd.ms-excel" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `inventory_${summary.sku}_${Date.now()}.csv`);
+    link.setAttribute("download", `inventory_${summary.sku}_${Date.now()}.xls`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -221,7 +261,7 @@ export function InventoryDetailModal({
                 title="Export to Spreadsheet"
               >
                 <FileText className="w-4 h-4" />
-                CSV
+                Excel
               </button>
               <button
                 onClick={exportToPDF}

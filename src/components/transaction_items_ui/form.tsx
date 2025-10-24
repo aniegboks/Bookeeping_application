@@ -32,17 +32,27 @@ export default function TransactionForm({
   users,
   currentUserId,
 }: TransactionFormProps) {
-  const [formData, setFormData] = useState<CreateInventoryTransactionInput>({
+  const [formData, setFormData] = useState<
+    Omit<
+      CreateInventoryTransactionInput,
+      "qty_in" | "qty_out" | "in_cost" | "out_cost"
+    > & {
+      qty_in: number | string;
+      qty_out: number | string;
+      in_cost: number | string;
+      out_cost: number | string;
+    }
+  >({
     item_id: transaction?.item_id || "",
     supplier_id: transaction?.supplier_id || "",
     receiver_id: transaction?.receiver_id || "",
     supplier_receiver: transaction?.supplier_receiver || "",
     transaction_type: transaction?.transaction_type || "purchase",
-    qty_in: transaction?.qty_in || 0,
-    in_cost: transaction?.in_cost || 0,
-    qty_out: transaction?.qty_out || 0,
-    out_cost: transaction?.out_cost || 0,
-    status: "completed" as const, // ✅ locked to completed
+    qty_in: transaction?.qty_in?.toString() || "",
+    in_cost: transaction?.in_cost?.toString() || "",
+    qty_out: transaction?.qty_out?.toString() || "",
+    out_cost: transaction?.out_cost?.toString() || "",
+    status: "completed" as const,
     reference_no: transaction?.reference_no || "",
     notes: transaction?.notes || "",
     transaction_date:
@@ -62,7 +72,7 @@ export default function TransactionForm({
     setFormData((prev) => ({
       ...prev,
       [name]: ["qty_in", "qty_out", "in_cost", "out_cost"].includes(name)
-        ? Number(value)
+        ? value === "" ? "" : Number(value)
         : value,
     }));
   };
@@ -70,9 +80,18 @@ export default function TransactionForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // convert string numbers to actual numbers for submission
     const dataToSubmit: CreateInventoryTransactionInput = {
       ...formData,
-      status: "completed" as const,
+      qty_in:
+        formData.qty_in === "" ? 0 : Number(formData.qty_in),
+      qty_out:
+        formData.qty_out === "" ? 0 : Number(formData.qty_out),
+      in_cost:
+        formData.in_cost === "" ? 0 : Number(formData.in_cost),
+      out_cost:
+        formData.out_cost === "" ? 0 : Number(formData.out_cost),
+      status: "completed",
     };
 
     if (isPurchase && (!dataToSubmit.qty_in || dataToSubmit.qty_in <= 0)) {

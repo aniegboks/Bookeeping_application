@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { InventorySummary } from "@/lib/types/inventory_summary";
-import { AlertTriangle, ArrowUpDown, CheckCircle, Eye } from "lucide-react";
+import { ArrowUpDown, CheckCircle, Eye } from "lucide-react";
 import { InventoryDetailModal } from "./inventory_detail_modal";
 
 interface InventorySummaryTableProps {
@@ -15,7 +15,7 @@ type SortDirection = "asc" | "desc";
 export function InventorySummaryTable({ summaries }: InventorySummaryTableProps) {
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [filter, setFilter] = useState<"all" | "low_stock" | "adequate">("all");
+  const [filter, setFilter] = useState<"all" | "low_stock" | "adequate">("adequate"); // default to adequate
   const [selectedInventoryId, setSelectedInventoryId] = useState<string | null>(null);
 
   const handleSort = (field: SortField) => {
@@ -37,7 +37,6 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
     return (summary.current_stock || 0) <= threshold;
   };
 
-  // Derived data
   const { sortedSummaries, lowStockCount, adequateStockCount } = useMemo(() => {
     const filtered = summaries.filter((s) => {
       if (filter === "low_stock") return isLowStock(s);
@@ -78,33 +77,19 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
     };
   }, [summaries, filter, sortField, sortDirection]);
 
-  const overallStatus =
-    summaries.length === 0
-      ? "No data available"
-      : lowStockCount > 0
-      ? `${lowStockCount} item${lowStockCount > 1 ? "s" : ""} low on stock`
-      : "All items are adequately stocked";
-
-  const overallStatusColor =
-    summaries.length === 0
-      ? "bg-gray-100 text-gray-700"
-      : lowStockCount > 0
-      ? "bg-red-50 text-red-700 border-red-200"
-      : "bg-green-50 text-green-700 border-green-200";
-
   return (
     <div className="bg-white rounded-sm border border-gray-200">
       {/* Header with filter */}
-      <div
-        className={`p-4 border-b border-gray-200 flex items-center justify-between ${overallStatusColor}`}
-      >
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white">
         <div className="flex items-center gap-2">
-          {lowStockCount > 0 ? (
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-          ) : (
-            <CheckCircle className="w-5 h-5 text-green-600" />
-          )}
-          <h2 className="text-sm font-medium">{overallStatus}</h2>
+          <CheckCircle className="w-5 h-5 text-gray-600" />
+          <h2 className="text-sm font-medium text-gray-800">
+            {summaries.length === 0
+              ? "No data available"
+              : lowStockCount > 0
+              ? `${lowStockCount} item${lowStockCount > 1 ? "s" : ""} low on stock`
+              : "All items are adequately stocked"}
+          </h2>
         </div>
 
         <div className="flex gap-2">
@@ -112,7 +97,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
             onClick={() => setFilter("all")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               filter === "all"
-                ? "bg-[#3D4C63] hover:bg-[#2f3a4e] text-white"
+                ? "bg-gray-300 text-gray-900"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -122,7 +107,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
             onClick={() => setFilter("low_stock")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               filter === "low_stock"
-                ? "bg-red-600 text-white"
+                ? "bg-gray-300 text-gray-900"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -132,7 +117,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
             onClick={() => setFilter("adequate")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               filter === "adequate"
-                ? "bg-green-600 text-white"
+                ? "bg-gray-300 text-gray-900"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -143,7 +128,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full bg-white">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               {[{ key: "name", label: "Item Name" }, { key: "sku", label: "SKU" }, { key: "category_name", label: "Category" }].map(
@@ -165,7 +150,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
               <th className="px-4 py-3 text-right">Total Out</th>
               <th className="px-4 py-3 text-right">Avg Cost</th>
               <th className="px-4 py-3 text-center">Status</th>
-              <th className="px-4 py-3 text-center">View</th> {/* Eye icon column */}
+              <th className="px-4 py-3 text-center">View</th>
             </tr>
           </thead>
 
@@ -174,11 +159,9 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
               const avgCost = getAvgCost(summary);
               const lowStock = isLowStock(summary);
               const threshold = summary.low_stock_threshold || 0;
-              const stockPercentage =
-                threshold > 0 ? ((summary.current_stock || 0) / threshold) * 100 : 100;
 
               return (
-                <tr key={summary.id} className={`hover:bg-gray-50 ${lowStock ? "bg-red-50/30" : ""}`}>
+                <tr key={summary.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{summary.name}</p>
@@ -187,11 +170,7 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700">{summary.sku || "N/A"}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{summary.category_name || "N/A"}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span className={`text-sm font-medium ${lowStock ? "text-red-600" : "text-gray-900"}`}>
-                      {summary.current_stock || 0} {summary.uom_name}
-                    </span>
-                  </td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-900">{summary.current_stock || 0} {summary.uom_name}</td>
                   <td className="px-4 py-3 text-right text-sm text-gray-500">{threshold}</td>
                   <td className="px-4 py-3 text-right text-sm text-gray-900">{summary.total_in_quantity || 0}</td>
                   <td className="px-4 py-3 text-right text-sm text-gray-900">{summary.total_out_quantity || 0}</td>
@@ -199,17 +178,12 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
                     ₦{avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {lowStock ? (
-                      <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-100 rounded-full">
-                        <AlertTriangle className="w-4 h-4 text-red-600" />
-                        <span className="text-xs font-semibold text-red-700">Low Stock</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-green-100 rounded-full">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-xs font-semibold text-green-700">Adequate</span>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full">
+                      <CheckCircle className="w-4 h-4 text-gray-600" />
+                      <span className="text-xs font-semibold text-gray-700">
+                        {lowStock ? "Low Stock" : "Adequate"}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button

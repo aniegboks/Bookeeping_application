@@ -23,6 +23,7 @@ export type InventoryItem = {
   low_stock_threshold: number;
   created_at: string;
   updated_at: string;
+  created_by: string; 
 
   category_name: string;
   sub_category_name: string;
@@ -50,7 +51,6 @@ export type InventoryItem = {
   };
 };
 
-// 👇 Add this alias
 export type GlobalInventoryItem = InventoryItem;
 
 export type CreateInventoryItemInput = Omit<
@@ -71,6 +71,8 @@ export type CreateInventoryItemInput = Omit<
   | "sub_categories"
   | "uoms"
   | "brands"
->;
+> & {
+  created_by: string;
+};
 
 export type UpdateInventoryItemInput = Partial<CreateInventoryItemInput>;

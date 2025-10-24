@@ -34,6 +34,7 @@ interface InventoryItemFormData {
   cost_price: string;
   selling_price: string;
   low_stock_threshold: string;
+  created_by: string;
 }
 
 export default function InventoryItemForm({
@@ -54,8 +55,12 @@ export default function InventoryItemForm({
     uom_id: item?.uom_id || "",
     barcode: item?.barcode || "",
     cost_price: item?.cost_price?.toString() || "",
-    selling_price: item?.selling_price?.toString() || "0",
-    low_stock_threshold: item?.low_stock_threshold?.toString() || "0",
+    selling_price: item?.selling_price?.toString() || "",
+    low_stock_threshold: item?.low_stock_threshold?.toString() || "",
+    created_by:
+      typeof window !== "undefined"
+        ? localStorage.getItem("user_id") || ""
+        : "",
   });
 
   const [filteredSubCategories, setFilteredSubCategories] = useState<SubCategory[]>([]);
@@ -91,7 +96,8 @@ export default function InventoryItemForm({
     if (!formData.brand_id) newErrors.brand_id = "Brand is required";
     if (!formData.uom_id) newErrors.uom_id = "Unit of measure is required";
     if (!formData.cost_price) newErrors.cost_price = "Cost price is required";
-    if (!formData.selling_price) newErrors.selling_price = "Selling price is required";
+    if (!formData.selling_price)
+      newErrors.selling_price = "Selling price is required";
     if (!formData.low_stock_threshold)
       newErrors.low_stock_threshold = "Low stock threshold is required";
 
@@ -101,13 +107,6 @@ export default function InventoryItemForm({
       newErrors.selling_price = "Selling price must be a number";
     if (formData.low_stock_threshold && isNaN(Number(formData.low_stock_threshold)))
       newErrors.low_stock_threshold = "Low stock threshold must be a number";
-
-    if (Number(formData.cost_price) < 0)
-      newErrors.cost_price = "Cost price cannot be negative";
-    if (Number(formData.selling_price) < 0)
-      newErrors.selling_price = "Selling price cannot be negative";
-    if (Number(formData.low_stock_threshold) < 0)
-      newErrors.low_stock_threshold = "Low stock threshold cannot be negative";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -133,9 +132,8 @@ export default function InventoryItemForm({
     setIsSubmitting(true);
 
     try {
-      // ✅ Correctly typed payload
       const payload: CreateInventoryItemInput = {
-        sku: formData.sku.trim() || "",
+        sku: formData.sku.trim(),
         name: formData.name.trim(),
         category_id: formData.category_id,
         brand_id: formData.brand_id,
@@ -144,7 +142,8 @@ export default function InventoryItemForm({
         selling_price: parseFloat(formData.selling_price),
         low_stock_threshold: parseFloat(formData.low_stock_threshold),
         sub_category_id: formData.sub_category_id || "",
-        barcode: formData.barcode.trim() || "",
+        barcode: formData.barcode.trim(),
+        created_by: formData.created_by || localStorage.getItem("user_id") || "",
       };
 
       if (item) {
@@ -183,23 +182,21 @@ export default function InventoryItemForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* SKU */}
             <div>
-              <label className="block text-sm font-medium mb-1">
-                SKU <span className="text-gray-400">(Optional)</span>
-              </label>
+              <label className="block text-sm font-medium mb-1">SKU</label>
               <input
                 type="text"
                 name="sku"
                 value={formData.sku}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Auto-generated if empty"
+                className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             {/* Name */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Name <span className="text-gray-400">*</span>
+                Name <span className="text-gray-500">*</span>
               </label>
               <input
                 type="text"
@@ -207,7 +204,7 @@ export default function InventoryItemForm({
                 value={formData.name}
                 onChange={handleChange}
                 className={`w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.name ? "border-red-500" : ""
+                  errors.name ? "border-gray-500" : ""
                 }`}
               />
             </div>
@@ -215,14 +212,14 @@ export default function InventoryItemForm({
             {/* Category */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Category <span className="text-gray-400">*</span>
+                Category <span className="text-gray-500">*</span>
               </label>
               <select
                 name="category_id"
                 value={formData.category_id}
                 onChange={handleChange}
                 className={`w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.category_id ? "border-red-500" : ""
+                  errors.category_id ? "border-gray-500" : ""
                 }`}
               >
                 <option value="">Select Category</option>
@@ -234,11 +231,9 @@ export default function InventoryItemForm({
               </select>
             </div>
 
-            {/* Sub-Category */}
+            {/* Subcategory */}
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Sub-Category <span className="text-gray-400">(Optional)</span>
-              </label>
+              <label className="block text-sm font-medium mb-1">Sub-Category</label>
               <select
                 name="sub_category_id"
                 value={formData.sub_category_id}
@@ -260,14 +255,14 @@ export default function InventoryItemForm({
             {/* Brand */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Brand <span className="text-gray-400">*</span>
+                Brand <span className="text-gray-500">*</span>
               </label>
               <select
                 name="brand_id"
                 value={formData.brand_id}
                 onChange={handleChange}
                 className={`w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.brand_id ? "border-red-500" : ""
+                  errors.brand_id ? "border-gray-500" : ""
                 }`}
               >
                 <option value="">Select Brand</option>
@@ -282,14 +277,14 @@ export default function InventoryItemForm({
             {/* UOM */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Unit of Measure <span className="text-gray-400">*</span>
+                Unit of Measure <span className="text-gray-500">*</span>
               </label>
               <select
                 name="uom_id"
                 value={formData.uom_id}
                 onChange={handleChange}
                 className={`w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.uom_id ? "border-red-500" : ""
+                  errors.uom_id ? "border-gray-500" : ""
                 }`}
               >
                 <option value="">Select UOM</option>
@@ -303,9 +298,7 @@ export default function InventoryItemForm({
 
             {/* Barcode */}
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Barcode <span className="text-gray-400">(Optional)</span>
-              </label>
+              <label className="block text-sm font-medium mb-1">Barcode</label>
               <input
                 type="text"
                 name="barcode"
@@ -318,7 +311,7 @@ export default function InventoryItemForm({
             {/* Cost Price */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Cost Price <span className="text-gray-400">*</span>
+                Cost Price <span className="text-gray-500">*</span>
               </label>
               <input
                 type="number"
@@ -327,7 +320,7 @@ export default function InventoryItemForm({
                 value={formData.cost_price}
                 onChange={handleChange}
                 className={`w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.cost_price ? "border-red-500" : ""
+                  errors.cost_price ? "border-gray-500" : ""
                 }`}
               />
             </div>
@@ -335,7 +328,7 @@ export default function InventoryItemForm({
             {/* Selling Price */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Selling Price <span className="text-gray-400">*</span>
+                Selling Price <span className="text-gray-500">*</span>
               </label>
               <input
                 type="number"
@@ -344,7 +337,7 @@ export default function InventoryItemForm({
                 value={formData.selling_price}
                 onChange={handleChange}
                 className={`w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.selling_price ? "border-red-500" : ""
+                  errors.selling_price ? "border-gray-500" : ""
                 }`}
               />
             </div>
@@ -352,7 +345,7 @@ export default function InventoryItemForm({
             {/* Low Stock Threshold */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Low Stock Threshold <span className="text-gray-400">*</span>
+                Low Stock Threshold <span className="text-gray-500">*</span>
               </label>
               <input
                 type="number"
@@ -365,6 +358,9 @@ export default function InventoryItemForm({
               />
             </div>
           </div>
+
+          {/* Hidden Created By */}
+          <input type="hidden" name="created_by" value={formData.created_by} />
 
           {/* Buttons */}
           <div className="flex justify-end mt-4 gap-3">

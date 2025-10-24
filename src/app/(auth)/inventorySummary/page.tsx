@@ -10,11 +10,10 @@ import { inventoryItemApi } from "@/lib/inventory_item";
 
 import { InventorySummaryStats } from "@/components/inventory_summary/stats_card";
 import { InventorySummaryTable } from "@/components/inventory_summary/table";
-import { AllInventoryTable } from "@/components/inventory_summary/get_all_table";
 import { BulkInventoryLoader } from "@/components/inventory_summary/bulk_inventory_loader";
 import { LowStockAlert } from "@/components/inventory_summary/low_stock_alert";
 import LoadingSpinner from "@/components/ui/loading_spinner";
-
+import { GlobalInventoryEnhancedReport } from "@/components/inventory_summary/global_summary"
 export default function InventorySummaryPage() {
   const [summaries, setSummaries] = useState<InventorySummary[]>([]);
   const [allInventories, setAllInventories] = useState<InventorySummary[]>([]);
@@ -125,9 +124,8 @@ export default function InventorySummaryPage() {
 
       <InventorySummaryStats summaries={summaries} />
       {/* All Inventory Table */}
-      <div className="mt-8">
-        <AllInventoryTable inventories={allInventories} />
-      </div>
+
+      <GlobalInventoryEnhancedReport />
 
       {/* Low Stock Table */}
       <InventorySummaryTable summaries={summaries} />
@@ -142,7 +140,6 @@ export default function InventorySummaryPage() {
           Bulk Load Inventories
         </button>
       </div>
-
       {/* Bulk Loader Modal */}
       <BulkInventoryLoader
         isOpen={showBulkLoader}

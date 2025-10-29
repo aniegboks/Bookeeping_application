@@ -63,7 +63,18 @@ export default function SupplierModal({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    
+    // If contact_name is being changed, automatically update the company name
+    if (name === "contact_name") {
+      setFormData((prev) => ({ 
+        ...prev, 
+        contact_name: value,
+        name: value // Auto-fill company name with contact name
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,40 +118,42 @@ export default function SupplierModal({
           {/* Basic Information */}
           <div>
             <h3 className="text-lg font-semibold text-slate-800 mb-3">
-              Basic Information
+              Company Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Name */}
+              {/* Contact Name (Now First) */}
               <div className="col-span-1 md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
-                />
-              </div>
-
-              {/* Contact Name */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Contact Name
+                  Contact Name *
                 </label>
                 <input
                   type="text"
                   name="contact_name"
                   value={formData.contact_name}
                   onChange={handleChange}
+                  required
                   className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 />
               </div>
 
-              {/* Email */}
+              {/* Company Name (Auto-filled, Read-only) */}
               <div>
+                <label className="block text-sm font-medium text-slate-700">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  readOnly
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 bg-gray-50 cursor-not-allowed"
+                  placeholder="Auto-filled from contact name"
+                />
+              </div>
+
+              {/* Email */}
+              <div className="col-span-1 md:col-span-3">
                 <label className="block text-sm font-medium text-slate-700">
                   Email
                 </label>

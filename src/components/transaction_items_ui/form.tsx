@@ -80,17 +80,12 @@ export default function TransactionForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // convert string numbers to actual numbers for submission
     const dataToSubmit: CreateInventoryTransactionInput = {
       ...formData,
-      qty_in:
-        formData.qty_in === "" ? 0 : Number(formData.qty_in),
-      qty_out:
-        formData.qty_out === "" ? 0 : Number(formData.qty_out),
-      in_cost:
-        formData.in_cost === "" ? 0 : Number(formData.in_cost),
-      out_cost:
-        formData.out_cost === "" ? 0 : Number(formData.out_cost),
+      qty_in: formData.qty_in === "" ? 0 : Number(formData.qty_in),
+      qty_out: formData.qty_out === "" ? 0 : Number(formData.qty_out),
+      in_cost: formData.in_cost === "" ? 0 : Number(formData.in_cost),
+      out_cost: formData.out_cost === "" ? 0 : Number(formData.out_cost),
       status: "completed",
     };
 
@@ -213,14 +208,7 @@ export default function TransactionForm({
               <select
                 name="supplier_id"
                 value={formData.supplier_id}
-                onChange={(e) => {
-                  const selectedSupplier = suppliers.find(s => s.id === e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    supplier_id: e.target.value,
-                    supplier_receiver: selectedSupplier?.name || prev.supplier_receiver,
-                  }));
-                }}
+                onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-2"
               >
                 <option value="">Select Supplier</option>
@@ -230,6 +218,20 @@ export default function TransactionForm({
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Supplier Name (Manual Entry) */}
+            <div className="pb-4">
+              <label className="block font-medium mb-1">Supplier Name</label>
+              <input
+                type="text"
+                name="supplier_receiver"
+                value={formData.supplier_receiver}
+                onChange={handleChange}
+                placeholder="Enter supplier name"
+                className="w-full border border-gray-300 rounded-lg p-2"
+                required
+              />
             </div>
 
             {/* Receiver */}
@@ -248,21 +250,6 @@ export default function TransactionForm({
                   </option>
                 ))}
               </select>
-            </div>
-
-            {/* Supplier Name (Auto-filled) */}
-            <div className="pb-4">
-              <label className="block font-medium mb-1">
-                Supplier Name
-              </label>
-              <input
-                type="text"
-                name="supplier_receiver"
-                value={formData.supplier_receiver}
-                onChange={handleChange}
-                placeholder="Auto-filled from supplier selection"
-                className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50"
-              />
             </div>
 
             {/* Transaction Date */}

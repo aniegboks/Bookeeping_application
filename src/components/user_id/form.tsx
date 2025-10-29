@@ -1,22 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, CreateUserInput } from "@/lib/types/user";
+import { User, CreateUserInput, UpdateUserInput } from "@/lib/types/user";
 import SmallLoader from "../ui/small_loader";
-
-interface BackendUserPayload {
-  id?: string;
-  email: string;
-  phone: string;
-  user_metadata: {
-    name: string;
-    roles: string[];
-  };
-}
 
 interface UserFormProps {
   user?: User;
-  onSubmit: (payload: BackendUserPayload[]) => Promise<void>;
+  onSubmit: (data: CreateUserInput | UpdateUserInput) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
 }
@@ -77,20 +67,16 @@ export default function UserForm({
       return;
     }
 
-    // ✅ Build backend payload
-    const payload: BackendUserPayload[] = [
-      {
-        ...(user?.id ? { id: user.id } : {}),
-        email: formData.email,
-        phone: formData.phone,
-        user_metadata: {
-          name: formData.name,
-          roles: formData.roles,
-        },
-      },
-    ];
+    // Build the data to submit
+    const dataToSubmit: CreateUserInput | UpdateUserInput = {
+      email: formData.email,
+      phone: formData.phone,
+      name: formData.name,
+      roles: formData.roles,
+      ...(formData.password && { password: formData.password }),
+    };
 
-    await onSubmit(payload);
+    await onSubmit(dataToSubmit);
   };
 
   return (

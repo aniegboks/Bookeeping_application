@@ -213,7 +213,14 @@ export default function TransactionForm({
               <select
                 name="supplier_id"
                 value={formData.supplier_id}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const selectedSupplier = suppliers.find(s => s.id === e.target.value);
+                  setFormData((prev) => ({
+                    ...prev,
+                    supplier_id: e.target.value,
+                    supplier_receiver: selectedSupplier?.name || prev.supplier_receiver,
+                  }));
+                }}
                 className="w-full border border-gray-300 rounded-lg p-2"
               >
                 <option value="">Select Supplier</option>
@@ -242,6 +249,22 @@ export default function TransactionForm({
                 ))}
               </select>
             </div>
+
+            {/* Supplier Name (Auto-filled) */}
+            <div className="pb-4">
+              <label className="block font-medium mb-1">
+                Supplier Name
+              </label>
+              <input
+                type="text"
+                name="supplier_receiver"
+                value={formData.supplier_receiver}
+                onChange={handleChange}
+                placeholder="Auto-filled from supplier selection"
+                className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50"
+              />
+            </div>
+
             {/* Transaction Date */}
             <div>
               <label className="block font-medium mb-1">Transaction Date</label>

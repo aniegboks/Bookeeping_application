@@ -242,21 +242,6 @@ export default function TransactionForm({
                 ))}
               </select>
             </div>
-
-            {/* Supplier / Receiver Text */}
-            <div className="pb-4">
-              <label className="block font-medium mb-1">
-                Supplier / Receiver
-              </label>
-              <input
-                type="text"
-                name="supplier_receiver"
-                value={formData.supplier_receiver}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-2"
-              />
-            </div>
-
             {/* Transaction Date */}
             <div>
               <label className="block font-medium mb-1">Transaction Date</label>

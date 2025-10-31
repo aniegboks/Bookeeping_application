@@ -4,16 +4,24 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { InventorySummary } from "@/lib/types/inventory_summary";
 import { InventoryItem } from "@/lib/types/inventory_item";
+import { SchoolClass } from "@/lib/types/classes";
+import { AcademicSession } from "@/lib/types/academic_session";
+import { ClassTeacher } from "@/lib/types/class_teacher";
 
 import { inventorySummaryApi } from "@/lib/inventory_summary";
 import { inventoryItemApi } from "@/lib/inventory_item";
+import { schoolClassApi } from "@/lib/classes";
+import { academicSessionsApi } from "@/lib/academic_session";
+import { classTeacherApi } from "@/lib/class_teacher";
 
 import { InventorySummaryStats } from "@/components/inventory_summary/stats_card";
 import { InventorySummaryTable } from "@/components/inventory_summary/table";
 import { BulkInventoryLoader } from "@/components/inventory_summary/bulk_inventory_loader";
 import { LowStockAlert } from "@/components/inventory_summary/low_stock_alert";
 import LoadingSpinner from "@/components/ui/loading_spinner";
-import { GlobalInventoryEnhancedReport } from "@/components/inventory_summary/global_summary"
+import { GlobalInventoryEnhancedReport } from "@/components/inventory_summary/global_summary";
+import DistributionCollectionReport from "@/components/inventory_summary/inventory_distribution_report";
+
 export default function InventorySummaryPage() {
   const [summaries, setSummaries] = useState<InventorySummary[]>([]);
   const [allInventories, setAllInventories] = useState<InventorySummary[]>([]);
@@ -21,49 +29,48 @@ export default function InventorySummaryPage() {
   const [error, setError] = useState<string | null>(null);
   const [showBulkLoader, setShowBulkLoader] = useState(false);
 
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [sessions, setSessions] = useState<AcademicSession[]>([]);
+  const [teachers, setTeachers] = useState<ClassTeacher[]>([]);
+
   useEffect(() => {
-    fetchInventorySummaries();
-    fetchAllInventoryItems();
+    fetchAllData();
   }, []);
 
-  const fetchInventorySummaries = async () => {
+  const fetchAllData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const data = await inventorySummaryApi.getLowStock();
-
-      if (data.length === 0) {
-        toast.success("All items are sufficiently stocked — no low stock alerts.");
-      }
-
-      setSummaries(data);
-    } catch (err: unknown) {
-      console.error("Error fetching inventory summaries:", err);
-
-      let message = "An unknown error occurred";
-
-      if (err instanceof Error) message = err.message;
-      else if (typeof err === "string") message = err;
-
-      if (message.toLowerCase().includes("not found")) {
-        console.warn("No low-stock items found.");
-        setSummaries([]);
-        setError(null);
-        toast.success("All items are sufficiently stocked — no low stock alerts.");
-      } else {
-        setError("Failed to fetch inventory summaries");
-      }
+      await Promise.all([
+        fetchInventorySummaries(),
+        fetchAllInventoryItems(),
+        fetchDropdownData(),
+      ]);
+    } catch (err) {
+      console.error("Error initializing page:", err);
+      toast.error("Failed to load inventory summary data.");
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchInventorySummaries = async () => {
+    try {
+      const data = await inventorySummaryApi.getLowStock();
+      setSummaries(data);
+    } catch (err) {
+      console.error("Error fetching inventory summaries:", err);
+      setError("Failed to fetch inventory summaries");
+    }
+  };
+
   const fetchAllInventoryItems = async () => {
     try {
-      const items: InventoryItem[] = await inventoryItemApi.getAll();
+      const items = await inventoryItemApi.getAll();
+      setInventoryItems(items);
 
-      // Convert InventoryItem → InventorySummary
       const converted: InventorySummary[] = items.map((item) => ({
         id: item.id,
         name: item.name,
@@ -90,6 +97,23 @@ export default function InventorySummaryPage() {
     }
   };
 
+  const fetchDropdownData = async () => {
+    try {
+      const [cls, ses, tch] = await Promise.all([
+        schoolClassApi.getAll(),
+        academicSessionsApi.getAll(),
+        classTeacherApi.getAll(),
+      ]);
+
+      setClasses(cls);
+      setSessions(ses);
+      setTeachers(tch);
+    } catch (err) {
+      console.error("Error fetching dropdown data:", err);
+      toast.error("Failed to load dropdown data.");
+    }
+  };
+
   const handleBulkLoad = (newSummaries: InventorySummary[]) => {
     setSummaries((prev) => {
       const existingIds = new Set(prev.map((s) => s.id));
@@ -106,7 +130,7 @@ export default function InventorySummaryPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">{error}</p>
           <button
-            onClick={fetchInventorySummaries}
+            onClick={fetchAllData}
             className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
           >
             Try again
@@ -119,19 +143,24 @@ export default function InventorySummaryPage() {
   return (
     <div className="my-4">
       <LowStockAlert />
-
       <div className="mb-6" />
 
       <InventorySummaryStats summaries={summaries} />
-      {/* All Inventory Table */}
 
-      <GlobalInventoryEnhancedReport />
+      <DistributionCollectionReport
+        inventoryItems={inventoryItems}
+        classes={classes}
+        sessions={sessions}
+        teachers={teachers}
+      />
+      {/**
+ *       <GlobalInventoryEnhancedReport />
 
-      {/* Low Stock Table */}
-      <InventorySummaryTable summaries={summaries} />
+ */}
 
-
-      {/* Bulk Load Button */}
+      <div className="my-8">
+        <InventorySummaryTable summaries={summaries} />
+      </div>
       <div className="mt-4 flex justify-start">
         <button
           onClick={() => setShowBulkLoader(true)}
@@ -140,7 +169,7 @@ export default function InventorySummaryPage() {
           Bulk Load Inventories
         </button>
       </div>
-      {/* Bulk Loader Modal */}
+
       <BulkInventoryLoader
         isOpen={showBulkLoader}
         onClose={() => setShowBulkLoader(false)}

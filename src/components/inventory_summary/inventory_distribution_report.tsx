@@ -364,7 +364,7 @@ export default function DistributionCollectionReport({
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-2 mb-4">
             {Object.entries(activeFilters).map(([key, value]) => {
-              let label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
               let displayValue = value;
               
               if (key === 'inventory_item_id') {

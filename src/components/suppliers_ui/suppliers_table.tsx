@@ -29,32 +29,47 @@ export default function SuppliersTable({
   onDelete,
   loading,
 }: Props) {
+  // Initial state changed to start at 10
   const [currentPage, setCurrentPage] = useState(1);
   const [suppliersPerPage, setSuppliersPerPage] = useState(10);
 
   // --- Filtering ---
   const filteredSuppliers = suppliers.filter((s) => {
-    const matchesSearch =
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.contact_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.city.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCountry =
-      filterCountry === "all" || s.country === filterCountry;
+    // Handle empty or undefined searchTerm
+    const matchesSearch = !searchTerm || searchTerm.trim() === "" ||
+      (s.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (s.contact_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (s.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (s.city?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+    
+    // Handle empty or "all" filterCountry
+    const matchesCountry = !filterCountry || 
+      filterCountry === "all" || 
+      filterCountry.trim() === "" ||
+      s.country === filterCountry;
+    
     return matchesSearch && matchesCountry;
   });
 
-  // Reset to first page when filter/search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterCountry, suppliersPerPage]);
-
-  const totalPages = Math.ceil(filteredSuppliers.length / suppliersPerPage);
+  // --- Pagination Calculations ---
+  const totalPages = Math.max(1, Math.ceil(filteredSuppliers.length / suppliersPerPage));
   const startIndex = (currentPage - 1) * suppliersPerPage;
   const paginatedSuppliers = filteredSuppliers.slice(
     startIndex,
     startIndex + suppliersPerPage
   );
+
+  // FIX: Reset to first page when filter/search OR suppliersPerPage changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterCountry, suppliersPerPage]);
+
+  // Ensure current page doesn't exceed total pages when pagination changes
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   // --- Pagination Handlers ---
   const handlePrev = useCallback(
@@ -77,7 +92,7 @@ export default function SuppliersTable({
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleNext, handlePrev]);
 
-  // --- Loading ---
+  // --- Loading State ---
   if (loading) return <p className="text-center py-12">Loading suppliers...</p>;
 
   return (
@@ -225,57 +240,63 @@ export default function SuppliersTable({
       )}
 
       {/* Pagination Controls */}
-      {filteredSuppliers.length > suppliersPerPage && (
+      {filteredSuppliers.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-slate-200 bg-white gap-4">
-          {/* Rows per page */}
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <span>Rows per page:</span>
-            <select
-              value={suppliersPerPage}
-              onChange={(e) => {
-                setSuppliersPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-slate-300 rounded-lg px-2 py-1 text-sm focus:outline-none"
-            >
-              {[5, 10, 20, 50].map((num) => (
-                <option key={num} value={num}>
-                  {num}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Page info + buttons */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handlePrev}
-              disabled={currentPage === 1}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-600 disabled:text-slate-400 hover:bg-slate-100 rounded-lg"
-            >
-              <ChevronLeft size={16} /> Prev
-            </button>
-
-            <span className="text-sm text-slate-600">
-              Page <span className="font-semibold">{currentPage}</span> of{" "}
-              <span className="font-semibold">{totalPages}</span>
-            </span>
-
-            <button
-              onClick={handleNext}
-              disabled={currentPage === totalPages}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-600 disabled:text-slate-400 hover:bg-slate-100 rounded-lg"
-            >
-              Next <ChevronRight size={16} />
-            </button>
-          </div>
-
           {/* Total count */}
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 order-3 sm:order-1">
             Showing {startIndex + 1}–
             {Math.min(startIndex + suppliersPerPage, filteredSuppliers.length)} of{" "}
-            {filteredSuppliers.length} suppliers
+            <span className="font-semibold">{filteredSuppliers.length}</span> suppliers
           </p>
+
+          <div className="flex items-center gap-4 order-2">
+            {/* Rows per page */}
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <span>Rows:</span>
+              <select
+                value={suppliersPerPage}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value);
+                  setSuppliersPerPage(newValue);
+                  // The useEffect handles the setCurrentPage(1) now
+                }}
+                className="border border-slate-300 rounded-lg px-2 py-1 text-sm focus:outline-none"
+              >
+                {/* Removed 5, starting options at 10 */}
+                {[10, 20, 50].map((num) => (
+                  <option key={num} value={num}>
+                    {num}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Page info + buttons */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handlePrev}
+                  disabled={currentPage === 1}
+                  className="flex items-center justify-center h-8 w-8 text-slate-600 disabled:text-slate-400 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <span className="text-sm text-slate-600 whitespace-nowrap">
+                  Page <span className="font-semibold">{currentPage}</span> of{" "}
+                  <span className="font-semibold">{totalPages}</span>
+                </span>
+
+                <button
+                  onClick={handleNext}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center justify-center h-8 w-8 text-slate-600 disabled:text-slate-400 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

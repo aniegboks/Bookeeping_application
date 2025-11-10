@@ -1,6 +1,6 @@
 // lib/types/inventory_transaction.ts
 
-export type TransactionType = "purchase" | "sale" ;
+export type TransactionType = "purchase" | "sale";
 export type TransactionStatus = "pending" | "completed" | "cancelled" | "on_hold";
 
 export interface InventoryTransaction {
@@ -14,6 +14,7 @@ export interface InventoryTransaction {
   in_cost: number;
   qty_out: number;
   out_cost: number;
+  amount_paid: number; // ✅ ADDED
   status: TransactionStatus;
   reference_no: string | null;
   notes: string | null;
@@ -33,6 +34,7 @@ export interface CreateInventoryTransactionInput {
   in_cost?: number;
   qty_out?: number;
   out_cost?: number;
+  amount_paid?: number; // ✅ ADDED
   status?: TransactionStatus;
   reference_no?: string;
   notes?: string;
@@ -50,6 +52,7 @@ export interface UpdateInventoryTransactionInput {
   in_cost?: number;
   qty_out?: number;
   out_cost?: number;
+  amount_paid?: number; // ✅ ADDED
   status?: TransactionStatus;
   reference_no?: string;
   notes?: string;

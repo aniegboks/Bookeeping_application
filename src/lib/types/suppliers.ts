@@ -42,4 +42,8 @@ export interface Supplier {
     website?: string;
     notes?: string;
   }
-  
+  export interface SupplierBalance {
+  supplier_id: string;
+  supplier_name: string;
+  balance: number;
+}

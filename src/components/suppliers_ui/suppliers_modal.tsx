@@ -146,8 +146,7 @@ export default function SupplierModal({
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  readOnly
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 bg-gray-50 cursor-not-allowed"
+                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 bg-gray-50"
                   placeholder="Auto-filled from contact name"
                 />
               </div>

@@ -35,12 +35,13 @@ export default function TransactionForm({
   const [formData, setFormData] = useState<
     Omit<
       CreateInventoryTransactionInput,
-      "qty_in" | "qty_out" | "in_cost" | "out_cost"
+      "qty_in" | "qty_out" | "in_cost" | "out_cost" | "amount_paid"
     > & {
       qty_in: number | string;
       qty_out: number | string;
       in_cost: number | string;
       out_cost: number | string;
+      amount_paid: number | string;
     }
   >({
     item_id: transaction?.item_id || "",
@@ -52,7 +53,8 @@ export default function TransactionForm({
     in_cost: transaction?.in_cost?.toString() || "",
     qty_out: transaction?.qty_out?.toString() || "",
     out_cost: transaction?.out_cost?.toString() || "",
-    status: "completed" as const,
+    amount_paid: transaction?.amount_paid?.toString() || "",
+    status: transaction?.status || "completed",
     reference_no: transaction?.reference_no || "",
     notes: transaction?.notes || "",
     transaction_date:
@@ -71,7 +73,7 @@ export default function TransactionForm({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: ["qty_in", "qty_out", "in_cost", "out_cost"].includes(name)
+      [name]: ["qty_in", "qty_out", "in_cost", "out_cost", "amount_paid"].includes(name)
         ? value === "" ? "" : Number(value)
         : value,
     }));
@@ -86,8 +88,16 @@ export default function TransactionForm({
       qty_out: formData.qty_out === "" ? 0 : Number(formData.qty_out),
       in_cost: formData.in_cost === "" ? 0 : Number(formData.in_cost),
       out_cost: formData.out_cost === "" ? 0 : Number(formData.out_cost),
-      status: "completed",
+      amount_paid: formData.amount_paid === "" ? 0 : Number(formData.amount_paid),
+      status: formData.status as "pending" | "completed" | "cancelled",
     };
+
+    // ✅ DEBUG: Log the data before submission
+    console.log("=== TRANSACTION DATA BEFORE SUBMIT ===");
+    console.log("Form Data (Raw):", formData);
+    console.log("Data to Submit (Processed):", dataToSubmit);
+    console.log("JSON String:", JSON.stringify(dataToSubmit, null, 2));
+    console.log("=====================================");
 
     if (isPurchase && (!dataToSubmit.qty_in || dataToSubmit.qty_in <= 0)) {
       toast.error("Quantity In must be greater than 0 for a purchase");
@@ -105,14 +115,29 @@ export default function TransactionForm({
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 overflow-y-auto max-h-[90vh]">
         <h2 className="text-2xl font-bold mb-6">
-          {transaction ? "Edit Purchase" : "Add Purchase"}
+          {transaction ? `Edit ${isPurchase ? 'Purchase' : 'Sale'}` : `Add ${isPurchase ? 'Purchase' : 'Sale'}`}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Transaction Type */}
+            <div className="pb-4">
+              <label className="block font-medium mb-1">Transaction Type</label>
+              <select
+                name="transaction_type"
+                value={formData.transaction_type}
+                onChange={handleChange}
+                required
+                className="w-full border border-gray-300 rounded-lg p-2"
+              >
+                <option value="purchase">Purchase</option>
+                <option value="sale">Sale</option>
+              </select>
+            </div>
+
             {/* Item */}
             <div className="pb-4">
-              <label className="block font-medium mb-1">Item</label>
+              <label className="block font-medium mb-1">Item *</label>
               <select
                 name="item_id"
                 value={formData.item_id}
@@ -129,28 +154,14 @@ export default function TransactionForm({
               </select>
             </div>
 
-            {/* Transaction Type */}
-            <div className="pb-4">
-              <label className="block font-medium mb-1">Transaction Type</label>
-              <select
-                name="transaction_type"
-                value={formData.transaction_type}
-                onChange={handleChange}
-                required
-                className="w-full border border-gray-300 rounded-lg p-2"
-              >
-                <option value="purchase">Purchase</option>
-                <option value="sale">Sale</option>
-              </select>
-            </div>
-
             {/* Quantity */}
             {isPurchase && (
               <div className="pb-4">
-                <label className="block font-medium mb-1">Quantity In</label>
+                <label className="block font-medium mb-1">Quantity In *</label>
                 <input
                   type="number"
                   min={1}
+                  step="any"
                   name="qty_in"
                   value={formData.qty_in}
                   onChange={handleChange}
@@ -161,10 +172,11 @@ export default function TransactionForm({
             )}
             {isSale && (
               <div className="pb-4">
-                <label className="block font-medium mb-1">Quantity Out</label>
+                <label className="block font-medium mb-1">Quantity Out *</label>
                 <input
                   type="number"
                   min={1}
+                  step="any"
                   name="qty_out"
                   value={formData.qty_out}
                   onChange={handleChange}
@@ -174,13 +186,14 @@ export default function TransactionForm({
               </div>
             )}
 
-            {/* Costs */}
+            {/* Unit Cost */}
             {isPurchase && (
               <div className="pb-4">
-                <label className="block font-medium mb-1">In Cost</label>
+                <label className="block font-medium mb-1">Unit Cost (Purchase Price)</label>
                 <input
                   type="number"
                   min={0}
+                  step="0.01"
                   name="in_cost"
                   value={formData.in_cost}
                   onChange={handleChange}
@@ -190,10 +203,11 @@ export default function TransactionForm({
             )}
             {isSale && (
               <div className="pb-4">
-                <label className="block font-medium mb-1">Out Cost</label>
+                <label className="block font-medium mb-1">Unit Cost (Sale Price)</label>
                 <input
                   type="number"
                   min={0}
+                  step="0.01"
                   name="out_cost"
                   value={formData.out_cost}
                   onChange={handleChange}
@@ -202,9 +216,40 @@ export default function TransactionForm({
               </div>
             )}
 
-            {/* Supplier */}
+            {/* Amount Paid */}
             <div className="pb-4">
-              <label className="block font-medium mb-1">Supplier</label>
+              <label className="block font-medium mb-1">Amount Paid</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                name="amount_paid"
+                value={formData.amount_paid}
+                onChange={handleChange}
+                placeholder="Enter amount paid"
+                className="w-full border border-gray-300 rounded-lg p-2"
+              />
+            </div>
+
+            {/* Status */}
+            <div className="pb-4">
+              <label className="block font-medium mb-1">Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                required
+                className="w-full border border-gray-300 rounded-lg p-2"
+              >
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            {/* Supplier (Dropdown) */}
+            <div className="pb-4">
+              <label className="block font-medium mb-1">Supplier (Select)</label>
               <select
                 name="supplier_id"
                 value={formData.supplier_id}
@@ -220,30 +265,32 @@ export default function TransactionForm({
               </select>
             </div>
 
-            {/* Supplier Name (Manual Entry) */}
+            {/* Supplier/Receiver Name (Manual Entry) */}
             <div className="pb-4">
-              <label className="block font-medium mb-1">Supplier Name</label>
+              <label className="block font-medium mb-1">
+                {isPurchase ? 'Supplier Name *' : 'Receiver Name *'}
+              </label>
               <input
                 type="text"
                 name="supplier_receiver"
                 value={formData.supplier_receiver}
                 onChange={handleChange}
-                placeholder="Enter supplier name"
+                placeholder={isPurchase ? "Enter supplier name" : "Enter receiver name"}
                 className="w-full border border-gray-300 rounded-lg p-2"
                 required
               />
             </div>
 
-            {/* Receiver */}
+            {/* Receiver (User) */}
             <div className="pb-4">
-              <label className="block font-medium mb-1">Receiver</label>
+              <label className="block font-medium mb-1">Received By</label>
               <select
                 name="receiver_id"
                 value={formData.receiver_id}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-2"
               >
-                <option value="">Select Receiver</option>
+                <option value="">Select User</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}
@@ -253,7 +300,7 @@ export default function TransactionForm({
             </div>
 
             {/* Transaction Date */}
-            <div>
+            <div className="pb-4">
               <label className="block font-medium mb-1">Transaction Date</label>
               <input
                 type="datetime-local"
@@ -265,13 +312,14 @@ export default function TransactionForm({
             </div>
 
             {/* Reference No */}
-            <div>
+            <div className="pb-4">
               <label className="block font-medium mb-1">Reference No</label>
               <input
                 type="text"
                 name="reference_no"
                 value={formData.reference_no}
                 onChange={handleChange}
+                placeholder="Enter reference number"
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
             </div>
@@ -284,6 +332,7 @@ export default function TransactionForm({
                 value={formData.notes}
                 onChange={handleChange}
                 rows={3}
+                placeholder="Add any additional notes..."
                 className="w-full border border-gray-300 rounded-lg p-2"
               />
             </div>
@@ -308,7 +357,7 @@ export default function TransactionForm({
                   <SmallLoader /> <p className="text-sm">Saving...</p>
                 </span>
               ) : (
-                "Save Purchase"
+                `Save ${isPurchase ? 'Purchase' : 'Sale'}`
               )}
             </button>
           </div>

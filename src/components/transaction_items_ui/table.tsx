@@ -48,6 +48,14 @@ export default function TransactionTable({
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -74,9 +82,9 @@ export default function TransactionTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Cost</th>
-              {/**               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Out Cost</th>
-*/}
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -84,76 +92,93 @@ export default function TransactionTable({
           </thead>
 
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedTransactions.map((tx) => (
-              <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
-                {/* Transaction Type */}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    {tx.transaction_type === "purchase" ? (
-                      <ArrowDownCircle className="text-green-600 w-4 h-4" />
-                    ) : (
-                      <ArrowUpCircle className="text-purple-600 w-4 h-4" />
-                    )}
-                    <span className="text-sm font-medium text-gray-900 capitalize">
-                      {tx.transaction_type}
+            {paginatedTransactions.map((tx) => {
+              const isPurchase = tx.transaction_type === "purchase";
+              const quantity = isPurchase ? tx.qty_in : tx.qty_out;
+              const unitCost = isPurchase ? tx.in_cost : tx.out_cost;
+              const totalCost = quantity * unitCost;
+              
+              return (
+                <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
+                  {/* Transaction Type */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      {isPurchase ? (
+                        <ArrowDownCircle className="text-green-600 w-4 h-4" />
+                      ) : (
+                        <ArrowUpCircle className="text-purple-600 w-4 h-4" />
+                      )}
+                      <span className="text-sm font-medium text-gray-900 capitalize">
+                        {tx.transaction_type}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Item Name */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="max-w-[150px] truncate" title={getItemName(tx.item_id)}>
+                      {getItemName(tx.item_id)}
+                    </div>
+                  </td>
+
+                  {/* Quantity */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {quantity}
+                  </td>
+
+                  {/* Unit Cost */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
+                    {formatCurrency(unitCost)}
+                  </td>
+
+                  {/* Total Cost */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
+                    <span className={isPurchase ? "text-green-600" : "text-purple-600"}>
+                      {formatCurrency(totalCost)}
                     </span>
-                  </div>
-                </td>
+                  </td>
 
-                {/* Item Name */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="max-w-[150px] truncate" title={getItemName(tx.item_id)}>
-                    {getItemName(tx.item_id)}
-                  </div>
-                </td>
+                  {/* Amount Paid */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
+                    {tx.amount_paid ? formatCurrency(tx.amount_paid) : "—"}
+                  </td>
 
-                {/* Quantity */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {tx.transaction_type === "purchase" ? tx.qty_in : tx.qty_out}
-                </td>
-
-                {/* In Cost */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">{tx.in_cost}</td>
-
-                {/* Out Cost */}
-                {/**     <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-medium">{tx.out_cost}</td>
- */}
-
-                {/* Status */}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(tx.status)}`}
-                  >
-                    {tx.status}
-                  </span>
-                </td>
-
-                {/* Date */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString() : "—"}
-                </td>
-
-                {/* Actions */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onEdit(tx)}
-                      className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
-                      title="Edit Transaction"
+                  {/* Status */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(tx.status)}`}
                     >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(tx)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete Transaction"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      {tx.status}
+                    </span>
+                  </td>
+
+                  {/* Date */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString() : "—"}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onEdit(tx)}
+                        className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
+                        title="Edit Transaction"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onDelete(tx)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete Transaction"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -173,6 +198,9 @@ export default function TransactionTable({
           >
             Previous
           </button>
+          <span className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+          </span>
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}

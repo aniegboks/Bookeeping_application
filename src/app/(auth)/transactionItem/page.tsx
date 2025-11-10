@@ -71,6 +71,14 @@ export default function InventoryTransactionsPage() {
         else toast.error(`${prefix}: Unexpected error`);
     };
 
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+            minimumFractionDigits: 0,
+        }).format(amount);
+    };
+
     // --- Load All Data ---
     const loadAllData = useCallback(async () => {
         setLoading(true);
@@ -209,23 +217,55 @@ export default function InventoryTransactionsPage() {
     const exportToExcel = () => {
         if (!filteredTransactions.length) return toast.error("No transactions to export");
 
-        const data = filteredTransactions.map(t => ({
-            Type: t.transaction_type,
-            Item: getItemName(t.item_id),
-            "Quantity In/Out": t.qty_in > 0 ? `+${t.qty_in}` : `-${t.qty_out || 0}`,
-            Status: t.status,
-            Date: t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : "—",
-            ReferenceNo: t.reference_no || "",
-            Notes: t.notes || "",
-            SupplierReceiver: t.supplier_receiver || "",
-        }));
+        const data = filteredTransactions.map(t => {
+            const isPurchase = t.transaction_type === "purchase";
+            const quantity = isPurchase ? t.qty_in : t.qty_out;
+            const unitCost = isPurchase ? t.in_cost : t.out_cost;
+            const totalCost = quantity * unitCost;
+            const balance = totalCost - (t.amount_paid || 0);
+
+            return {
+                "Transaction Type": t.transaction_type.toUpperCase(),
+                "Item": getItemName(t.item_id),
+                "Quantity": quantity,
+                "Unit Cost": unitCost,
+                "Total Cost": totalCost,
+                "Amount Paid": t.amount_paid || 0,
+                "Balance": balance,
+                "Status": t.status.toUpperCase(),
+                "Supplier/Receiver": t.supplier_receiver || "—",
+                "Reference No": t.reference_no || "—",
+                "Date": t.transaction_date ? new Date(t.transaction_date).toLocaleDateString() : "—",
+                "Notes": t.notes || "—",
+            };
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(data);
+        
+        // Set column widths
+        worksheet['!cols'] = [
+            { wch: 18 }, // Transaction Type
+            { wch: 25 }, // Item
+            { wch: 10 }, // Quantity
+            { wch: 12 }, // Unit Cost
+            { wch: 12 }, // Total Cost
+            { wch: 12 }, // Amount Paid
+            { wch: 12 }, // Balance
+            { wch: 12 }, // Status
+            { wch: 25 }, // Supplier/Receiver
+            { wch: 15 }, // Reference No
+            { wch: 12 }, // Date
+            { wch: 30 }, // Notes
+        ];
+
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
 
         const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-        saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "inventory_transactions.xlsx");
+        const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+        
+        const filename = `inventory_transactions_${new Date().toISOString().split('T')[0]}.xlsx`;
+        saveAs(blob, filename);
 
         toast.success("Transactions exported successfully!");
     };
@@ -253,7 +293,7 @@ export default function InventoryTransactionsPage() {
                 <TransactionForm
                     transaction={editingTransaction || undefined}
                     onSubmit={handleTransactionSubmit}
-                    onCancel={() => setActiveForm(null)}
+                    onCancel={() => { setActiveForm(null); setEditingTransaction(null); }}
                     isSubmitting={isSubmitting}
                     inventoryItems={inventoryItems}
                     suppliers={suppliers}
@@ -282,19 +322,21 @@ export default function InventoryTransactionsPage() {
                 onDelete={handleDeleteRequest}
                 loading={loading}
             />
+            
             <div className="my-4 text-left">
                 <button
                     onClick={exportToExcel}
-                    className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm"
+                    disabled={filteredTransactions.length === 0}
+                    className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    <span className="flex gap-2">
+                    <span className="flex gap-2 items-center">
                         <Download className="w-5 h-5" />
-                        Export
+                        Export to Excel ({filteredTransactions.length})
                     </span>
                 </button>
             </div>
+            
             <InventoryTransactionChart transactions={transactions} />
-
 
             {showDeleteModal && deletingTransaction && (
                 <DeleteModal

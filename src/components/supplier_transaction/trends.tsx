@@ -18,15 +18,15 @@ interface TrendsProps {
 
 export default function Trends({ transactions }: TrendsProps) {
   const totalTransactions = transactions.length;
-  const completedTransactions = transactions.filter(
-    (t) => t.status === "completed"
-  ).length;
-  const pendingTransactions = transactions.filter(
-    (t) => t.status === "pending"
-  ).length;
-  const totalAmount = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-  // Normalize amount for visualization (divide by 1000 or scale appropriately)
+  // Derive "status": if credit > 0, consider completed; else pending
+  const completedTransactions = transactions.filter((t) => t.credit > 0).length;
+  const pendingTransactions = transactions.filter((t) => t.credit === 0).length;
+
+  // Derive amount as credit - debit
+  const totalAmount = transactions.reduce((sum, t) => sum + (t.credit - t.debit), 0);
+
+  // Normalize amount for visualization (divide by 10000 or scale appropriately)
   const normalizedAmount = Math.min(totalAmount / 10000, 100);
 
   const data = [

@@ -1,5 +1,4 @@
 // lib/supplier_transactions_api.ts
-
 import {
   SupplierTransaction,
   CreateSupplierTransactionPayload,
@@ -10,7 +9,8 @@ import {
 
 const BASE_URL = "/api/proxy/supplier_transactions";
 
-async function fetchApi(url: string, options: RequestInit = {}) {
+// Generic fetch helper with typed response
+async function fetchApi<T>(url: string, options: RequestInit = {}): Promise<T> {
   try {
     const response = await fetch(url, {
       ...options,
@@ -30,6 +30,7 @@ async function fetchApi(url: string, options: RequestInit = {}) {
     }
 
     if (response.status === 204 || options.method === "DELETE") {
+      // @ts-expect-error no content to return
       return null;
     }
 
@@ -41,6 +42,7 @@ async function fetchApi(url: string, options: RequestInit = {}) {
 }
 
 export const supplierTransactionsApi = {
+  // Fetch all transactions with optional filters
   async getAll(
     filters?: GetSupplierTransactionsParams
   ): Promise<SupplierTransaction[]> {
@@ -48,44 +50,49 @@ export const supplierTransactionsApi = {
       filters as Record<string, string>
     ).toString();
     const url = `${BASE_URL}${query ? `?${query}` : ""}`;
-    return fetchApi(url);
+    return fetchApi<SupplierTransaction[]>(url);
   },
 
+  // Fetch single transaction by ID
   async getById(id: string): Promise<SupplierTransaction> {
     const url = `${BASE_URL}/${id}`;
-    return fetchApi(url);
+    return fetchApi<SupplierTransaction>(url);
   },
 
+  // Create a new transaction
   async create(
     data: CreateSupplierTransactionPayload
   ): Promise<SupplierTransaction> {
-    return fetchApi(BASE_URL, {
+    return fetchApi<SupplierTransaction>(BASE_URL, {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
 
+  // Update existing transaction
   async update(
     id: string,
     data: UpdateSupplierTransactionPayload
   ): Promise<SupplierTransaction> {
     const url = `${BASE_URL}/${id}`;
-    return fetchApi(url, {
+    return fetchApi<SupplierTransaction>(url, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   },
 
+  // Delete a transaction
   async delete(id: string): Promise<void> {
     const url = `${BASE_URL}/${id}`;
-    await fetchApi(url, {
-      method: "DELETE",
-    });
+    await fetchApi<null>(url, { method: "DELETE" });
   },
 
-  async bulkUpsert(data: BulkUpsertTransactionItem[]): Promise<any> {
+  // Bulk upsert transactions
+  async bulkUpsert(
+    data: BulkUpsertTransactionItem[]
+  ): Promise<SupplierTransaction[]> {
     const url = `${BASE_URL}/bulk_upsert`;
-    return fetchApi(url, {
+    return fetchApi<SupplierTransaction[]>(url, {
       method: "POST",
       body: JSON.stringify(data),
     });

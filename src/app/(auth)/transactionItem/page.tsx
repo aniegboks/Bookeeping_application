@@ -17,7 +17,7 @@ import { schoolClassApi } from "@/lib/classes";
 import { academicSessionsApi } from "@/lib/academic_session";
 import { inventoryTransactionApi } from "@/lib/inventory_transactions";
 import { inventoryItemApi } from "@/lib/inventory_item";
-import { getAllSuppliers } from "@/lib/suppliers";
+import { supplierApi } from "@/lib/suppliers";
 import { userApi } from "@/lib/user";
 import { inventoryDistributionApi } from "@/lib/inventory_distrbution";
 
@@ -93,7 +93,7 @@ export default function InventoryTransactionsPage() {
             ] = await Promise.all([
                 inventoryTransactionApi.getAll(),
                 inventoryItemApi.getAll(),
-                getAllSuppliers(),
+                supplierApi.getAll(),
                 userApi.getAll(),
                 schoolClassApi.getAll() as Promise<SchoolClass[]>,
                 academicSessionsApi.getAll() as Promise<AcademicSession[]>,
@@ -241,7 +241,7 @@ export default function InventoryTransactionsPage() {
         });
 
         const worksheet = XLSX.utils.json_to_sheet(data);
-        
+
         // Set column widths
         worksheet['!cols'] = [
             { wch: 18 }, // Transaction Type
@@ -263,7 +263,7 @@ export default function InventoryTransactionsPage() {
 
         const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
         const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-        
+
         const filename = `inventory_transactions_${new Date().toISOString().split('T')[0]}.xlsx`;
         saveAs(blob, filename);
 
@@ -322,7 +322,7 @@ export default function InventoryTransactionsPage() {
                 onDelete={handleDeleteRequest}
                 loading={loading}
             />
-            
+
             <div className="my-4 text-left">
                 <button
                     onClick={exportToExcel}
@@ -335,7 +335,7 @@ export default function InventoryTransactionsPage() {
                     </span>
                 </button>
             </div>
-            
+
             <InventoryTransactionChart transactions={transactions} />
 
             {showDeleteModal && deletingTransaction && (

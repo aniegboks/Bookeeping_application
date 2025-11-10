@@ -97,7 +97,7 @@ export default function TransactionTable({
               const quantity = isPurchase ? tx.qty_in : tx.qty_out;
               const unitCost = isPurchase ? tx.in_cost : tx.out_cost;
               const totalCost = quantity * unitCost;
-              
+
               return (
                 <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
                   {/* Transaction Type */}
@@ -140,8 +140,11 @@ export default function TransactionTable({
 
                   {/* Amount Paid */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
-                    {tx.amount_paid ? formatCurrency(tx.amount_paid) : "—"}
+                    {tx.amount_paid !== null && tx.amount_paid !== undefined
+                      ? formatCurrency(tx.amount_paid)
+                      : "—"}
                   </td>
+
 
                   {/* Status */}
                   <td className="px-6 py-4 whitespace-nowrap">

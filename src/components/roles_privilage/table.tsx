@@ -35,7 +35,7 @@ export default function RolePrivilegesTable({
     });
 
   // Helper function to normalize status for display
-  const getStatusDisplay = (status: string | boolean | any): { text: string; isActive: boolean } => {
+  const getStatusDisplay = (status: string | boolean | unknown): { text: string; isActive: boolean } => {
     // Handle boolean values
     if (typeof status === 'boolean') {
       return {

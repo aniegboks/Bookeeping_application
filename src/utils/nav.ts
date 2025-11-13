@@ -26,4 +26,5 @@ export const AcademicSessionTerms: NavItem[] = [
   { label: "Students Report", link: "/studentsReport", description: "Generate reports and analytics" },
   {label: "Supplier Transaction", link: "/supplierTransaction", description: "Track supplier transactions" },
   {label: "Roles", link: "/roles", description: "Manage user roles and permissions" },
+  {label: "Role Privileges", link: "/rolesPrivilage", description: "Assign and manage role privileges" },
 ];

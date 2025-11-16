@@ -27,4 +27,6 @@ export const AcademicSessionTerms: NavItem[] = [
   {label: "Supplier Transaction", link: "/supplierTransaction", description: "Track supplier transactions" },
   {label: "Roles", link: "/roles", description: "Manage user roles and permissions" },
   {label: "Role Privileges", link: "/rolesPrivilage", description: "Assign and manage role privileges" },
+  {label: "Menus", link: "/menu", description: "Manage application menus" },
+  {label: "Role Menus", link: "/rolesMenu", description: "Assign and manage role menus" },
 ];

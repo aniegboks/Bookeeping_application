@@ -16,9 +16,12 @@ import { CreateUserInput, UpdateUserInput } from "@/lib/types/user";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
+import { Role } from "@/lib/types/roles";
+import { rolesApi } from "@/lib/roles";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -28,6 +31,23 @@ export default function UsersPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Load roles
+  const loadRoles = async () => {
+    try {
+      const data = await rolesApi.getAll();
+      // Filter only active roles
+      const activeRoles = data.filter(role => role.status === "active");
+      setRoles(activeRoles);
+    } catch (err: unknown) {
+      console.error("Failed to load roles:", err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred while loading roles.";
+      toast.error("Failed to load roles: " + message);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -48,6 +68,7 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
+    loadRoles();
     loadUsers();
   }, []);
 
@@ -204,6 +225,7 @@ export default function UsersPage() {
                 </h2>
                 <UserForm
                   user={editingUser || undefined}
+                  roles={roles}
                   onSubmit={handleFormSubmit}
                   onCancel={handleCancel}
                   isSubmitting={isSubmitting}
@@ -213,6 +235,7 @@ export default function UsersPage() {
 
             <UserTable
               users={filteredUsers}
+              roles={roles}
               onEdit={handleEdit}
               onDelete={handleDeleteRequest}
               loading={loading}
@@ -230,7 +253,6 @@ export default function UsersPage() {
               </button>
             </div>
             <Trends users={users} />
-
 
             {showDeleteModal && deletingUser && (
               <DeleteModal

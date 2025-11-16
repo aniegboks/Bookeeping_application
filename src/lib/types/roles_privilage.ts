@@ -72,4 +72,6 @@ export type RolePrivilegeResource =
     | "users"
     | "notifications"
     | "roles"
-    | "role_privileges";
+    | "role_privileges"
+    | "menus"
+    | "role_menus";

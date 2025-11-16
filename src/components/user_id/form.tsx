@@ -2,19 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { User, CreateUserInput, UpdateUserInput } from "@/lib/types/user";
+import { Role } from "@/lib/types/roles";
 import SmallLoader from "../ui/small_loader";
 
 interface UserFormProps {
   user?: User;
+  roles: Role[];
   onSubmit: (data: CreateUserInput | UpdateUserInput) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
 }
 
-const VALID_ROLES = ["admin", "user", "super-admin"];
-
 export default function UserForm({
   user,
+  roles,
   onSubmit,
   onCancel,
   isSubmitting,
@@ -29,6 +30,9 @@ export default function UserForm({
 
   const [roleError, setRoleError] = useState("");
 
+  // Extract role codes from the roles array
+  const validRoleCodes = roles.map((role) => role.code);
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -41,10 +45,10 @@ export default function UserForm({
     }
   }, [user]);
 
-  const handleRoleToggle = (role: string) => {
-    const newRoles = formData.roles.includes(role)
-      ? formData.roles.filter((r) => r !== role)
-      : [...formData.roles, role];
+  const handleRoleToggle = (roleCode: string) => {
+    const newRoles = formData.roles.includes(roleCode)
+      ? formData.roles.filter((r) => r !== roleCode)
+      : [...formData.roles, roleCode];
 
     setFormData({ ...formData, roles: newRoles });
     setRoleError("");
@@ -54,11 +58,11 @@ export default function UserForm({
     e.preventDefault();
 
     const invalidRoles = formData.roles.filter(
-      (role) => !VALID_ROLES.includes(role)
+      (role) => !validRoleCodes.includes(role)
     );
 
     if (invalidRoles.length > 0) {
-      setRoleError(`roles can only include: ${VALID_ROLES.join(", ")}`);
+      setRoleError(`Invalid roles: ${invalidRoles.join(", ")}`);
       return;
     }
 
@@ -87,11 +91,11 @@ export default function UserForm({
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* EMAIL */}
+          {/* EMAIL & NAME */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-gray-500">*</span>
+                Email <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -100,14 +104,14 @@ export default function UserForm({
                   setFormData({ ...formData, email: e.target.value })
                 }
                 required
-                className="w-full border border-gray-300 rounded-md p-2"
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                placeholder="user@example.com"
               />
             </div>
 
-            {/* NAME */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name <span className="text-gray-500">*</span>
+                Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -116,7 +120,8 @@ export default function UserForm({
                   setFormData({ ...formData, name: e.target.value })
                 }
                 required
-                className="w-full border border-gray-300 rounded-md p-2"
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                placeholder="John Doe"
               />
             </div>
           </div>
@@ -132,38 +137,16 @@ export default function UserForm({
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
               }
-              className="w-full border border-gray-300 rounded-md p-2"
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+              placeholder="+1234567890"
             />
-          </div>
-
-          {/* ROLES */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Roles <span className="text-gray-500">*</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {VALID_ROLES.map((role) => (
-                <label
-                  key={role}
-                  className="flex items-center gap-2 text-sm border border-gray-300 rounded-md px-2 py-1 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.roles.includes(role)}
-                    onChange={() => handleRoleToggle(role)}
-                  />
-                  {role}
-                </label>
-              ))}
-            </div>
-            {roleError && <p className="text-red-500 text-sm">{roleError}</p>}
           </div>
 
           {/* PASSWORD (only for create) */}
           {!user && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password <span className="text-gray-500">*</span>
+                Password <span className="text-red-500">*</span>
               </label>
               <input
                 type="password"
@@ -172,26 +155,77 @@ export default function UserForm({
                   setFormData({ ...formData, password: e.target.value })
                 }
                 required
-                className="w-full border border-gray-300 rounded-md p-2"
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                placeholder="Enter password"
               />
             </div>
           )}
 
+          {/* ROLES */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Roles <span className="text-red-500">*</span>
+            </label>
+            {roles.length === 0 ? (
+              <p className="text-sm text-gray-500 italic">
+                No active roles available. Please create roles first.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {roles.map((role) => (
+                  <label
+                    key={role.code}
+                    className={`flex items-center gap-2 text-sm border rounded-md px-3 py-2 cursor-pointer transition-all ${
+                      formData.roles.includes(role.code)
+                        ? "border-[#3D4C63] bg-[#3D4C63]/5 text-[#3D4C63]"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.roles.includes(role.code)}
+                      onChange={() => handleRoleToggle(role.code)}
+                      className="w-4 h-4 text-[#3D4C63] border-gray-300 rounded focus:ring-[#3D4C63]"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium">{role.name}</p>
+                      <p className="text-xs text-gray-500">{role.code}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+            {roleError && (
+              <p className="text-red-500 text-sm mt-2">{roleError}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              Select at least one role for the user
+            </p>
+          </div>
+
           {/* ACTION BUTTONS */}
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="px-4 py-2 rounded-md bg-[#171D26] text-white hover:bg-[#1f2633] flex items-center gap-2"
+              disabled={isSubmitting || roles.length === 0}
+              className="px-4 py-2 rounded-md bg-[#3D4C63] text-white hover:bg-[#495C79] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? <SmallLoader /> : user ? "Update" : "Create"}
+              {isSubmitting ? (
+                <>
+                  <SmallLoader />
+                  {user ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                <>{user ? "Update User" : "Create User"}</>
+              )}
             </button>
           </div>
         </form>

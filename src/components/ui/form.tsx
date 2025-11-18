@@ -5,6 +5,13 @@ import { Eye, EyeOff, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 import SmallLoader from "./small_loader";
 
+interface LoginPayload {
+  email: string;
+  password: string;
+  name?: string;
+  role_code?: string;
+}
+
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,7 +25,7 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const payload: any = { email, password };
+      const payload: LoginPayload = { email, password };
       
       // Include optional fields if provided
       if (name.trim()) payload.name = name.trim();
@@ -113,7 +120,7 @@ export default function LoginForm() {
             disabled={loading}
           />
           <p className="text-xs text-gray-500 mt-1">
-            We'll create an account for you automatically
+            We&apos;ll create an account for you automatically
           </p>
         </div>
       )}

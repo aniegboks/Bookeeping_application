@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -20,6 +20,10 @@ interface Menu {
   updated_at: string;
 }
 
+interface RoleMenuResponse {
+  menu: Menu;
+}
+
 interface UserContextType {
   user: User | null;
   menus: Menu[];
@@ -36,7 +40,67 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const fetchUser = async () => {
+  // Map Supabase roles to backend role codes
+  const mapRoleToBackendCode = (role: string): string => {
+    const roleMap: Record<string, string> = {
+      'admin': 'ADMIN',
+      'super-admin': 'SUPER_ADMIN',
+      'editor': 'ADMIN', // Map editor to ADMIN if needed
+      'teacher': 'CLASS_TEACHER',
+      'user': 'STUDENTS', // Default users to STUDENTS role
+      // Add more mappings as needed
+    };
+    
+    // Return mapped role or uppercase the role as fallback
+    return roleMap[role.toLowerCase()] || role.toUpperCase();
+  };
+
+  const fetchMenus = useCallback(async (roles: string[]) => {
+    try {
+      // Map Supabase roles to backend role codes
+      const backendRoles = roles.map(mapRoleToBackendCode);
+      console.log('🔄 Mapped roles:', { original: roles, backend: backendRoles });
+
+      // Fetch menus for each role using proxy
+      const menusPromises = backendRoles.map(async (roleCode: string) => {
+        try {
+          const res = await fetch(`/api/proxy/role_menus/role/${roleCode}`);
+          
+          if (res.ok) {
+            const data: RoleMenuResponse[] = await res.json();
+            // Extract menu objects from role_menus response
+            return data.map((item) => item.menu);
+          }
+          console.warn(`⚠️ No menus found for role: ${roleCode}`);
+          return [];
+        } catch (error) {
+          console.error(`❌ Failed to fetch menus for role ${roleCode}:`, error);
+          return [];
+        }
+      });
+
+      const menusArrays = await Promise.all(menusPromises);
+      const allMenus = menusArrays.flat();
+
+      // Remove duplicates based on menu id
+      const uniqueMenus = Array.from(
+        new Map(allMenus.map((menu) => [menu.id, menu])).values()
+      );
+
+      // Sort alphabetically by caption
+      uniqueMenus.sort((a, b) => 
+        a.caption.localeCompare(b.caption)
+      );
+
+      console.log(`✅ Loaded ${uniqueMenus.length} unique menus for roles:`, backendRoles);
+      setMenus(uniqueMenus);
+    } catch (error) {
+      console.error("Failed to fetch menus:", error);
+      setMenus([]);
+    }
+  }, []);
+
+  const fetchUser = useCallback(async () => {
     try {
       // Fetch user via proxy - uses /api/v1/auth/test endpoint
       const res = await fetch("/api/proxy/auth/test");
@@ -62,67 +126,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Map Supabase roles to backend role codes
-  const mapRoleToBackendCode = (role: string): string => {
-    const roleMap: Record<string, string> = {
-      'admin': 'ADMIN',
-      'super-admin': 'SUPER_ADMIN',
-      'editor': 'ADMIN', // Map editor to ADMIN if needed
-      'teacher': 'CLASS_TEACHER',
-      'user': 'STUDENTS', // Default users to STUDENTS role
-      // Add more mappings as needed
-    };
-    
-    // Return mapped role or uppercase the role as fallback
-    return roleMap[role.toLowerCase()] || role.toUpperCase();
-  };
-
-  const fetchMenus = async (roles: string[]) => {
-    try {
-      // Map Supabase roles to backend role codes
-      const backendRoles = roles.map(mapRoleToBackendCode);
-      console.log('🔄 Mapped roles:', { original: roles, backend: backendRoles });
-
-      // Fetch menus for each role using proxy
-      const menusPromises = backendRoles.map(async (roleCode: string) => {
-        try {
-          const res = await fetch(`/api/proxy/role_menus/role/${roleCode}`);
-          
-          if (res.ok) {
-            const data = await res.json();
-            // Extract menu objects from role_menus response
-            return data.map((item: any) => item.menu);
-          }
-          console.warn(`⚠️ No menus found for role: ${roleCode}`);
-          return [];
-        } catch (error) {
-          console.error(`❌ Failed to fetch menus for role ${roleCode}:`, error);
-          return [];
-        }
-      });
-
-      const menusArrays = await Promise.all(menusPromises);
-      const allMenus = menusArrays.flat();
-
-      // Remove duplicates based on menu id
-      const uniqueMenus = Array.from(
-        new Map(allMenus.map((menu: any) => [menu.id, menu])).values()
-      );
-
-      // Sort alphabetically by caption
-      uniqueMenus.sort((a: any, b: any) => 
-        a.caption.localeCompare(b.caption)
-      );
-
-      console.log(`✅ Loaded ${uniqueMenus.length} unique menus for roles:`, backendRoles);
-      setMenus(uniqueMenus);
-    } catch (error) {
-      console.error("Failed to fetch menus:", error);
-      setMenus([]);
-    }
-  };
+  }, [fetchMenus]);
 
   const logout = async () => {
     try {
@@ -139,7 +143,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchUser();
-  }, []);
+  }, [fetchUser]);
 
   return (
     <UserContext.Provider value={{ user, menus, loading, logout, refreshUser: fetchUser }}>

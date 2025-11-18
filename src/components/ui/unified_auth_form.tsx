@@ -119,7 +119,7 @@ export default function LoginForm() {
         {/* Helper Text */}
         <div className="text-center pt-2">
           <p className="text-xs text-gray-500">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <span className="text-gray-400">Contact your administrator</span>
           </p>
         </div>

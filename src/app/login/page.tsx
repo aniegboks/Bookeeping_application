@@ -1,41 +1,71 @@
 "use client";
 
 import Container from "@/components/ui/container";
-import LoginForm from "@/components/ui/form";
+import UnifiedAuthForm from "@/components/ui/unified_auth_form";
 import Image from "next/image";
 
 export default function LoginPage() {
   return (
-    <div className="h-[100dvh] flex items-center justify-center bg-[#F3F4F7]">
-      <Container>
-        <div className="grid grid-cols-1 md:grid-cols-2 bg-white overflow-hidden shadow-lg">
-          {/* Left Side - Image */}
-          <div className="hidden md:block md:relative bg-gray-100 flex flex-col items-center justify-center min-h-[100vh]" style={{ backgroundImage: "url('/images/img4.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
+    <div className="h-screen w-screen flex overflow-hidden bg-[#F3F4F7]">
+      {/* Full Screen Grid Container */}
+      <div className="w-full h-full grid grid-cols-1 md:grid-cols-2">
+        
+        {/* Left Section - Image with Dark Overlay */}
+        <div
+          className="hidden md:block relative bg-gray-900"
+          style={{
+            backgroundImage: "url('/images/img8.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          {/* Dark Overlay - black/50 */}
+          <div className="absolute inset-0 bg-black/50" />
+          
+          {/* Content on top of overlay */}
+          <div className="relative z-10 flex items-center justify-center h-full">
           </div>
+        </div>
 
-          {/* Right Side - Form */}
-          <div className="flex flex-col items-center justify-center md:p-6 p-10 w-full h-full">
-            <div className="w-full max-w-sm">
-              {/* Logo */}
-              <div className="flex items-center gap-2 mb-8">
-                <Image src="/images/logo.png" alt="logo" className="h-5 w-5 object-cover" width={50} height={50}/>
-                <h4 className="text-md font-bold text-[#171D26] tracking-tighter">Kayron</h4>
-              </div>
+        {/* Right Section - Auth Form (Centered) */}
+        <div className="flex items-center justify-center p-8 bg-white">
+          <div className="w-full max-w-md">
 
-              {/* Heading */}
-              <h2 className="text-4xl font-semibold mb-4 text-[#171D26] tracking-tighter">
-                Login to your account
-              </h2>
-              <p className="text-sm text-gray-600 mb-4">
-                Enter your email and password to login
+            {/* Logo */}
+            <div className="flex items-center gap-3 mb-10">
+              <Image
+                src="/images/logo.png"
+                alt="Kayron Logo"
+                width={50}
+                height={50}
+                className="h-10 w-10 object-cover"
+              />
+              <h4 className="text-2xl font-bold text-[#171D26] tracking-tight">
+                Kayron
+              </h4>
+            </div>
+
+            {/* Heading */}
+            <h2 className="text-4xl font-bold mb-3 text-[#171D26] tracking-tight">
+              Get Started
+            </h2>
+            <p className="text-sm text-gray-600 mb-8">
+              Login to your account or create a new one
+            </p>
+
+            {/* Login / Signup Form */}
+            <UnifiedAuthForm />
+            
+            {/* Optional Footer Text */}
+            <div className="mt-8 text-center">
+              <p className="text-xs text-gray-400">
+                &copy; 2025 Kayron. All rights reserved.
               </p>
-
-              {/* Render the separated form */}
-              <LoginForm />
             </div>
           </div>
         </div>
-      </Container>
+
+      </div>
     </div>
   );
 }

@@ -30,3 +30,5 @@ export const AcademicSessionTerms: NavItem[] = [
   {label: "Menus", link: "/menu", description: "Manage application menus" },
   {label: "Role Menus", link: "/rolesMenu", description: "Assign and manage role menus" },
 ];
+
+export const getDefaultMenus = () => AcademicSessionTerms;

@@ -1,100 +1,139 @@
-// UPDATED LOGIN ROUTE (app/api/login/route.ts)
 import { NextRequest, NextResponse } from "next/server";
 
+const AUTH_URL = process.env.BOOK_KEEPING_AUTH_URL!;
+const CREATE_USER_URL = process.env.BOOK_KEEPING_CREATE_USER_URL!;
+
 export async function POST(req: NextRequest) {
-  const book_keeping_auth_url = process.env.BOOK_KEEPING_AUTH_URL;
-
-  if (!book_keeping_auth_url) {
-    return NextResponse.json(
-      { error: "Auth URL not configured" },
-      { status: 500 }
-    );
-  }
-
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const { email, password, name, role_code, isSignup } = body;
 
-    // 🔹 Input validation
+    // Validate required fields
     if (!email || !password) {
       return NextResponse.json(
-        {
-          error: "Email and password are required",
-          message: "Email and password are required",
-        },
+        { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    // 🔹 Call backend login endpoint
-    const backendRes = await fetch(book_keeping_auth_url, {
+    // If this is a signup request, create user first
+    if (isSignup) {
+      if (!name || !role_code) {
+        return NextResponse.json(
+          { error: "Name and role are required for registration" },
+          { status: 400 }
+        );
+      }
+
+      // STEP 1: Create user
+      const createResponse = await fetch(CREATE_USER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          role_code,
+          email_confirm: true,
+        }),
+      });
+
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json().catch(() => null);
+        
+        // User already exists
+        if (createResponse.status === 409) {
+          return NextResponse.json(
+            { error: "User already exists. Please login instead." },
+            { status: 409 }
+          );
+        }
+
+        return NextResponse.json(
+          { 
+            error: errorData?.message || errorData?.error || "Failed to create account",
+            details: errorData 
+          },
+          { status: createResponse.status }
+        );
+      }
+
+      // User created successfully (returns {})
+      // Now proceed to login
+    }
+
+    // STEP 2: Login (either after signup or direct login)
+    const loginResponse = await fetch(AUTH_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
 
-    if (!backendRes.ok) {
-      const errorData = await backendRes.json().catch(() => null);
-
-      let errorMessage = "Invalid credentials";
-      if (backendRes.status === 401) {
-        errorMessage = "Invalid email or password";
-      } else if (backendRes.status === 500) {
-        errorMessage = "Server error. Please try again later.";
+    if (!loginResponse.ok) {
+      const errorData = await loginResponse.json().catch(() => null);
+      
+      if (loginResponse.status === 401) {
+        return NextResponse.json(
+          { error: "Invalid email or password" },
+          { status: 401 }
+        );
       }
 
       return NextResponse.json(
-        {
-          error: errorMessage,
-          message: errorData?.message || errorMessage,
+        { 
+          error: errorData?.message || errorData?.error || "Login failed",
+          details: errorData 
         },
-        { status: backendRes.status }
+        { status: loginResponse.status }
       );
     }
 
-    const data = await backendRes.json();
+    const loginData = await loginResponse.json();
 
-    // 🔹 Validate response
-    if (!data.access_token) {
+    // Validate we got tokens
+    if (!loginData.access_token) {
       return NextResponse.json(
         { error: "Invalid response from authentication service" },
         { status: 500 }
       );
     }
 
+    // Create success response
     const res = NextResponse.json({
       success: true,
-      user: data.user || null,
-      message: "Login successful",
+      user: loginData.user,
+      message: isSignup 
+        ? "Account created successfully! Welcome aboard!" 
+        : "Welcome back!",
+      isNewUser: !!isSignup,
     });
 
-    // 🔹 Set access token cookie
-    res.cookies.set("token", data.access_token, {
+    // Set secure cookies
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "strict" as const,
       path: "/",
-      maxAge: 60 * 60, // 1 hour or match backend access token lifetime
+    };
+
+    res.cookies.set("token", loginData.access_token, {
+      ...cookieOptions,
+      maxAge: 60 * 60, // 1 hour
     });
 
-    // 🆕 🔹 Also set refresh token cookie (for auto refresh)
-    if (data.refresh_token) {
-      res.cookies.set("refresh_token", data.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7, // 7 days (or match backend)
+    if (loginData.refresh_token) {
+      res.cookies.set("refresh_token", loginData.refresh_token, {
+        ...cookieOptions,
+        maxAge: 60 * 60 * 24 * 7, // 7 days
       });
     }
 
     return res;
+
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Auth error:", error);
     return NextResponse.json(
-      {
-        error: "Network error",
-        message: "Something went wrong. Please try again.",
-      },
+      { error: "Something went wrong. Please try again." },
       { status: 500 }
     );
   }

@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
   if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return redirectToLogin(request);
   }
 
   try {
@@ -25,48 +25,68 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    if (refreshToken) {
-      const refreshResponse = await fetch(REFRESH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
+    // Token expired - try refresh
+    if (verify.status === 401 && refreshToken) {
+      const newTokens = await attemptTokenRefresh(refreshToken);
+      
+      if (newTokens) {
         const response = NextResponse.next();
-
-        response.cookies.set("token", data.access_token, {
-          httpOnly: true,
-          sameSite: "strict",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-        });
-
-        // Optional: set new refresh token if backend rotates it
-        if (data.refresh_token) {
-          response.cookies.set("refresh_token", data.refresh_token, {
-            httpOnly: true,
-            sameSite: "strict",
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-          });
-        }
-
+        setAuthCookies(response, newTokens);
         return response;
       }
     }
 
-    const response = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.delete("token");
-    response.cookies.delete("refresh_token");
-    return response;
+    return redirectToLogin(request);
+    
   } catch (err) {
-    console.error("Authentication error:", err);
-    const response = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.delete("token");
-    response.cookies.delete("refresh_token");
-    return response;
+    console.error("Middleware error:", err);
+    return redirectToLogin(request);
+  }
+}
+
+async function attemptTokenRefresh(refreshToken: string) {
+  try {
+    const refreshResponse = await fetch(REFRESH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (refreshResponse.ok) {
+      return await refreshResponse.json();
+    }
+    return null;
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+    return null;
+  }
+}
+
+function redirectToLogin(request: NextRequest) {
+  const response = NextResponse.redirect(new URL("/login", request.url));
+  response.cookies.delete("token");
+  response.cookies.delete("refresh_token");
+  return response;
+}
+
+function setAuthCookies(response: NextResponse, data: any) {
+  const cookieOptions = {
+    httpOnly: true,
+    sameSite: "strict" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  };
+
+  response.cookies.set("token", data.access_token, {
+    ...cookieOptions,
+    maxAge: 60 * 60,
+  });
+
+  if (data.refresh_token) {
+    response.cookies.set("refresh_token", data.refresh_token, {
+      ...cookieOptions,
+      maxAge: 60 * 60 * 24 * 7,
+    });
   }
 }
 

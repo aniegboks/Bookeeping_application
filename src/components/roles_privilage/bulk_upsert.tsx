@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, Trash2, Upload } from "lucide-react";
+import { X, Plus, Trash2, Upload, RefreshCw } from "lucide-react";
 import { Role } from "@/lib/types/roles";
 import { PrivilegeStatus } from "@/lib/types/roles_privilage";
 import toast from "react-hot-toast";
 
 interface PrivilegeRow {
     id: string;
-    module: string; // Module name
+    module: string;
     description: string;
     status: PrivilegeStatus;
 }
@@ -18,6 +18,7 @@ interface BulkUpsertModalProps {
     onSubmit: (payload: {
         role: string;
         privileges: Record<string, { description: string; status: boolean }[]>;
+        mode: 'merge' | 'replace'; // ✅ NEW: Add mode parameter
     }) => void;
     onCancel: () => void;
     isSubmitting: boolean;
@@ -30,12 +31,12 @@ export default function BulkUpsertModal({
     isSubmitting,
 }: BulkUpsertModalProps) {
     const [selectedRole, setSelectedRole] = useState("");
+    const [upsertMode, setUpsertMode] = useState<'merge' | 'replace'>('merge'); // ✅ NEW: Mode selector
     const [privileges, setPrivileges] = useState<PrivilegeRow[]>([
         { id: crypto.randomUUID(), module: "", description: "", status: "active" },
     ]);
     const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set());
 
-    // Predefined privilege templates exactly matching Swagger docs
     const privilegeTemplates: Record<string, string[]> = {
         "Brands": [
             "Get all brands",
@@ -186,8 +187,6 @@ export default function BulkUpsertModal({
             "Update a role privilege by ID",
             "Delete a role privilege by ID",
         ],
-
-        // ✅ ADDED
         "Menus": [
             "Get all menus",
             "Create a new menu",
@@ -195,8 +194,6 @@ export default function BulkUpsertModal({
             "Update a menu by ID",
             "Delete a menu by ID",
         ],
-
-        // ✅ ADDED
         "Role Menus": [
             "Get all role menus",
             "Create a new role menu",
@@ -206,8 +203,6 @@ export default function BulkUpsertModal({
             "Delete a role menu by ID",
         ],
     };
-
-
 
     const addPrivilege = () => {
         setPrivileges([
@@ -231,7 +226,6 @@ export default function BulkUpsertModal({
         const newSelected = new Set(selectedTemplates);
 
         if (newSelected.has(template)) {
-            // Remove template privileges
             newSelected.delete(template);
             const descriptionsToRemove = privilegeTemplates[template];
             setPrivileges(
@@ -240,7 +234,6 @@ export default function BulkUpsertModal({
                 )
             );
         } else {
-            // Add template privileges
             newSelected.add(template);
             const descriptions = privilegeTemplates[template];
             const newPrivileges = descriptions.map((desc) => ({
@@ -307,6 +300,7 @@ export default function BulkUpsertModal({
         const payload = {
             role: selectedRole,
             privileges: groupedPrivileges,
+            mode: upsertMode, // ✅ Pass the mode to parent
         };
 
         onSubmit(payload);
@@ -354,6 +348,49 @@ export default function BulkUpsertModal({
                                     </option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* ✅ NEW: Mode Selection */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Update Mode *
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setUpsertMode('merge')}
+                                    className={`p-4 border-2 rounded-lg text-left transition ${
+                                        upsertMode === 'merge'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-300 hover:border-gray-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Plus className="w-5 h-5 text-blue-600" />
+                                        <span className="font-medium">Merge (Add/Update)</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600">
+                                        Add new privileges and update existing ones. Keeps other privileges intact.
+                                    </p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUpsertMode('replace')}
+                                    className={`p-4 border-2 rounded-lg text-left transition ${
+                                        upsertMode === 'replace'
+                                            ? 'border-red-500 bg-red-50'
+                                            : 'border-gray-300 hover:border-gray-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <RefreshCw className="w-5 h-5 text-red-600" />
+                                        <span className="font-medium">Replace (Start Fresh)</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600">
+                                        Delete ALL existing privileges and replace with these ones only.
+                                    </p>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Template Checkboxes */}
@@ -458,11 +495,19 @@ export default function BulkUpsertModal({
                         </div>
 
                         {/* Info Box */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mt-4">
-                            <p className="text-sm text-blue-800">
-                                <strong>Note:</strong> This operation will insert new privileges or update
-                                existing ones based on the role code and description combination. Existing
-                                privileges with matching role and description will have their status updated.
+                        <div className={`border rounded-md p-4 mt-4 ${
+                            upsertMode === 'replace' 
+                                ? 'bg-red-50 border-red-200' 
+                                : 'bg-blue-50 border-blue-200'
+                        }`}>
+                            <p className={`text-sm ${
+                                upsertMode === 'replace' ? 'text-red-800' : 'text-blue-800'
+                            }`}>
+                                <strong>{upsertMode === 'replace' ? '⚠️ Warning:' : 'ℹ️ Note:'}</strong>{' '}
+                                {upsertMode === 'replace' 
+                                    ? 'This will DELETE all existing privileges for this role and replace them with only the ones listed above.'
+                                    : 'This will add new privileges or update existing ones. Other privileges for this role will remain unchanged.'
+                                }
                             </p>
                         </div>
                     </div>
@@ -480,17 +525,21 @@ export default function BulkUpsertModal({
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition disabled:opacity-50 flex items-center gap-2"
+                            className={`px-4 py-2 text-white rounded-md transition disabled:opacity-50 flex items-center gap-2 ${
+                                upsertMode === 'replace'
+                                    ? 'bg-red-600 hover:bg-red-700'
+                                    : 'bg-gray-700 hover:bg-gray-800'
+                            }`}
                         >
                             {isSubmitting ? (
                                 <>
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    Upserting...
+                                    {upsertMode === 'replace' ? 'Replacing...' : 'Upserting...'}
                                 </>
                             ) : (
                                 <>
-                                    <Upload className="w-4 h-4" />
-                                    Upsert {privileges.filter((p) => p.description.trim()).length} Privilege(s)
+                                    {upsertMode === 'replace' ? <RefreshCw className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+                                    {upsertMode === 'replace' ? 'Replace All' : 'Upsert'} ({privileges.filter((p) => p.description.trim()).length} Privilege(s))
                                 </>
                             )}
                         </button>

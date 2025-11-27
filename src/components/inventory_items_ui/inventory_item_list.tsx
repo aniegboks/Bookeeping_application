@@ -33,7 +33,10 @@ interface InventoryItemListProps {
   onSearch: (term: string) => void;
   onEdit: (item: InventoryItem) => void;
   onDelete: (item: InventoryItem) => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
+
 // Low Stock Alert Component
 function LowStockAlert({ lowStockItems }: { lowStockItems: InventoryItem[] }) {
   const [isVisible, setIsVisible] = useState(true);
@@ -161,6 +164,8 @@ export default function InventoryItemList({
   onSearch,
   onEdit,
   onDelete,
+  canUpdate = true,
+  canDelete = true,
 }: InventoryItemListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -193,6 +198,9 @@ export default function InventoryItemList({
 
   const isLowStock = (item: InventoryItem) =>
     item.current_stock <= item.low_stock_threshold;
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   return (
     <>
@@ -227,7 +235,7 @@ export default function InventoryItemList({
                   "Margin",
                   "Current Stock",
                   "Updated At",
-                  "Actions",
+                  ...(hasAnyActionPermission ? ["Actions"] : []),
                 ].map((h) => (
                   <th
                     key={h}
@@ -292,20 +300,32 @@ export default function InventoryItemList({
                   <td className="px-6 py-4 text-gray-500">
                     {formatDate(item.updated_at)}
                   </td>
-                  <td className="px-6 py-4 flex gap-2">
-                    <button
-                      onClick={() => onEdit(item)}
-                      className="text-[#3D4C63] hover:text-[#495C79] p-1 rounded hover:bg-blue-50 flex items-center gap-1"
-                    >
-                      <PenSquare className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(item)}
-                      className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 flex items-center gap-1"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
+
+                  {/* Only show action buttons if user has permissions */}
+                  {hasAnyActionPermission && (
+                    <td className="px-6 py-4 flex gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button
+                          onClick={() => onEdit(item)}
+                          className="text-[#3D4C63] hover:text-[#495C79] p-1 rounded hover:bg-blue-50 flex items-center gap-1"
+                          title="Edit item"
+                        >
+                          <PenSquare className="h-4 w-4" />
+                        </button>
+                      )}
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button
+                          onClick={() => onDelete(item)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 flex items-center gap-1"
+                          title="Delete item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

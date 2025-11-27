@@ -13,6 +13,7 @@ interface DistributionTableProps {
   inventoryItems: InventoryItem[];
   classTeachers: ClassTeacher[];
   itemsPerPage?: number;
+  canUpdate?: boolean;
 }
 
 export default function DistributionTable({
@@ -23,6 +24,7 @@ export default function DistributionTable({
   inventoryItems,
   classTeachers,
   itemsPerPage = 10,
+  canUpdate = true,
 }: DistributionTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(distributions.length / itemsPerPage);
@@ -84,9 +86,11 @@ export default function DistributionTable({
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Actions
-              </th>
+              {canUpdate && (
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white/50 backdrop-blur-sm divide-y divide-gray-100">
@@ -138,15 +142,17 @@ export default function DistributionTable({
                   {new Date(distribution.distribution_date).toLocaleDateString()}
                 </td>
 
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <button
-                    onClick={() => onEdit(distribution)}
-                    className="p-2.5 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-all duration-200 hover:scale-110"
-                    title="Edit Distribution"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                </td>
+                {canUpdate && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <button
+                      onClick={() => onEdit(distribution)}
+                      className="p-2.5 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-all duration-200 hover:scale-110"
+                      title="Edit Distribution"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

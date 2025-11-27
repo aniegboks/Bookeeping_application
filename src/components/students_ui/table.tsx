@@ -10,6 +10,8 @@ interface StudentTableProps {
   onDelete: (student: Student) => void;
   loading?: boolean;
   pageSize?: number;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function StudentTable({
@@ -19,9 +21,14 @@ export default function StudentTable({
   onDelete,
   loading = false,
   pageSize = 10,
+  canUpdate = true,
+  canDelete = true,
 }: StudentTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(students.length / pageSize);
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   if (loading) {
     return (
@@ -97,9 +104,12 @@ export default function StudentTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              {/* Only show Actions column if user has any action permission */}
+              {hasAnyActionPermission && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -167,24 +177,33 @@ export default function StudentTable({
                   </span>
                 </td>
 
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onEdit(student)}
-                      className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
-                      title="Edit Student"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(student)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete Student"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+                {/* Only show action buttons if user has permissions */}
+                {hasAnyActionPermission && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button
+                          onClick={() => onEdit(student)}
+                          className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
+                          title="Edit Student"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button
+                          onClick={() => onDelete(student)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Student"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

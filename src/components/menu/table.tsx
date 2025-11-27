@@ -11,6 +11,9 @@ interface MenusTableProps {
     openCreateModal: () => void;
     openEditModal: (menu: Menu) => void;
     handleDelete: (id: string, route: string) => void;
+    canCreate?: boolean;
+    canUpdate?: boolean;
+    canDelete?: boolean;
 }
 
 export default function MenusTable({
@@ -20,6 +23,9 @@ export default function MenusTable({
     openCreateModal,
     openEditModal,
     handleDelete,
+    canCreate = true,
+    canUpdate = true,
+    canDelete = true,
 }: MenusTableProps) {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -32,6 +38,9 @@ export default function MenusTable({
 
     const formatDate = (dateString: string) =>
         new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+
+    // Check if user has any action permissions
+    const hasAnyActionPermission = canUpdate || canDelete;
 
     return (
         <div className="bg-white rounded-sm border border-gray-200 overflow-x-auto">
@@ -50,12 +59,15 @@ export default function MenusTable({
                         />
                     </div>
 
-                    <button
-                        onClick={openCreateModal}
-                        className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap"
-                    >
-                        <Plus className="h-4 w-4" /> Add Menu
-                    </button>
+                    {/* Only show Add Menu button if user has create permission */}
+                    {canCreate && (
+                        <button
+                            onClick={openCreateModal}
+                            className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap"
+                        >
+                            <Plus className="h-4 w-4" /> Add Menu
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -67,7 +79,10 @@ export default function MenusTable({
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Caption</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        {/* Only show Actions column if user has any action permission */}
+                        {hasAnyActionPermission && (
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        )}
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -77,14 +92,31 @@ export default function MenusTable({
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{menu.caption}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(menu.created_at)}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(menu.updated_at)}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
-                                <button onClick={() => openEditModal(menu)} className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50">
-                                    <PenSquare className="h-4 w-4" />
-                                </button>
-                                <button onClick={() => handleDelete(menu.id, menu.route)} className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50">
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </td>
+                            {/* Only show action buttons if user has permissions */}
+                            {hasAnyActionPermission && (
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
+                                    {/* Only show Edit button if user can update */}
+                                    {canUpdate && (
+                                        <button 
+                                            onClick={() => openEditModal(menu)} 
+                                            className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50"
+                                            title="Edit menu"
+                                        >
+                                            <PenSquare className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                    {/* Only show Delete button if user can delete */}
+                                    {canDelete && (
+                                        <button 
+                                            onClick={() => handleDelete(menu.id, menu.route)} 
+                                            className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
+                                            title="Delete menu"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </td>
+                            )}
                         </tr>
                     ))}
                 </tbody>
@@ -97,16 +129,21 @@ export default function MenusTable({
                         No menus
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
-                        Get started by creating a new menu.
+                        {canCreate 
+                            ? "Get started by creating a new menu."
+                            : "No menus available."
+                        }
                     </p>
-                    <div className="mt-6">
-                        <button
-                            onClick={openCreateModal}
-                            className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
-                        >
-                            <Plus size={16} /> Create Menu
-                        </button>
-                    </div>
+                    {canCreate && (
+                        <div className="mt-6">
+                            <button
+                                onClick={openCreateModal}
+                                className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
+                            >
+                                <Plus size={16} /> Create Menu
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 

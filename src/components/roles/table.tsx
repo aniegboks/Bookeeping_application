@@ -10,6 +10,8 @@ interface RolesTableProps {
   onDelete: (role: Role) => void;
   loading?: boolean;
   onRefresh?: () => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function RolesTable({
@@ -18,6 +20,8 @@ export default function RolesTable({
   onDelete,
   loading,
   onRefresh,
+  canUpdate = true,
+  canDelete = true,
 }: RolesTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
@@ -30,6 +34,9 @@ export default function RolesTable({
       month: "short",
       day: "numeric",
     });
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   return (
     <div className="bg-white rounded-sm border border-gray-200 overflow-hidden">
@@ -63,9 +70,12 @@ export default function RolesTable({
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Created At
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
+            {/* Only show Actions column if user has any action permission */}
+            {hasAnyActionPermission && (
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            )}
           </tr>
         </thead>
 
@@ -93,25 +103,36 @@ export default function RolesTable({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(role.created_at)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
-                  <button
-                    onClick={() => onEdit(role)}
-                    className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => onDelete(role)}
-                    className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
+                {/* Only show action buttons if user has permissions */}
+                {hasAnyActionPermission && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
+                    {/* Only show Edit button if user can update */}
+                    {canUpdate && (
+                      <button
+                        onClick={() => onEdit(role)}
+                        className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50"
+                        title="Edit role"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    )}
+                    {/* Only show Delete button if user can delete */}
+                    {canDelete && (
+                      <button
+                        onClick={() => onDelete(role)}
+                        className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
+                        title="Delete role"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan={5} className="text-center py-12">
+              <td colSpan={hasAnyActionPermission ? 5 : 4} className="text-center py-12">
                 <Shield className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No roles</h3>
                 <p className="mt-1 text-sm text-gray-500">

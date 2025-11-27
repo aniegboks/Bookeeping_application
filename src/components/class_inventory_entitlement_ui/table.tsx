@@ -15,7 +15,9 @@ interface EntitlementTableProps {
   classes: SchoolClass[];
   academicSessions: AcademicSession[];
   users: User[];
-  pageSize?: number; // optional, default page size
+  pageSize?: number;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function EntitlementTable({
@@ -27,8 +29,13 @@ export default function EntitlementTable({
   classes,
   academicSessions,
   pageSize = 10,
+  canUpdate = true,
+  canDelete = true,
 }: EntitlementTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   if (loading) {
     return (
@@ -72,7 +79,10 @@ export default function EntitlementTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              {/* Only show Actions column if user has any action permission */}
+              {hasAnyActionPermission && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -109,24 +119,33 @@ export default function EntitlementTable({
                   <div className="max-w-[200px] truncate">{entitlement.notes || "—"}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(entitlement.created_at).toLocaleDateString()}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onEdit(entitlement)}
-                      className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-sm transition-colors"
-                      title="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(entitlement)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
+                {/* Only show action buttons if user has permissions */}
+                {hasAnyActionPermission && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button
+                          onClick={() => onEdit(entitlement)}
+                          className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-sm transition-colors"
+                          title="Edit entitlement"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      )}
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button
+                          onClick={() => onDelete(entitlement)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete entitlement"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

@@ -11,6 +11,7 @@ interface ControlsProps {
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
   onAddTransaction: () => void;
+  canCreate?: boolean;
 }
 
 export default function Controls({
@@ -21,6 +22,7 @@ export default function Controls({
   statusFilter,
   onStatusFilterChange,
   onAddTransaction,
+  canCreate = true,
 }: ControlsProps) {
   useEffect(() => {
     if (!typeFilter) {
@@ -80,16 +82,18 @@ export default function Controls({
             </div>
           </div>
 
-          {/* Add Transaction Button */}
-          <div className="w-full lg:w-auto">
-            <button
-              onClick={onAddTransaction}
-              className="bg-[#3D4C63] text-white px-6 py-2 rounded-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap w-full lg:w-auto justify-center"
-            >
-              <Plus className="h-4 w-4" />
-              New Purchase
-            </button>
-          </div>
+          {/* Only show Add Transaction Button if user has create permission */}
+          {canCreate && (
+            <div className="w-full lg:w-auto">
+              <button
+                onClick={onAddTransaction}
+                className="bg-[#3D4C63] text-white px-6 py-2 rounded-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap w-full lg:w-auto justify-center"
+              >
+                <Plus className="h-4 w-4" />
+                New Purchase
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

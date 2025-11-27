@@ -12,6 +12,9 @@ interface UOMListProps {
   onEdit: (uom: UOM) => void;
   onDelete: (id: string, name: string) => void;
   openCreateModal: () => void;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function UOMList({
@@ -20,10 +23,16 @@ export default function UOMList({
   onEdit,
   onDelete,
   openCreateModal,
+  canCreate = true,
+  canUpdate = true,
+  canDelete = true,
 }: UOMListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   // 🔍 Filter UOMs by search term
   const filteredUOMs = useMemo(() => {
@@ -75,12 +84,15 @@ export default function UOMList({
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] text-[#171D26] text-sm"
             />
           </div>
-          <button
-            onClick={openCreateModal}
-            className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors text-sm"
-          >
-            <Plus size={16} /> Add UOM
-          </button>
+          {/* Only show Add UOM button if user has create permission */}
+          {canCreate && (
+            <button
+              onClick={openCreateModal}
+              className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors text-sm"
+            >
+              <Plus size={16} /> Add UOM
+            </button>
+          )}
         </div>
       </div>
 
@@ -97,15 +109,18 @@ export default function UOMList({
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
               Created
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Actions
-            </th>
+            {/* Only show Actions column if user has any action permission */}
+            {hasAnyActionPermission && (
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Actions
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {loading ? (
             <tr>
-              <td colSpan={4} className="text-center py-12 text-gray-500">
+              <td colSpan={hasAnyActionPermission ? 4 : 3} className="text-center py-12 text-gray-500">
                 <SmallLoader />
               </td>
             </tr>
@@ -116,11 +131,13 @@ export default function UOMList({
                 uom={uom}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                canUpdate={canUpdate}
+                canDelete={canDelete}
               />
             ))
           ) : (
             <tr>
-              <td colSpan={4} className="text-center py-12 text-gray-500">
+              <td colSpan={hasAnyActionPermission ? 4 : 3} className="text-center py-12 text-gray-500">
                 {searchTerm
                   ? "No UOMs found matching your search"
                   : "No UOMs found"}

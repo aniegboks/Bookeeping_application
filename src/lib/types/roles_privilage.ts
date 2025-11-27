@@ -64,6 +64,7 @@ export type RolePrivilegeResource =
     | "inventory_items"
     | "inventory_transactions"
     | "inventory_summary"
+    | "inventory_distributions"
     | "suppliers"
     | "supplier_transactions"
     | "class_inventory_entitlements"

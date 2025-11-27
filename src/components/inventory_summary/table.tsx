@@ -2,20 +2,26 @@
 
 import { useState, useMemo } from "react";
 import { InventorySummary } from "@/lib/types/inventory_summary";
-import { ArrowUpDown, CheckCircle, Eye } from "lucide-react";
+import { ArrowUpDown, CheckCircle, Eye, PenSquare, Trash2 } from "lucide-react";
 import { InventoryDetailModal } from "./inventory_detail_modal";
 
 interface InventorySummaryTableProps {
   summaries: InventorySummary[];
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 type SortField = keyof InventorySummary | "avgCost";
 type SortDirection = "asc" | "desc";
 
-export function InventorySummaryTable({ summaries }: InventorySummaryTableProps) {
+export function InventorySummaryTable({ 
+  summaries,
+  canUpdate = true,
+  canDelete = true 
+}: InventorySummaryTableProps) {
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [filter, setFilter] = useState<"all" | "low_stock" | "adequate">("adequate"); // default to adequate
+  const [filter, setFilter] = useState<"all" | "low_stock" | "adequate">("adequate");
   const [selectedInventoryId, setSelectedInventoryId] = useState<string | null>(null);
 
   const handleSort = (field: SortField) => {
@@ -77,6 +83,9 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
     };
   }, [summaries, filter, sortField, sortDirection]);
 
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
+
   return (
     <div className="bg-white rounded-sm border border-gray-200">
       {/* Header with filter */}
@@ -131,26 +140,31 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
         <table className="w-full bg-white">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {[{ key: "name", label: "Item Name" }, { key: "sku", label: "SKU" }, { key: "category_name", label: "Category" }].map(
-                ({ key, label }) => (
-                  <th key={key} className="px-4 py-3 text-left">
-                    <button
-                      onClick={() => handleSort(key as SortField)}
-                      className="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900"
-                    >
-                      {label}
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                  </th>
-                )
-              )}
+              {[
+                { key: "name", label: "Item Name" }, 
+                { key: "sku", label: "SKU" }, 
+                { key: "category_name", label: "Category" }
+              ].map(({ key, label }) => (
+                <th key={key} className="px-4 py-3 text-left">
+                  <button
+                    onClick={() => handleSort(key as SortField)}
+                    className="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    {label}
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                </th>
+              ))}
               <th className="px-4 py-3 text-right">Current Stock</th>
               <th className="px-4 py-3 text-right">Min Level</th>
               <th className="px-4 py-3 text-right">Total In</th>
               <th className="px-4 py-3 text-right">Total Out</th>
               <th className="px-4 py-3 text-right">Avg Cost</th>
               <th className="px-4 py-3 text-center">Status</th>
-              <th className="px-4 py-3 text-center">View</th>
+              {/* Only show Actions column if user has any permission */}
+              {hasAnyActionPermission && (
+                <th className="px-4 py-3 text-center">Actions</th>
+              )}
             </tr>
           </thead>
 
@@ -170,12 +184,21 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-700">{summary.sku || "N/A"}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{summary.category_name || "N/A"}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-900">{summary.current_stock || 0} {summary.uom_name}</td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-900">
+                    {summary.current_stock || 0} {summary.uom_name}
+                  </td>
                   <td className="px-4 py-3 text-right text-sm text-gray-500">{threshold}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-900">{summary.total_in_quantity || 0}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-900">{summary.total_out_quantity || 0}</td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-900">
+                    {summary.total_in_quantity || 0}
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-900">
+                    {summary.total_out_quantity || 0}
+                  </td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                    ₦{avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₦{avgCost.toLocaleString(undefined, { 
+                      minimumFractionDigits: 2, 
+                      maximumFractionDigits: 2 
+                    })}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full">
@@ -185,15 +208,50 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={() => setSelectedInventoryId(summary.id)}
-                      className="p-2 rounded-full hover:bg-gray-100 transition"
-                      title="View Details"
-                    >
-                      <Eye className="w-5 h-5 text-gray-600" />
-                    </button>
-                  </td>
+                  
+                  {/* Only show action buttons if user has permissions */}
+                  {hasAnyActionPermission && (
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        {/* View button - always show for viewing details */}
+                        <button
+                          onClick={() => setSelectedInventoryId(summary.id)}
+                          className="p-2 rounded-full hover:bg-gray-100 transition"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4 text-gray-600" />
+                        </button>
+
+                        {/* Only show Edit button if user can update */}
+                        {canUpdate && (
+                          <button
+                            onClick={() => {
+                              // Handle edit action here
+                              console.log("Edit inventory:", summary.id);
+                            }}
+                            className="p-2 rounded-full hover:bg-blue-50 transition text-[#3D4C63]"
+                            title="Edit inventory"
+                          >
+                            <PenSquare className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* Only show Delete button if user can delete */}
+                        {canDelete && (
+                          <button
+                            onClick={() => {
+                              // Handle delete action here
+                              console.log("Delete inventory:", summary.id);
+                            }}
+                            className="p-2 rounded-full hover:bg-red-50 transition text-red-600"
+                            title="Delete inventory"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -201,7 +259,9 @@ export function InventorySummaryTable({ summaries }: InventorySummaryTableProps)
         </table>
 
         {sortedSummaries.length === 0 && (
-          <div className="text-center py-12 text-gray-500 text-sm">No inventory items found.</div>
+          <div className="text-center py-12 text-gray-500 text-sm">
+            No inventory items found.
+          </div>
         )}
       </div>
 

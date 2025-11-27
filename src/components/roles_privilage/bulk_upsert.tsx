@@ -202,6 +202,13 @@ export default function BulkUpsertModal({
             "Update role menus by role code",
             "Delete a role menu by ID",
         ],
+        "Inventory Distributions": [
+            "Get all inventory distributions",
+            "Create a new inventory distribution",
+            "Get an inventory distribution by ID",
+            "Update an inventory distribution by ID",
+            "Delete an inventory distribution by ID",
+        ],
     };
 
     const addPrivilege = () => {

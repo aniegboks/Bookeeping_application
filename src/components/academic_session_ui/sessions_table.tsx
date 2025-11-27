@@ -1,3 +1,5 @@
+
+// components/academic_session_ui/sessions_table.tsx (Updated)
 "use client";
 
 import { useState } from "react";
@@ -86,22 +88,28 @@ function DeleteConfirmModal({
   );
 }
 
-// Main sessions table component with pagination
+// Main sessions table component with pagination and permissions
 export default function SessionsTable({
   sessions,
   setSessions,
   openCreateModal,
   openEditModal,
+  canCreate = true,
+  canUpdate = true,
+  canDelete = true,
 }: {
   sessions: AcademicSession[];
   setSessions: React.Dispatch<React.SetStateAction<AcademicSession[]>>;
   openCreateModal: () => void;
   openEditModal: (session: AcademicSession) => void;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Number of sessions per page
+  const itemsPerPage = 10;
 
   const totalPages = Math.ceil(sessions.length / itemsPerPage);
   const paginatedSessions = sessions.slice(
@@ -109,7 +117,16 @@ export default function SessionsTable({
     currentPage * itemsPerPage
   );
 
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
+
   const handleDelete = async (id: string) => {
+    // Double-check permission before deleting
+    if (!canDelete) {
+      toast.error("You don't have permission to delete academic sessions");
+      return;
+    }
+
     setDeleting(true);
     try {
       const res = await fetch(`/api/academic_session/${id}`, { method: "DELETE" });
@@ -127,7 +144,7 @@ export default function SessionsTable({
       setSessions((prev) => prev.filter((s) => s.id !== id));
       toast.success("Academic session deleted successfully!");
       if (paginatedSessions.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1); // Go back a page if last item on page is deleted
+        setCurrentPage(currentPage - 1);
       }
     } catch (err: unknown) {
       if (err instanceof Error) toast.error(err.message);
@@ -136,6 +153,15 @@ export default function SessionsTable({
       setDeleting(false);
       setDeleteId(null);
     }
+  };
+
+  const openDeleteModal = (id: string) => {
+    // Check permission before opening delete modal
+    if (!canDelete) {
+      toast.error("You don't have permission to delete academic sessions");
+      return;
+    }
+    setDeleteId(id);
   };
 
   const formatDate = (dateStr: string) =>
@@ -152,27 +178,34 @@ export default function SessionsTable({
           <h2 className="text-lg font-semibold text-[#171D26] tracking-tighter">
             Academic Sessions
           </h2>
-          <button
-            onClick={openCreateModal}
-            className=" bg-[#3D4C63] text-white flex items-center gap-2 hover:bg-[#495C79] transition-colors px-2 py-2 rounded-sm"
-          >
-            <Plus size={16} /> Add New Session
-          </button>
+          {/* Only show Add New Session button if user has create permission */}
+          {canCreate && (
+            <button
+              onClick={openCreateModal}
+              className="bg-[#3D4C63] text-white flex items-center gap-2 hover:bg-[#495C79] transition-colors px-2 py-2 rounded-sm"
+            >
+              <Plus size={16} /> Add New Session
+            </button>
+          )}
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 py-4">
               <tr>
-                {["Session", "Name", "Start Date", "End Date", "Status", "Actions"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      {h}
-                    </th>
-                  )
+                {["Session", "Name", "Start Date", "End Date", "Status"].map((h) => (
+                  <th
+                    key={h}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    {h}
+                  </th>
+                ))}
+                {/* Only show Actions column if user has any action permission */}
+                {hasAnyActionPermission && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 )}
               </tr>
             </thead>
@@ -200,20 +233,31 @@ export default function SessionsTable({
                       {session.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm flex gap-2">
-                    <button
-                      onClick={() => openEditModal(session)}
-                      className="text-[#3D4C63] hover:text-[#495C79] p-1 rounded hover:bg-blue-50"
-                    >
-                      <PenSquare className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteId(session.id)}
-                      className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
+                  {/* Only show action buttons if user has permissions */}
+                  {hasAnyActionPermission && (
+                    <td className="px-6 py-4 text-sm flex gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button
+                          onClick={() => openEditModal(session)}
+                          className="text-[#3D4C63] hover:text-[#495C79] p-1 rounded hover:bg-blue-50"
+                          title="Edit session"
+                        >
+                          <PenSquare className="h-4 w-4" />
+                        </button>
+                      )}
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button
+                          onClick={() => openDeleteModal(session.id)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                          title="Delete session"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -226,16 +270,20 @@ export default function SessionsTable({
                 No academic sessions
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Get started by creating a new session.
+                {canCreate
+                  ? "Get started by creating a new session."
+                  : "No academic sessions available."}
               </p>
-              <div className="mt-6">
-                <button
-                  onClick={openCreateModal}
-                  className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
-                >
-                  <Plus size={16} />Create Session
-                </button>
-              </div>
+              {canCreate && (
+                <div className="mt-6">
+                  <button
+                    onClick={openCreateModal}
+                    className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
+                  >
+                    <Plus size={16} />Create Session
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

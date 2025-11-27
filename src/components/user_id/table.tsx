@@ -1,15 +1,28 @@
 "use client";
+
 import { useState, useMemo } from "react";
-import { Edit, Trash2, Mail, Phone, User as UserIcon, ChevronLeft, ChevronRight, Shield } from "lucide-react";
-import { User } from "@/lib/types/user";
+import {
+  Edit,
+  Trash2,
+  Mail,
+  Phone,
+  User,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+} from "lucide-react";
+
+import { User as UserType } from "@/lib/types/user";
 import { Role } from "@/lib/types/roles";
 
 interface UserTableProps {
-  users: User[];
+  users: UserType[];
   roles: Role[];
-  onEdit: (user: User) => void;
-  onDelete: (user: User) => void;
+  onEdit: (user: UserType) => void;
+  onDelete: (user: UserType) => void;
   loading?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function UserTable({
@@ -18,28 +31,39 @@ export default function UserTable({
   onEdit,
   onDelete,
   loading = false,
+  canUpdate = true,
+  canDelete = true,
 }: UserTableProps) {
+
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 10;
 
-  // Create a map of role codes to role names for efficient lookup
+  // ✅ Normalize users: convert `role` → `roles[]`
+  const normalizedUsers = useMemo(() => {
+    return users.map((u: any) => ({
+      ...u,
+      roles: Array.isArray(u.roles)
+        ? u.roles
+        : u.role
+          ? [u.role]
+          : [],
+    }));
+  }, [users]);
+
+  // Map role.code → role.name
   const roleMap = useMemo(() => {
     const map = new Map<string, string>();
-    roles.forEach((role) => {
-      map.set(role.code, role.name);
-    });
+    roles.forEach((role) => map.set(role.code, role.name));
     return map;
   }, [roles]);
 
-  // Helper function to get role display name
-  const getRoleDisplayName = (roleCode: string): string => {
-    return roleMap.get(roleCode) || roleCode;
-  };
+  const getRoleDisplayName = (roleCode: string): string =>
+    roleMap.get(roleCode) || roleCode;
 
-  const totalPages = Math.ceil(users.length / usersPerPage);
+  const totalPages = Math.ceil(normalizedUsers.length / usersPerPage);
   const startIndex = (currentPage - 1) * usersPerPage;
   const endIndex = startIndex + usersPerPage;
-  const paginatedUsers = users.slice(startIndex, endIndex);
+  const paginatedUsers = normalizedUsers.slice(startIndex, endIndex);
 
   const handlePrev = () => {
     if (currentPage > 1) setCurrentPage((p) => p - 1);
@@ -49,6 +73,10 @@ export default function UserTable({
     if (currentPage < totalPages) setCurrentPage((p) => p + 1);
   };
 
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
+
+  // LOADING
   if (loading) {
     return (
       <div className="bg-white rounded-sm border border-gray-200 p-12 text-center">
@@ -58,10 +86,11 @@ export default function UserTable({
     );
   }
 
-  if (users.length === 0) {
+  // EMPTY
+  if (normalizedUsers.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-        <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <User className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
         <p className="mt-1 text-sm text-gray-500">
           Get started by creating a new user.
@@ -70,58 +99,67 @@ export default function UserTable({
     );
   }
 
+  // TABLE
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Phone
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Roles
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              {/* Only show Actions column if user has any action permission */}
+              {hasAnyActionPermission && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
+
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedUsers.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+
+                {/* NAME */}
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">
                   <div className="flex items-center gap-2">
-                    <UserIcon className="text-[#3D4C63] h-4 w-4 flex-shrink-0" />
-                    <span className="max-w-[200px] truncate" title={user.name}>
-                      {user.name || "—"}
-                    </span>
+                    <User className="text-[#3D4C63] h-4 w-4" />
+                    <span className="max-w-[200px] truncate">{user.name || "—"}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+
+                {/* EMAIL */}
+                <td className="px-6 py-4 text-sm text-gray-900">
                   <div className="flex items-center gap-2">
-                    <Mail className="text-[#3D4C63] h-4 w-4 flex-shrink-0" />
-                    <span className="max-w-[250px] truncate" title={user.email}>
-                      {user.email || "—"}
-                    </span>
+                    <Mail className="text-[#3D4C63] h-4 w-4" />
+                    <span className="max-w-[250px] truncate">{user.email || "—"}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+
+                {/* PHONE */}
+                <td className="px-6 py-4 text-sm text-gray-900">
                   <div className="flex items-center gap-2">
-                    <Phone className="text-[#3D4C63] h-4 w-4 flex-shrink-0" />
+                    <Phone className="text-[#3D4C63] h-4 w-4" />
                     <span>{user.phone || "—"}</span>
                   </div>
                 </td>
+
+                {/* ROLES */}
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <div className="flex flex-wrap gap-1">
-                    {user.roles && user.roles.length > 0 ? (
-                      user.roles.map((roleCode) => {
+                    {user.roles.length > 0 ? (
+                      user.roles.map((roleCode: string) => {
                         const roleName = getRoleDisplayName(roleCode);
                         return (
                           <span
@@ -137,53 +175,70 @@ export default function UserTable({
                     ) : (
                       <span className="text-gray-400">No roles assigned</span>
                     )}
+
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onEdit(user)}
-                      className="p-2 text-[#3D4C63] hover:text-[#495C79] hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Edit User"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(user)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete User"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
+
+                {/* ACTIONS - Only show if user has permissions */}
+                {hasAnyActionPermission && (
+                  <td className="px-6 py-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button
+                          onClick={() => onEdit(user)}
+                          className="p-2 text-[#3D4C63] hover:bg-blue-50 rounded-lg"
+                          title="Edit user"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      )}
+
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button
+                          onClick={() => onDelete(user)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          title="Delete user"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
+
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination Controls */}
-      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-gray-50">
+      {/* PAGINATION */}
+      <div className="flex items-center justify-between px-6 py-3 border-t bg-gray-50">
         <span className="text-sm text-gray-500">
-          Showing {startIndex + 1} to {Math.min(endIndex, users.length)} of {users.length} users
+          Showing {startIndex + 1} to {Math.min(endIndex, normalizedUsers.length)} of{" "}
+          {normalizedUsers.length} users
         </span>
+
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500">
             Page {currentPage} / {totalPages || 1}
           </span>
+
           <div className="flex gap-2">
             <button
               onClick={handlePrev}
               disabled={currentPage === 1}
-              className="flex items-center gap-1 px-3 py-1 text-sm rounded-sm border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed bg-white/70 backdrop-blur-sm transition"
+              className="flex items-center gap-1 px-3 py-1 text-sm rounded-sm border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               <ChevronLeft className="h-4 w-4" /> Prev
             </button>
+
             <button
               onClick={handleNext}
               disabled={currentPage === totalPages || totalPages === 0}
-              className="flex items-center gap-1 px-3 py-1 text-sm rounded-sm border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed bg-white/70 backdrop-blur-sm transition"
+              className="flex items-center gap-1 px-3 py-1 text-sm rounded-sm border bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               Next <ChevronRight className="h-4 w-4" />
             </button>

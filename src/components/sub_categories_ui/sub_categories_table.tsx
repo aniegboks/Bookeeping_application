@@ -12,6 +12,8 @@ interface TableProps {
   onEdit: (item: SubCategory) => void;
   onDelete: (id: string) => Promise<void>;
   onAdd: () => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function SubCategoriesTable({
@@ -20,9 +22,14 @@ export default function SubCategoriesTable({
   onEdit,
   onDelete,
   onAdd,
+  canUpdate = true,
+  canDelete = true,
 }: TableProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   // --- Pagination ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,29 +75,32 @@ export default function SubCategoriesTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Updated
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              {/* Only show Actions column if user has any action permission */}
+              {hasAnyActionPermission && (
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {subCategories.length === 0 ? (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={hasAnyActionPermission ? 5 : 4}>
                   <div className="text-center py-12">
                     <Dock className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-medium text-gray-900">
-                      No categories
+                      No sub-categories
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      Get started by creating a new category.
+                      Get started by creating a new sub-category.
                     </p>
                     <div className="mt-6">
                       <button
                         onClick={onAdd}
                         className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
                       >
-                        <Plus size={16} /> Create Category
+                        <Plus size={16} /> Create Sub-Category
                       </button>
                     </div>
                   </div>
@@ -116,20 +126,31 @@ export default function SubCategoriesTable({
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(item.updated_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
-                    <button
-                      onClick={() => onEdit(item)}
-                      className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50 transition-colors"
-                    >
-                      <PenSquare className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteId(item.id)}
-                      className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
+                  {/* Only show action buttons if user has permissions */}
+                  {hasAnyActionPermission && (
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button
+                          onClick={() => onEdit(item)}
+                          className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50 transition-colors"
+                          title="Edit sub-category"
+                        >
+                          <PenSquare className="h-4 w-4" />
+                        </button>
+                      )}
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button
+                          onClick={() => setDeleteId(item.id)}
+                          className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50 transition-colors"
+                          title="Delete sub-category"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))
             )}

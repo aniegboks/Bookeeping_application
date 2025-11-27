@@ -1,29 +1,41 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit, Trash2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Edit, Trash2, Eye } from "lucide-react";
 import { InventoryTransaction } from "@/lib/types/inventory_transactions";
 import { InventoryItem } from "@/lib/types/inventory_item";
+import { Supplier } from "@/lib/types/suppliers";
 
 interface TransactionTableProps {
   transactions?: InventoryTransaction[];
   items?: InventoryItem[];
+  suppliers?: Supplier[];
   onEdit: (transaction: InventoryTransaction) => void;
   onDelete: (transaction: InventoryTransaction) => void;
+  onView: (transaction: InventoryTransaction) => void;
   loading?: boolean;
   itemsPerPage?: number;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function TransactionTable({
   transactions = [],
   items = [],
+  suppliers = [],
   onEdit,
   onDelete,
+  onView,
   loading = false,
   itemsPerPage = 10,
+  canUpdate = true,
+  canDelete = true,
 }: TransactionTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages || 1);
@@ -38,6 +50,8 @@ export default function TransactionTable({
   );
 
   const getItemName = (id: string) => items.find((i) => i.id === id)?.name || id;
+  
+  const getSupplierName = (id: string) => suppliers.find((s) => s.id === id)?.name || "—";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -79,15 +93,18 @@ export default function TransactionTable({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              {/* Only show Actions column if user has any action permission */}
+              {hasAnyActionPermission && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              )}
             </tr>
           </thead>
 
@@ -97,27 +114,21 @@ export default function TransactionTable({
               const quantity = isPurchase ? tx.qty_in : tx.qty_out;
               const unitCost = isPurchase ? tx.in_cost : tx.out_cost;
               const totalCost = quantity * unitCost;
+              const isCompleted = tx.status === "completed";
 
               return (
                 <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
-                  {/* Transaction Type */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {isPurchase ? (
-                        <ArrowDownCircle className="text-green-600 w-4 h-4" />
-                      ) : (
-                        <ArrowUpCircle className="text-purple-600 w-4 h-4" />
-                      )}
-                      <span className="text-sm font-medium text-gray-900 capitalize">
-                        {tx.transaction_type}
-                      </span>
+                  {/* Item Name */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                    <div className="max-w-[150px] truncate" title={getItemName(tx.item_id)}>
+                      {getItemName(tx.item_id)}
                     </div>
                   </td>
 
-                  {/* Item Name */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="max-w-[150px] truncate" title={getItemName(tx.item_id)}>
-                      {getItemName(tx.item_id)}
+                  {/* Supplier Name */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <div className="max-w-[150px] truncate" title={getSupplierName(tx.supplier_id || "")}>
+                      {getSupplierName(tx.supplier_id || "")}
                     </div>
                   </td>
 
@@ -139,12 +150,11 @@ export default function TransactionTable({
                   </td>
 
                   {/* Amount Paid */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black font-medium">
                     {tx.amount_paid !== null && tx.amount_paid !== undefined
                       ? formatCurrency(tx.amount_paid)
                       : "—"}
                   </td>
-
 
                   {/* Status */}
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -160,25 +170,46 @@ export default function TransactionTable({
                     {tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString() : "—"}
                   </td>
 
-                  {/* Actions */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onEdit(tx)}
-                        className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
-                        title="Edit Transaction"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(tx)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete Transaction"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {/* Actions - Only show if user has permissions */}
+                  {hasAnyActionPermission && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center gap-2">
+                        {/* Show View button for completed transactions */}
+                        {isCompleted ? (
+                          <button
+                            onClick={() => onView(tx)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View Transaction"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <>
+                            {/* Only show Edit button if user can update and transaction is not completed */}
+                            {canUpdate && (
+                              <button
+                                onClick={() => onEdit(tx)}
+                                className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
+                                title="Edit Transaction"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            )}
+                            {/* Only show Delete button if user can delete and transaction is not completed */}
+                            {canDelete && (
+                              <button
+                                onClick={() => onDelete(tx)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete Transaction"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}

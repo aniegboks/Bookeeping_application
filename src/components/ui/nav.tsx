@@ -13,6 +13,33 @@ import {
   FileText, BarChart3, CheckSquare, Layers
 } from "lucide-react";
 
+// Map menu routes to required privileges
+const MENU_PRIVILEGES: Record<string, { module: string; action: 'read' | 'create' | 'update' | 'delete' }> = {
+  '/dashboard': { module: 'Dashboard', action: 'read' },
+  '/academic-sessions': { module: 'Academic Sessions', action: 'read' },
+  '/brands': { module: 'Brands', action: 'read' },
+  '/categories': { module: 'Categories', action: 'read' },
+  '/sub-categories': { module: 'Sub Categories', action: 'read' },
+  '/unit-of-measurements': { module: 'Unit of Measurements', action: 'read' },
+  '/inventory-items': { module: 'Inventory Items', action: 'read' },
+  '/entitlements': { module: 'Entitlements', action: 'read' },
+  '/suppliers': { module: 'Suppliers', action: 'read' },
+  '/classes': { module: 'Classes', action: 'read' },
+  '/teachers': { module: 'Teachers', action: 'read' },
+  '/students': { module: 'Students', action: 'read' },
+  '/supplier-transactions': { module: 'Supplier Transactions', action: 'read' },
+  '/student-collections': { module: 'Student Collections', action: 'read' },
+  '/distributions': { module: 'Distributions', action: 'read' },
+  '/collection-summary': { module: 'Collection Summary', action: 'read' },
+  '/collection-report': { module: 'Collection Report', action: 'read' },
+  '/users': { module: 'Users', action: 'read' },
+  '/roles': { module: 'Roles', action: 'read' },
+  '/privileges': { module: 'Privileges', action: 'read' },
+  '/menus': { module: 'Menus', action: 'read' },
+  '/settings': { module: 'Settings', action: 'read' },
+  // Add more routes as needed
+};
+
 // Smart icon mapping based on menu caption
 const getIconForMenu = (caption: string): React.ReactNode => {
   const lower = caption.toLowerCase();
@@ -44,8 +71,21 @@ const getIconForMenu = (caption: string): React.ReactNode => {
 };
 
 const VerticalNav = () => {
-  const { user, menus, loading, logout } = useUser();
+  const { user, menus, loading, logout, canPerformAction } = useUser();
   const pathname = usePathname();
+
+  // Filter menus based on privileges
+  const authorizedMenus = React.useMemo(() => {
+    return menus.filter(menu => {
+      const privilege = MENU_PRIVILEGES[menu.route];
+      
+      // If no privilege requirement is defined, show the menu item
+      if (!privilege) return true;
+      
+      // Check if user has the required privilege
+      return canPerformAction(privilege.module, privilege.action);
+    });
+  }, [menus, canPerformAction]);
 
   if (loading) {
     return (
@@ -92,14 +132,14 @@ const VerticalNav = () => {
 
       {/* Scrollable Nav Links */}
       <nav className="flex-1 overflow-y-auto px-4 mt-6 scrollbar-none">
-        {menus.length === 0 ? (
+        {authorizedMenus.length === 0 ? (
           <div className="text-center text-gray-500 text-sm py-8">
             <p className="mb-2">No menu items available</p>
             <p className="text-xs">Contact your administrator</p>
           </div>
         ) : (
           <ul className="flex flex-col gap-1">
-            {menus.map((menu) => {
+            {authorizedMenus.map((menu) => {
               const isActive = pathname === menu.route;
               return (
                 <li key={menu.id}>

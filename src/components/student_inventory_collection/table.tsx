@@ -11,7 +11,7 @@ import { User } from "@/lib/types/user";
 //  Mock API (replace with your actual fetch endpoint)
 const inventoryApi = {
   async fetchAll(): Promise<StudentInventoryCollection[]> {
-    const res = await fetch("/api/proxy/student_inventory_collection"); // Adjust to your actual route
+    const res = await fetch("/api/proxy/student_inventory_collection");
     if (!res.ok) throw new Error("Failed to fetch inventory collections");
     return res.json();
   },
@@ -27,8 +27,9 @@ interface CollectionTableProps {
   academicSessions?: AcademicSession[];
   users?: User[];
   rowsPerPage?: number;
-  // Optional external trigger to reload data after bulk upload
   refreshTrigger?: number;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function CollectionTable({
@@ -37,6 +38,8 @@ export default function CollectionTable({
   students,
   rowsPerPage = 10,
   refreshTrigger,
+  canUpdate = true,
+  canDelete = true,
 }: CollectionTableProps) {
   const [collections, setCollections] = useState<StudentInventoryCollection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +81,9 @@ export default function CollectionTable({
   const getAdmissionNumber = (id: string) =>
     students.find((s) => s.id === id)?.admission_number || "—";
 
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
+
   // UI Rendering
   if (loading) {
     return (
@@ -94,7 +100,7 @@ export default function CollectionTable({
         <p className="text-gray-500">No inventory collections found</p>
         <button
           onClick={fetchCollections}
-          className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-[#E8EBF0] hover:bg-[#D8DCE3] rounded-lg transition-colors"
+          className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-[#E8EBF0] hover:bg-[#D8DCE3] rounded-lg transition-colors mx-auto"
         >
           <RefreshCw className="w-4 h-4" /> Refresh
         </button>
@@ -126,7 +132,10 @@ export default function CollectionTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Eligible</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Received</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              {/* Only show Actions column if user has any action permission */}
+              {hasAnyActionPermission && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              )}
             </tr>
           </thead>
 
@@ -159,9 +168,11 @@ export default function CollectionTable({
                   </span>
                 </td>
 
+                {/* Eligible - only clickable if can update */}
                 <td
-                  className="px-6 py-4 cursor-pointer"
-                  onClick={() => onEdit({ ...c, eligible: !c.eligible })}
+                  className={`px-6 py-4 ${canUpdate ? 'cursor-pointer' : 'cursor-default'}`}
+                  onClick={() => canUpdate && onEdit({ ...c, eligible: !c.eligible })}
+                  title={canUpdate ? "Click to toggle" : "No permission to change"}
                 >
                   {c.eligible ? (
                     <span className="flex items-center gap-1 text-green-600">
@@ -174,9 +185,11 @@ export default function CollectionTable({
                   )}
                 </td>
 
+                {/* Received - only clickable if can update */}
                 <td
-                  className="px-6 py-4 cursor-pointer"
-                  onClick={() => onEdit({ ...c, received: !c.received })}
+                  className={`px-6 py-4 ${canUpdate ? 'cursor-pointer' : 'cursor-default'}`}
+                  onClick={() => canUpdate && onEdit({ ...c, received: !c.received })}
+                  title={canUpdate ? "Click to toggle" : "No permission to change"}
                 >
                   {c.received ? (
                     <span className="flex items-center gap-1 text-green-600">
@@ -193,24 +206,33 @@ export default function CollectionTable({
                   {c.received_date ? new Date(c.received_date).toLocaleDateString() : "—"}
                 </td>
 
-                <td className="px-6 py-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onEdit(c)}
-                      className="text-[#3D4C63] hover:text-[#495C79] transition"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(c)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded transition"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+                {/* Only show action buttons if user has permissions */}
+                {hasAnyActionPermission && (
+                  <td className="px-6 py-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button
+                          onClick={() => onEdit(c)}
+                          className="text-[#3D4C63] hover:text-[#495C79] transition"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button
+                          onClick={() => onDelete(c)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded transition"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

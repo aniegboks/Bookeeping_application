@@ -13,6 +13,8 @@ interface ClassTableProps {
   loading?: boolean;
   users: User[];
   classTeachers: ClassTeacher[];
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function ClassTable({
@@ -22,6 +24,8 @@ export default function ClassTable({
   loading = false,
   users,
   classTeachers,
+  canUpdate = true,
+  canDelete = true,
 }: ClassTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -39,6 +43,9 @@ export default function ClassTable({
     const user = users.find((u) => u.id === userId);
     return user?.username || user?.name || "Unknown User";
   };
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   if (loading) {
     return (
@@ -68,7 +75,10 @@ export default function ClassTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              {/* Only show Actions column if user has any action permission */}
+              {hasAnyActionPermission && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              )}
             </tr>
           </thead>
 
@@ -106,22 +116,33 @@ export default function ClassTable({
                   {new Date(schoolClass.updated_at).toLocaleDateString()}
                 </td>
 
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onEdit(schoolClass)}
-                      className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(schoolClass)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+                {/* Only show action buttons if user has permissions */}
+                {hasAnyActionPermission && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button
+                          onClick={() => onEdit(schoolClass)}
+                          className="p-2 text-[#3D4C63] hover:text-[#495C79] rounded-lg transition-colors"
+                          title="Edit class"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button
+                          onClick={() => onDelete(schoolClass)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete class"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

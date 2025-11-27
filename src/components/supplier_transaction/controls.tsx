@@ -17,6 +17,7 @@ interface ControlsProps {
 
   onAdd: () => void;
   onBulkAdd?: () => void;
+  canCreate?: boolean;
 }
 
 export default function Controls({
@@ -30,6 +31,7 @@ export default function Controls({
   onFilterStatusChange,
   onAdd,
   onBulkAdd,
+  canCreate = true,
 }: ControlsProps) {
   return (
     <div className="bg-white rounded-sm border border-gray-200 p-4">
@@ -50,25 +52,27 @@ export default function Controls({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={onAdd}
-              className="flex items-center gap-2 px-4 py-2 bg-[#3D4C63] text-white rounded-sm hover:bg-[#495C79] text-sm transition-colors whitespace-nowrap"
-            >
-              <Plus size={20} />
-              Add Transaction
-            </button>
-            {onBulkAdd && (
+          {/* Action Buttons - Only show if user has create permission */}
+          {canCreate && (
+            <div className="flex gap-2">
               <button
-                onClick={onBulkAdd}
+                onClick={onAdd}
                 className="flex items-center gap-2 px-4 py-2 bg-[#3D4C63] text-white rounded-sm hover:bg-[#495C79] text-sm transition-colors whitespace-nowrap"
               >
-                <Upload size={20} />
-                Bulk Add
+                <Plus size={20} />
+                Add Transaction
               </button>
-            )}
-          </div>
+              {onBulkAdd && (
+                <button
+                  onClick={onBulkAdd}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#3D4C63] text-white rounded-sm hover:bg-[#495C79] text-sm transition-colors whitespace-nowrap"
+                >
+                  <Upload size={20} />
+                  Bulk Add
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Filters */}

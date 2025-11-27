@@ -20,12 +20,18 @@ export default function UserForm({
   onCancel,
   isSubmitting,
 }: UserFormProps) {
-  const [formData, setFormData] = useState<CreateUserInput>({
+  const [formData, setFormData] = useState<{
+    email: string;
+    password: string;
+    phone: string;
+    name: string;
+    role: string;
+  }>({
     email: "",
     password: "",
     phone: "",
     name: "",
-    roles: [],
+    role: "",
   });
 
   const [roleError, setRoleError] = useState("");
@@ -33,52 +39,44 @@ export default function UserForm({
   // Extract role codes from the roles array
   const validRoleCodes = roles.map((role) => role.code);
 
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        email: user.email ?? "",
-        password: "",
-        phone: user.phone ?? "",
-        name: user.name ?? "",
-        roles: user.roles ?? [],
-      });
-    }
-  }, [user]);
-
-  const handleRoleToggle = (roleCode: string) => {
-    const newRoles = formData.roles.includes(roleCode)
-      ? formData.roles.filter((r) => r !== roleCode)
-      : [...formData.roles, roleCode];
-
-    setFormData({ ...formData, roles: newRoles });
-    setRoleError("");
-  };
+useEffect(() => {
+  if (user) {
+    setFormData({
+      email: user.email ?? "",
+      password: "",
+      phone: user.phone ?? "",
+      name: user.name ?? "",
+      role: user.roles?.[0] ?? "",   // FIXED
+    });
+  }
+}, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const invalidRoles = formData.roles.filter(
-      (role) => !validRoleCodes.includes(role)
-    );
-
-    if (invalidRoles.length > 0) {
-      setRoleError(`Invalid roles: ${invalidRoles.join(", ")}`);
+    // Validate role
+    if (!formData.role) {
+      setRoleError("Role is required");
       return;
     }
 
-    if (formData.roles.length === 0) {
-      setRoleError("At least one role is required");
+    if (!validRoleCodes.includes(formData.role)) {
+      setRoleError(`Invalid role: ${formData.role}`);
       return;
     }
 
     // Build the data to submit
-    const dataToSubmit: CreateUserInput | UpdateUserInput = {
+    const dataToSubmit: any = {
       email: formData.email,
       phone: formData.phone,
       name: formData.name,
-      roles: formData.roles,
-      ...(formData.password && { password: formData.password }),
+      role: formData.role,
     };
+
+    // Only include password if provided (for create or update with password change)
+    if (formData.password) {
+      dataToSubmit.password = formData.password;
+    }
 
     await onSubmit(dataToSubmit);
   };
@@ -138,69 +136,62 @@ export default function UserForm({
                 setFormData({ ...formData, phone: e.target.value })
               }
               className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
-              placeholder="+1234567890"
+              placeholder="+2348032445678"
             />
           </div>
 
-          {/* PASSWORD (only for create) */}
-          {!user && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                required
-                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
-                placeholder="Enter password"
-              />
-            </div>
-          )}
-
-          {/* ROLES */}
+          {/* PASSWORD */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Roles <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password {!user && <span className="text-red-500">*</span>}
+            </label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
+              required={!user}
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+              placeholder={user ? "Leave blank to keep current password" : "Enter password"}
+            />
+            {user && (
+              <p className="text-xs text-gray-500 mt-1">
+                Leave blank to keep the current password
+              </p>
+            )}
+          </div>
+
+          {/* ROLE (Single Select) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Role <span className="text-red-500">*</span>
             </label>
             {roles.length === 0 ? (
               <p className="text-sm text-gray-500 italic">
                 No active roles available. Please create roles first.
               </p>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <select
+                value={formData.role}
+                onChange={(e) => {
+                  setFormData({ ...formData, role: e.target.value });
+                  setRoleError("");
+                }}
+                required
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+              >
+                <option value="">Select a role</option>
                 {roles.map((role) => (
-                  <label
-                    key={role.code}
-                    className={`flex items-center gap-2 text-sm border rounded-md px-3 py-2 cursor-pointer transition-all ${
-                      formData.roles.includes(role.code)
-                        ? "border-[#3D4C63] bg-[#3D4C63]/5 text-[#3D4C63]"
-                        : "border-gray-300 hover:border-gray-400"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.roles.includes(role.code)}
-                      onChange={() => handleRoleToggle(role.code)}
-                      className="w-4 h-4 text-[#3D4C63] border-gray-300 rounded focus:ring-[#3D4C63]"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium">{role.name}</p>
-                      <p className="text-xs text-gray-500">{role.code}</p>
-                    </div>
-                  </label>
+                  <option key={role.code} value={role.code}>
+                    {role.name} ({role.code})
+                  </option>
                 ))}
-              </div>
+              </select>
             )}
             {roleError && (
               <p className="text-red-500 text-sm mt-2">{roleError}</p>
             )}
-            <p className="text-xs text-gray-500 mt-2">
-              Select at least one role for the user
-            </p>
           </div>
 
           {/* ACTION BUTTONS */}

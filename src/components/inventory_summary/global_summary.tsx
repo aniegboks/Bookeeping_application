@@ -115,7 +115,7 @@ export function GlobalInventoryEnhancedReport() {
       const classMap = new Map<string, string>(
         (classes as SchoolClass[]).map((cls) => [cls.id, cls.name])
       );
-      
+
       const transactionTotals: Record<string, number> = {};
       const transactionCosts: Record<string, number> = {};
       const transactionSuppliers: Record<string, Set<string>> = {};
@@ -391,15 +391,22 @@ export function GlobalInventoryEnhancedReport() {
                   <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Status
                   </th>
+                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                    AmountPaid
+                  </th>
+                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                    Discount 
+                  </th>
+                
+
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {currentData.map((item, index) => (
                   <tr
                     key={item.id}
-                    className={`hover:bg-blue-50 transition-colors duration-150 ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                    }`}
+                    className={`hover:bg-blue-50 transition-colors duration-150 ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                      }`}
                   >
                     <td className="px-6 py-4 text-sm text-gray-600 font-mono">
                       {item.id.substring(0, 8)}...

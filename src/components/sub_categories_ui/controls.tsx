@@ -12,6 +12,7 @@ interface ControlsProps {
   onAdd: () => void;
   viewMode: 'list' | 'grid';
   setViewMode: (mode: 'list' | 'grid') => void;
+  canCreate?: boolean;
 }
 
 export default function Controls({
@@ -22,7 +23,8 @@ export default function Controls({
   categories,
   onAdd,
   viewMode,
-  setViewMode
+  setViewMode,
+  canCreate = true,
 }: ControlsProps) {
   return (
     <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between px-5 py-4">
@@ -56,29 +58,31 @@ export default function Controls({
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Add button */}
         {/* View mode toggle */}
         <div className="flex bg-gray-100 rounded-sm p-1">
           <button
             onClick={() => setViewMode('list')}
-            className={`px-3 py-1 rounded-sm text-sm font-medium ${viewMode==='list' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`px-3 py-1 rounded-sm text-sm font-medium ${viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
           >
             List
           </button>
           <button
             onClick={() => setViewMode('grid')}
-            className={`px-3 py-1 rounded-md text-sm font-medium  ${viewMode==='grid' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`px-3 py-1 rounded-md text-sm font-medium ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
           >
             Grid
           </button>
         </div>
-        <button
-          onClick={onAdd}
-          className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-sm transition-colors flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" /> Add Sub-Category
-        </button>
-
+        
+        {/* Only show Add button if user has create permission */}
+        {canCreate && (
+          <button
+            onClick={onAdd}
+            className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-sm transition-colors flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" /> Add Sub-Category
+          </button>
+        )}
       </div>
     </div>
   );

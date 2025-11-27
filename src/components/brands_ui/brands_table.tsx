@@ -11,6 +11,9 @@ interface BrandsTableProps {
     openCreateModal: () => void;
     openEditModal: (brand: Brand) => void;
     handleDelete: (id: string, name: string) => void;
+    canCreate?: boolean;
+    canUpdate?: boolean;
+    canDelete?: boolean;
 }
 
 export default function BrandsTable({
@@ -20,6 +23,9 @@ export default function BrandsTable({
     openCreateModal,
     openEditModal,
     handleDelete,
+    canCreate = true,
+    canUpdate = true,
+    canDelete = true,
 }: BrandsTableProps) {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // Brands per page
@@ -32,6 +38,9 @@ export default function BrandsTable({
 
     const formatDate = (dateString: string) =>
         new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+
+    // Check if user has any action permissions
+    const hasAnyActionPermission = canUpdate || canDelete;
 
     return (
         <div className="bg-white rounded-sm border border-gray-200 overflow-x-auto">
@@ -50,12 +59,15 @@ export default function BrandsTable({
                         />
                     </div>
 
-                    <button
-                        onClick={openCreateModal}
-                        className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap"
-                    >
-                        <Plus className="h-4 w-4" /> Add Brand
-                    </button>
+                    {/* Only show Add Brand button if user has create permission */}
+                    {canCreate && (
+                        <button
+                            onClick={openCreateModal}
+                            className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap"
+                        >
+                            <Plus className="h-4 w-4" /> Add Brand
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -66,7 +78,10 @@ export default function BrandsTable({
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand Name</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        {/* Only show Actions column if user has any action permission */}
+                        {hasAnyActionPermission && (
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        )}
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -75,14 +90,31 @@ export default function BrandsTable({
                             <td className="px-6 py-4 whitespace-nowrap text-[#171D26]">{brand.name}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(brand.created_at)}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(brand.updated_at)}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
-                                <button onClick={() => openEditModal(brand)} className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50">
-                                    <PenSquare className="h-4 w-4" />
-                                </button>
-                                <button onClick={() => handleDelete(brand.id, brand.name)} className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50">
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </td>
+                            {/* Only show action buttons if user has permissions */}
+                            {hasAnyActionPermission && (
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
+                                    {/* Only show Edit button if user can update */}
+                                    {canUpdate && (
+                                        <button 
+                                            onClick={() => openEditModal(brand)} 
+                                            className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50"
+                                            title="Edit brand"
+                                        >
+                                            <PenSquare className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                    {/* Only show Delete button if user can delete */}
+                                    {canDelete && (
+                                        <button 
+                                            onClick={() => handleDelete(brand.id, brand.name)} 
+                                            className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
+                                            title="Delete brand"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </td>
+                            )}
                         </tr>
                     ))}
                 </tbody>
@@ -96,16 +128,21 @@ export default function BrandsTable({
                             No brands
                         </h3>
                         <p className="mt-1 text-sm text-gray-500">
-                            Get started by creating a new brand.
+                            {canCreate 
+                                ? "Get started by creating a new brand."
+                                : "No brands available."
+                            }
                         </p>
-                        <div className="mt-6">
-                            <button
-                                onClick={openCreateModal}
-                                className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
-                            >
-                                <Plus size={16} /> Create Brand
-                            </button>
-                        </div>
+                        {canCreate && (
+                            <div className="mt-6">
+                                <button
+                                    onClick={openCreateModal}
+                                    className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
+                                >
+                                    <Plus size={16} /> Create Brand
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

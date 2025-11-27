@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit, Trash2, RefreshCw, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Edit, Trash2, RefreshCw, CheckCircle, Clock } from "lucide-react";
 import { SupplierTransaction } from "@/lib/types/supplier_transactions";
 import { Supplier } from "@/lib/types/suppliers";
 
@@ -12,6 +12,8 @@ interface TransactionTableProps {
   loading?: boolean;
   suppliers: Supplier[];
   onRefresh?: () => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function TransactionTable({
@@ -21,9 +23,14 @@ export default function TransactionTable({
   loading = false,
   suppliers,
   onRefresh,
+  canUpdate = true,
+  canDelete = true,
 }: TransactionTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
 
   const totalPages = Math.max(1, Math.ceil(transactions.length / rowsPerPage));
   const paginatedTransactions = transactions.slice(
@@ -42,8 +49,6 @@ export default function TransactionTable({
 
   // Determine status based on credit/debit
   const getTransactionStatus = (transaction: SupplierTransaction): "completed" | "pending" => {
-    // If credit > 0, it's a payment (completed)
-    // If debit > 0, it's a purchase (pending payment)
     return transaction.credit > 0 ? "completed" : "pending";
   };
 
@@ -143,7 +148,10 @@ export default function TransactionTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              {/* Only show Actions column if user has any action permission */}
+              {hasAnyActionPermission && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              )}
             </tr>
           </thead>
 
@@ -177,16 +185,33 @@ export default function TransactionTable({
                 <td className="px-6 py-4 text-sm text-gray-500">
                   {new Date(transaction.transaction_date).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => onEdit(transaction)} className="text-[#3D4C63] hover:text-[#495C79]" title="Edit">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => onDelete(transaction)} className="p-1 text-red-600 hover:bg-red-50 rounded" title="Delete">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+                {/* Only show action buttons if user has permissions */}
+                {hasAnyActionPermission && (
+                  <td className="px-6 py-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      {/* Only show Edit button if user can update */}
+                      {canUpdate && (
+                        <button 
+                          onClick={() => onEdit(transaction)} 
+                          className="text-[#3D4C63] hover:text-[#495C79]" 
+                          title="Edit transaction"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                      {/* Only show Delete button if user can delete */}
+                      {canDelete && (
+                        <button 
+                          onClick={() => onDelete(transaction)} 
+                          className="p-1 text-red-600 hover:bg-red-50 rounded" 
+                          title="Delete transaction"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

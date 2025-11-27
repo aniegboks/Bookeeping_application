@@ -25,6 +25,9 @@ interface CategoriesTableProps {
   handleDelete: (id: string, name: string) => void;
   formatDate: (date: string) => string;
   openCreateModal: () => void;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export default function CategoriesTable({
@@ -33,6 +36,9 @@ export default function CategoriesTable({
   openCreateModal,
   handleDelete,
   formatDate,
+  canCreate = true,
+  canUpdate = true,
+  canDelete = true,
 }: CategoriesTableProps) {
   // Single state for modal + selected category
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
@@ -54,6 +60,9 @@ export default function CategoriesTable({
     }
   };
 
+  // Check if user has any action permissions
+  const hasAnyActionPermission = canUpdate || canDelete;
+
   return (
     <div className="overflow-x-auto relative">
       <table className="w-full">
@@ -68,9 +77,12 @@ export default function CategoriesTable({
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Last Updated
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
+            {/* Only show Actions column if user has any action permission */}
+            {hasAnyActionPermission && (
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            )}
           </tr>
         </thead>
 
@@ -91,21 +103,31 @@ export default function CategoriesTable({
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {formatDate(c.updated_at)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
-                <button
-                  onClick={() => openEditModal(c)}
-                  className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50 transition-colors"
-                >
-                  <PenSquare className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(c.id, c.name)}
-                  className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-
-              </td>
+              {/* Only show action buttons if user has permissions */}
+              {hasAnyActionPermission && (
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
+                  {/* Only show Edit button if user can update */}
+                  {canUpdate && (
+                    <button
+                      onClick={() => openEditModal(c)}
+                      className="text-[#3D4C63] hover:text-[#495C79] p-2 rounded hover:bg-blue-50 transition-colors"
+                      title="Edit category"
+                    >
+                      <PenSquare className="h-4 w-4" />
+                    </button>
+                  )}
+                  {/* Only show Delete button if user can delete */}
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDelete(c.id, c.name)}
+                      className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50 transition-colors"
+                      title="Delete category"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -117,16 +139,20 @@ export default function CategoriesTable({
           <Dock className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No categories</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Get started by creating a new category.
+            {canCreate
+              ? "Get started by creating a new category."
+              : "No categories available."}
           </p>
-          <div className="mt-6">
-            <button
-              onClick={openCreateModal}
-              className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
-            >
-              <Plus size={16} /> Create Category
-            </button>
-          </div>
+          {canCreate && (
+            <div className="mt-6">
+              <button
+                onClick={openCreateModal}
+                className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm flex items-center gap-2 mx-auto hover:bg-[#495C79] transition-colors"
+              >
+                <Plus size={16} /> Create Category
+              </button>
+            </div>
+          )}
         </div>
       )}
 

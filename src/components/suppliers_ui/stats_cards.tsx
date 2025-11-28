@@ -23,7 +23,9 @@ export default function StatsCards({ suppliers = [] }: Props) {
   const totalSuppliers = suppliers.length;
   const countries = new Set(suppliers.map((s) => s.country)).size;
   const recentlyAdded = suppliers.filter((s) => {
+    if (!s.created_at) return false;
     const created = new Date(s.created_at);
+    if (isNaN(created.getTime())) return false; // Check for invalid date
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return created > thirtyDaysAgo;
@@ -35,7 +37,7 @@ export default function StatsCards({ suppliers = [] }: Props) {
       title: "Total Suppliers",
       value: totalSuppliers,
       icon: <Users className="text-blue-600" size={20} />,
-      colorBg: "bg-blue-100", // use Tailwind directly
+      colorBg: "bg-blue-100",
       barColor: "#93C5FD",
       description: "Active suppliers in database",
       progress: 100,

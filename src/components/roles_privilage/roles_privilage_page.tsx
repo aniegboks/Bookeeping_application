@@ -16,7 +16,6 @@ import {
   CreateRolePrivilegePayload,
   UpdateRolePrivilegePayload,
   GroupedPrivileges,
-  PrivilegeStatus,
 } from "@/lib/types/roles_privilage";
 import { Role } from "@/lib/types/roles";
 
@@ -42,7 +41,6 @@ export default function RolePrivilegesPage() {
   const canDelete = canPerformAction("RolePrivileges", "delete");
 
   const [privileges, setPrivileges] = useState<RolePrivilege[]>([]);
-  const [groupedPrivileges, setGroupedPrivileges] = useState<GroupedPrivileges | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("");
@@ -88,16 +86,15 @@ export default function RolePrivilegesPage() {
           status: String(priv.status).toLowerCase() === "active" ? "active" : "inactive",
         }));
         setPrivileges(normalized);
-        setGroupedPrivileges(null);
       } else if (data && typeof data === "object" && "privileges" in data) {
         // Grouped response format - store module info in ID
-        setGroupedPrivileges(data as GroupedPrivileges);
+        const groupedData = data as GroupedPrivileges;
 
         const flatPrivileges: RolePrivilege[] = [];
-        Object.entries((data as GroupedPrivileges).privileges).forEach(([module, items]) => {
+        Object.entries(groupedData.privileges).forEach(([moduleName, items]) => {
           items.forEach((item, index) => {
             flatPrivileges.push({
-              id: `${roleCode || 'all'}:${module}:${index}`, // Format: ROLE:MODULE:INDEX
+              id: `${roleCode || 'all'}:${moduleName}:${index}`, // Format: ROLE:MODULE:INDEX
               role_code: roleCode || "",
               description: item.description,
               status: String(item.status).toLowerCase() === "active" ? "active" : "inactive",
@@ -109,7 +106,6 @@ export default function RolePrivilegesPage() {
         setPrivileges(flatPrivileges);
       } else {
         setPrivileges([]);
-        setGroupedPrivileges(null);
       }
     } catch (err) {
       console.error("Failed to load privileges:", err);
@@ -200,13 +196,13 @@ export default function RolePrivilegesPage() {
 
       // Extract module from ID (format: ROLE:MODULE:INDEX)
       const idParts = id.split(':');
-      const module = idParts[1] || 'Unknown';
+      const moduleName = idParts[1] || 'Unknown';
 
       // Build upsert payload with the module as key
       const upsertPayload = {
         role: selectedRole,
         privileges: {
-          [module]: [
+          [moduleName]: [
             {
               description: updates.description || privilege.description,
               status: (updates.status || privilege.status) === 'active',

@@ -27,9 +27,9 @@ export function ProtectedPage({
 
   useEffect(() => {
     if (!loading && !hasAccess) {
-      router.push(redirectTo);
+      router.push('/login');
     }
-  }, [loading, hasAccess, redirectTo, router]);
+  }, [loading, hasAccess, router]);
 
   if (loading) {
     return (
@@ -43,26 +43,33 @@ export function ProtectedPage({
   if (!hasAccess) {
     if (showAccessDenied) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md w-full">
-            <div className="flex items-center justify-center mb-4">
-              <ShieldAlert className="w-16 h-16 text-red-600" />
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+          <div className="bg-white shadow-xl rounded-2xl p-12 max-w-lg w-full border border-gray-100">
+            <div className="flex items-center justify-center mb-6">
+              <div className="bg-red-50 p-4 rounded-full">
+                <ShieldAlert className="w-12 h-12 text-red-500" />
+              </div>
             </div>
-            <h1 className="text-2xl font-bold text-red-600 mb-2 text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-3 text-center">
               Access Denied
             </h1>
-            <p className="text-gray-700 text-center mb-4">
-              You don't have permission to access this page.
+            <p className="text-gray-600 text-center mb-6 text-lg">
+              You don&apos;t have permission to access this page.
             </p>
-            <p className="text-sm text-gray-600 text-center">
-              Required: <span className="font-semibold">{module}</span> - {requiredAction}
-            </p>
-            <div className="mt-6 text-center">
+            <div className="bg-gray-50 rounded-lg p-4 mb-8">
+              <p className="text-sm text-gray-500 text-center">
+                Required permission
+              </p>
+              <p className="text-base font-semibold text-gray-800 text-center mt-1">
+                {module} · {requiredAction}
+              </p>
+            </div>
+            <div className="text-center">
               <button
-                onClick={() => router.push(redirectTo)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={() => router.push('/login')}
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
               >
-                Go to Dashboard
+                Go to Login
               </button>
             </div>
           </div>

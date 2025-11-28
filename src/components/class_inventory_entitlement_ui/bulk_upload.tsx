@@ -200,7 +200,7 @@ export default function BulkUploadForm({
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      {["Class", "Inventory Item", "Session Term", "Quantity", "Notes", "Created By", "Action"].map(
+                      {["Class", "Inventory Item", "Session Term", "Quantity", "Notes", "Action"].map(
                         (header) => (
                           <th
                             key={header}
@@ -285,7 +285,7 @@ export default function BulkUploadForm({
                             disabled={isSubmitting}
                           />
                         </td>
-                        <td className="px-3 py-2">
+                        {/**  <td className="px-3 py-2">
                           <select
                             value={row.created_by}
                             onChange={(e) => updateRow(row.tempId, "created_by", e.target.value)}
@@ -299,7 +299,7 @@ export default function BulkUploadForm({
                               </option>
                             ))}
                           </select>
-                        </td>
+                        </td>*/}
                         <td className="px-3 py-2 text-center">
                           <button
                             type="button"

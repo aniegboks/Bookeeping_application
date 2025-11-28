@@ -25,8 +25,9 @@ import { InventorySummaryTable } from "@/components/inventory_summary/table";
 import { BulkInventoryLoader } from "@/components/inventory_summary/bulk_inventory_loader";
 import { LowStockAlert } from "@/components/inventory_summary/low_stock_alert";
 import LoadingSpinner from "@/components/ui/loading_spinner";
-import { GlobalInventoryEnhancedReport } from "@/components/inventory_summary/global_summary";
+import { InventoryReportTable } from "@/components/inventory_summary/global_summary";
 import DistributionCollectionReport from "@/components/inventory_summary/inventory_distribution_report";
+import { InventoryReportContainer } from "./inventory_report_container";
 
 export default function InventorySummaryPage() {
   // Get permission checker from UserContext
@@ -174,7 +175,7 @@ export default function InventorySummaryPage() {
       <LowStockAlert />
       <div className="mb-6" />
 
-      <GlobalInventoryEnhancedReport />
+      <InventoryReportContainer />
 
 
       <div className="my-8">

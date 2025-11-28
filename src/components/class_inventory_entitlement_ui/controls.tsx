@@ -45,7 +45,7 @@ export default function Controls({
               </button>
               <button
                 onClick={onBulkAdd}
-                className="bg-green-600 text-white px-4 py-2 rounded-sm text-sm flex items-center gap-2 hover:bg-green-700 transition-colors whitespace-nowrap"
+                className="bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap"
               >
                 <Upload className="h-4 w-4" /> Bulk Upload
               </button>

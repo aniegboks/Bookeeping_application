@@ -1,3 +1,4 @@
+// global_summary.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,200 +10,22 @@ import {
   Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { inventoryItemApi } from "@/lib/inventory_item";
-import { inventoryDistributionApi } from "@/lib/inventory_distrbution";
-import { inventoryTransactionApi } from "@/lib/inventory_transactions";
-import { schoolClassApi } from "@/lib/classes";
+import { CombinedInventory } from "./inventory_report_container";
 
-interface Supplier {
-  name: string;
+interface InventoryReportTableProps {
+  data: CombinedInventory[];
+  loading: boolean;
 }
 
-interface TransactionWithSupplier {
-  item_id: string;
-  transaction_type: string;
-  qty_in: number;
-  in_cost: number;
-  suppliers?: Supplier | null;
-}
-
-interface Distribution {
-  inventory_item_id: string;
-  distributed_quantity: number;
-  class_id?: string | null;
-  receiver_name?: string | null;
-}
-
-interface DistributionResponse {
-  data: Distribution[];
-}
-
-interface SchoolClass {
-  id: string;
-  name: string;
-}
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  category_name: string;
-  brand_name: string;
-  uom_name: string;
-  current_stock: number;
-  cost_price: number;
-  selling_price: number;
-  is_low_stock?: boolean;
-}
-
-interface CombinedInventory {
-  id: string;
-  name: string;
-  category: string;
-  brand: string;
-  uom: string;
-  current_stock: number;
-  total_purchases: number;
-  total_distributed: number;
-  total_cost: number;
-  cost_price: number;
-  selling_price: number;
-  profit: number;
-  margin: number;
-  supplier_names: string;
-  class_count: number;
-  class_names: string;
-  receiver_names: string;
-  is_low_stock: boolean;
-}
-
-interface DistributionTotal {
-  qty: number;
-  classIds: Set<string>;
-  receivers: Set<string>;
-}
-
-export function GlobalInventoryEnhancedReport() {
-  const [data, setData] = useState<CombinedInventory[]>([]);
+export function InventoryReportTable({ data, loading }: InventoryReportTableProps) {
   const [filteredData, setFilteredData] = useState<CombinedInventory[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 15;
-
-  // Search
   const [searchTerm, setSearchTerm] = useState<string>("");
-
-  useEffect(() => {
-    fetchReportData();
-  }, []);
+  const rowsPerPage = 15;
 
   useEffect(() => {
     applyFilters();
   }, [data, searchTerm]);
-
-  async function fetchReportData() {
-    try {
-      setLoading(true);
-
-      const [items, transactions, distributions, classes] = await Promise.all([
-        inventoryItemApi.getAll(),
-        inventoryTransactionApi.getAll(),
-        inventoryDistributionApi.getAll(),
-        schoolClassApi.getAll(),
-      ]);
-
-      const classMap = new Map<string, string>(
-        (classes as SchoolClass[]).map((cls) => [cls.id, cls.name])
-      );
-
-      const transactionTotals: Record<string, number> = {};
-      const transactionCosts: Record<string, number> = {};
-      const transactionSuppliers: Record<string, Set<string>> = {};
-      const distributionTotals: Record<string, DistributionTotal> = {};
-
-      for (const tx of transactions as TransactionWithSupplier[]) {
-        if (tx.transaction_type === "purchase") {
-          const invId = tx.item_id;
-          if (!transactionTotals[invId]) transactionTotals[invId] = 0;
-          if (!transactionCosts[invId]) transactionCosts[invId] = 0;
-          if (!transactionSuppliers[invId]) transactionSuppliers[invId] = new Set();
-
-          transactionTotals[invId] += tx.qty_in ?? 0;
-          transactionCosts[invId] += tx.in_cost ?? 0;
-
-          if (tx.suppliers?.name) {
-            transactionSuppliers[invId].add(tx.suppliers.name);
-          }
-        }
-      }
-
-      const distributionsData = distributions as DistributionResponse;
-      for (const dist of distributionsData.data) {
-        const invId = dist.inventory_item_id;
-        if (!distributionTotals[invId]) {
-          distributionTotals[invId] = {
-            qty: 0,
-            classIds: new Set(),
-            receivers: new Set(),
-          };
-        }
-
-        distributionTotals[invId].qty += dist.distributed_quantity ?? 0;
-
-        if (dist.class_id) distributionTotals[invId].classIds.add(dist.class_id);
-        if (dist.receiver_name)
-          distributionTotals[invId].receivers.add(dist.receiver_name);
-      }
-
-      const combined = (items as InventoryItem[]).map((item) => {
-        const tIn = transactionTotals[item.id] ?? 0;
-        const tCost = transactionCosts[item.id] ?? 0;
-        const suppliers = Array.from(transactionSuppliers[item.id] ?? []);
-        const dOut = distributionTotals[item.id]?.qty ?? 0;
-        const classIds = Array.from(distributionTotals[item.id]?.classIds ?? []);
-        const classNames = classIds
-          .map((id) => classMap.get(id))
-          .filter((name): name is string => Boolean(name));
-        const receivers = Array.from(distributionTotals[item.id]?.receivers ?? []);
-
-        const costPrice = item.cost_price ?? 0;
-        const sellingPrice = item.selling_price ?? 0;
-        const profit = sellingPrice - costPrice;
-        const margin = costPrice > 0 ? ((profit / sellingPrice) * 100) : 0;
-
-        return {
-          id: item.id,
-          name: item.name,
-          category: item.category_name,
-          brand: item.brand_name,
-          uom: item.uom_name,
-          current_stock: item.current_stock ?? 0,
-          total_purchases: tIn,
-          total_distributed: dOut,
-          total_cost: tCost,
-          cost_price: costPrice,
-          selling_price: sellingPrice,
-          profit: profit,
-          margin: margin,
-          supplier_names: suppliers.length > 0 ? suppliers.join(", ") : "N/A",
-          class_count: classNames.length,
-          class_names:
-            classNames.length > 0 ? classNames.join(", ") : "No Distribution",
-          receiver_names: receivers.length > 0 ? receivers.join(", ") : "N/A",
-          is_low_stock: item.is_low_stock ?? false,
-        };
-      });
-
-      setData(combined);
-      setFilteredData(combined);
-    } catch (err) {
-      console.error("Error fetching enhanced report:", err);
-      toast.error("Failed to load enhanced inventory report");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function applyFilters() {
     let filtered = [...data];
@@ -239,6 +62,7 @@ export function GlobalInventoryEnhancedReport() {
       "Distributed",
       "Stock",
       "Total Cost",
+      "Amount Paid",
       "Cost Price",
       "Selling Price",
       "Profit",
@@ -260,6 +84,7 @@ export function GlobalInventoryEnhancedReport() {
       r.total_distributed,
       r.current_stock,
       r.total_cost.toFixed(2),
+      r.total_amount_paid.toFixed(2),
       r.cost_price.toFixed(2),
       r.selling_price.toFixed(2),
       r.profit.toFixed(2),
@@ -284,7 +109,7 @@ export function GlobalInventoryEnhancedReport() {
   const currentData = filteredData.slice(startIndex, startIndex + rowsPerPage);
 
   return (
-    <div className="p-8 bg-white rounded-sm border border-gray-100 my-8">
+    <div className="p-8 bg-white rounded-sm border border-gray-200 my-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div className="flex items-center gap-3">
@@ -302,7 +127,7 @@ export function GlobalInventoryEnhancedReport() {
         </div>
         <button
           onClick={exportSpreadsheet}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#3D4C63]  text-white text-sm font-medium rounded-sm hover:bg-[#495C79] transition-all shadow-sm hover:shadow"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#3D4C63] text-white text-sm font-medium rounded-sm hover:bg-[#495C79] transition-all shadow-sm hover:shadow"
         >
           <Download className="w-4 h-4" />
           Export CSV
@@ -327,177 +152,160 @@ export function GlobalInventoryEnhancedReport() {
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#3D4C63]  border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-[#3D4C63] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-gray-500 font-medium">Loading inventory data...</p>
           </div>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto border border-gray-200 rounded-sm">
+          <div className="overflow-x-auto rounded-sm">
             <table className="min-w-full border-collapse">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+              <thead className="bg-white">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     ITEM ID
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Suppliers
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Item Name
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Brand
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Category
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Purchases
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Distributed
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Stock
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Total Cost
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                    Amount Paid
+                  </th>
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Cost Price
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Selling Price
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Profit
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Margin (%)
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Classes
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Distributed To
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Receivers
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     UOM
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-6 py-8 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
-                    AmountPaid
-                  </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
-                    Discount 
-                  </th>
-                
-
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {currentData.map((item, index) => (
                   <tr
                     key={item.id}
-                    className={`hover:bg-blue-50 transition-colors duration-150 ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                      }`}
+                    className={`transition-colors duration-150 hover:bg-gray-50 ${
+                      index % 2 === 0 ? "bg-white" : "bg-white"
+                    }`}
                   >
-                    <td className="px-6 py-4 text-sm text-gray-600 font-mono">
+                    <td className="px-6 py-4 text-sm text-gray-900 font-mono">
                       {item.id.substring(0, 8)}...
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {item.supplier_names}
-                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.supplier_names}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.brand}</td>
                     <td className="px-6 py-4">
-                      <span className="text-sm font-semibold text-gray-900">
-                        {item.name}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {item.brand}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-900 text-xs">
                         {item.category}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="text-sm font-semibold bg-blue-50 px-3 py-1.5 rounded-full text-blue-700">
+                      <span className="text-sm px-3 py-1.5 rounded-full text-gray-900">
                         {item.total_purchases}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="text-sm font-semibold bg-purple-50 px-3 py-1.5 rounded-full text-purple-700">
+                      <span className="text-sm px-3 py-1.5 rounded-full text-gray-900">
                         {item.total_distributed}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="text-sm font-bold text-gray-900">
-                        {item.current_stock}
+                      <span className="text-sm text-gray-900">{item.current_stock}</span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <span className="text-sm text-gray-900">
+                        ₦{item.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="text-sm font-bold text-gray-900">
-                        ₦{item.total_cost.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                      <span className="text-sm  text-blue-700">
+                        ₦{item.total_amount_paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right text-sm text-gray-700">
-                      ₦{item.cost_price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                    <td className="px-6 py-4 text-right text-sm text-gray-900">
+                      ₦{item.cost_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                      ₦{item.selling_price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                    <td className="px-6 py-4 text-right text-sm text-gray-900">
+                      ₦{item.selling_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={`text-sm font-bold ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ₦{item.profit.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                      <span className={`text-sm ${item.profit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        ₦{item.profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={`text-sm font-bold ${item.margin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className={`text-sm ${item.margin >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                         {item.margin.toFixed(2)}%
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm">
+                      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-900 text-sm">
                         {item.class_count}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {item.class_names !== "No Distribution" ? (
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
-                          {item.class_names}
-                        </span>
+                      {item.class_names && item.class_names !== "No Distribution" ? (
+                        <div className="flex flex-wrap gap-1">
+                          {item.class_names
+                            .split(",")
+                            .map((cls) => cls.trim())
+                            .map((cls, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold"
+                              >
+                                {cls}
+                              </span>
+                            ))}
+                        </div>
                       ) : (
-                        <span className="text-gray-400 text-xs italic">
-                          {item.class_names}
-                        </span>
+                        <span className="text-gray-400 text-xs italic">No Distribution</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {item.receiver_names}
-                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.receiver_names}</td>
                     <td className="px-6 py-4 text-center">
-                      <span className="text-xs font-medium text-gray-600 uppercase">
-                        {item.uom}
-                      </span>
+                      <span className="text-xs font-medium text-gray-900 uppercase">{item.uom}</span>
                     </td>
                     <td className="px-6 py-4 text-center">
                       {item.is_low_stock ? (

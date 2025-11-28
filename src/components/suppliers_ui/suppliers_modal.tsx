@@ -102,29 +102,35 @@ export default function SupplierModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-slate-200 flex-shrink-0">
+        <div className="p-6 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-slate-50 to-white">
           <h2 className="text-2xl font-bold text-slate-900">
             {mode === "add" ? "Add New Supplier" : "Edit Supplier"}
           </h2>
+          <p className="text-sm text-slate-600 mt-1">
+            {mode === "add" 
+              ? "Fill in the details to add a new supplier" 
+              : "Update supplier information"}
+          </p>
         </div>
 
         {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="p-6 space-y-8 overflow-y-auto flex-1"
+          className="p-6 space-y-6 overflow-y-auto flex-1"
         >
-          {/* Basic Information */}
+          {/* Basic Information - 3 Column Grid */}
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-3">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+              <span className="w-1 h-5 bg-[#3D4C63] rounded-full mr-2"></span>
               Company Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Contact Name (Now First) */}
-              <div className="col-span-1 md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">
-                  Contact Name *
+              {/* Contact Name */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Contact Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -132,13 +138,14 @@ export default function SupplierModal({
                   value={formData.contact_name}
                   onChange={handleChange}
                   required
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  placeholder="Enter contact name"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
 
-              {/* Company Name (Auto-filled, Read-only) */}
+              {/* Company Name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Company Name
                 </label>
                 <input
@@ -146,14 +153,14 @@ export default function SupplierModal({
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 bg-gray-50"
-                  placeholder="Auto-filled from contact name"
+                  placeholder="Auto-filled"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 bg-slate-50 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
 
               {/* Email */}
-              <div className="col-span-1 md:col-span-3">
-                <label className="block text-sm font-medium text-slate-700">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Email
                 </label>
                 <input
@@ -161,21 +168,23 @@ export default function SupplierModal({
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  placeholder="contact@company.com"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
             </div>
           </div>
 
-          {/* Contact Details */}
+          {/* Contact Details - 2 Column Grid */}
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-3">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+              <span className="w-1 h-5 bg-[#3D4C63] rounded-full mr-2"></span>
               Contact Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Phone */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Phone
                 </label>
                 <input
@@ -183,13 +192,14 @@ export default function SupplierModal({
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  placeholder="+1 (555) 000-0000"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
 
               {/* Website */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Website
                 </label>
                 <input
@@ -197,32 +207,38 @@ export default function SupplierModal({
                   name="website"
                   value={formData.website}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  placeholder="https://company.com"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
             </div>
           </div>
 
-          {/* Address Information */}
+          {/* Address Information - 4 Column Grid */}
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-3">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+              <span className="w-1 h-5 bg-[#3D4C63] rounded-full mr-2"></span>
               Address Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Address
+              {/* Address - Full Width */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Street Address
                 </label>
                 <input
                   type="text"
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  placeholder="123 Main Street"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
+
+              {/* City */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   City
                 </label>
                 <input
@@ -230,23 +246,29 @@ export default function SupplierModal({
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  placeholder="New York"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
+
+              {/* State */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  State
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  State/Province
                 </label>
                 <input
                   type="text"
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  placeholder="NY"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
+
+              {/* Country - Full Width */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Country
                 </label>
                 <input
@@ -254,7 +276,8 @@ export default function SupplierModal({
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
-                  className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+                  placeholder="United States"
+                  className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all"
                 />
               </div>
             </div>
@@ -262,35 +285,39 @@ export default function SupplierModal({
 
           {/* Notes */}
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-3">Notes</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+              <span className="w-1 h-5 bg-[#3D4C63] rounded-full mr-2"></span>
+              Additional Notes
+            </h3>
             <textarea
               name="notes"
               value={formData.notes}
               onChange={handleChange}
-              rows={3}
-              className="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+              rows={4}
+              placeholder="Add any additional notes or comments..."
+              className="block w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:border-transparent transition-all resize-none"
             />
           </div>
 
           {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-4 flex-shrink-0">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 bg-[#3D4C63] text-white rounded-lg hover:bg-[#2f3a4e] transition-colors focus:outline-none focus:ring-2 focus:ring-[#3D4C63] disabled:opacity-70"
+              className="px-6 py-2.5 bg-[#3D4C63] text-white rounded-lg hover:bg-[#2f3a4e] transition-all focus:outline-none focus:ring-2 focus:ring-[#3D4C63] focus:ring-offset-2 disabled:opacity-70 font-medium shadow-sm"
             >
               {isSubmitting ? (
-                <span className="flex gap-2">
+                <span className="flex items-center gap-2">
                   <SmallLoader />
-                  Sending...
+                  Saving...
                 </span>
               ) : mode === "add" ? (
                 "Add Supplier"
@@ -302,6 +329,5 @@ export default function SupplierModal({
         </form>
       </div>
     </div>
-
   );
 }

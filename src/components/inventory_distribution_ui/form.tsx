@@ -316,7 +316,7 @@ export default function DistributionForm({
           </div>
 
           {/* Created By */}
-          <div>
+          {/**  <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Created By <span className="text-gray-500">*</span>
             </label>
@@ -336,7 +336,7 @@ export default function DistributionForm({
                 </option>
               ))}
             </select>
-          </div>
+          </div>*/}
 
           {/* Notes */}
           <div>

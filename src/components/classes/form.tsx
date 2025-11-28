@@ -61,7 +61,7 @@ export default function ClassForm({
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             {/* Class Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -99,7 +99,9 @@ export default function ClassForm({
             </div>
 
             {/* Created By */}
-            <div>
+            {/**
+             * 
+             *  <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Created By (User) <span className="text-gray-500">*</span>
               </label>
@@ -122,6 +124,7 @@ export default function ClassForm({
                 })}
               </select>
             </div>
+             */}
           </div>
 
           {/* Actions */}

@@ -362,7 +362,6 @@ export default function InventoryTransactionsPage() {
                 onAddTransaction={handleAddTransaction}
                 canCreate={canCreate}
             />
-
             {activeForm === "transaction" && (
                 <TransactionForm
                     transaction={editingTransaction || undefined}
@@ -371,7 +370,6 @@ export default function InventoryTransactionsPage() {
                     isSubmitting={isSubmitting}
                     inventoryItems={inventoryItems}
                     suppliers={suppliers}
-                    users={users}
                     currentUser={currentUser}
                 />
             )}

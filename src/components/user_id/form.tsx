@@ -39,17 +39,17 @@ export default function UserForm({
   // Extract role codes from the roles array
   const validRoleCodes = roles.map((role) => role.code);
 
-useEffect(() => {
-  if (user) {
-    setFormData({
-      email: user.email ?? "",
-      password: "",
-      phone: user.phone ?? "",
-      name: user.name ?? "",
-      role: user.roles?.[0] ?? "",   // FIXED
-    });
-  }
-}, [user]);
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        email: user.email ?? "",
+        password: "",
+        phone: user.phone ?? "",
+        name: user.name ?? "",
+        role: user.roles?.[0] ?? "",
+      });
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,17 +66,13 @@ useEffect(() => {
     }
 
     // Build the data to submit
-    const dataToSubmit: any = {
+    const dataToSubmit: CreateUserInput | UpdateUserInput = {
       email: formData.email,
       phone: formData.phone,
       name: formData.name,
-      role: formData.role,
+      roles: [formData.role],
+      ...(formData.password && { password: formData.password }),
     };
-
-    // Only include password if provided (for create or update with password change)
-    if (formData.password) {
-      dataToSubmit.password = formData.password;
-    }
 
     await onSubmit(dataToSubmit);
   };

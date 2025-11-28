@@ -155,7 +155,7 @@ export default function BulkUploadForm({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   {/* Class */}
                   <select
                     value={row.class_id}
@@ -228,7 +228,7 @@ export default function BulkUploadForm({
                   />
 
                   {/* Given By */}
-                  <select
+                  {/**   <select
                     value={row.given_by || ""}
                     onChange={(e) =>
                       handleChange(row.tempId, "given_by", e.target.value)
@@ -242,7 +242,8 @@ export default function BulkUploadForm({
                         {u.name}
                       </option>
                     ))}
-                  </select>
+                  </select>*/}
+
                 </div>
 
                 {/* ✅ Eligible / Received Checkboxes */}
@@ -297,11 +298,10 @@ export default function BulkUploadForm({
                       {filteredStudents.map((student) => (
                         <label
                           key={student.id}
-                          className={`flex items-center gap-1 px-2 py-1 border rounded-lg text-xs cursor-pointer transition ${
-                            row.selectedStudents.includes(student.id)
+                          className={`flex items-center gap-1 px-2 py-1 border rounded-lg text-xs cursor-pointer transition ${row.selectedStudents.includes(student.id)
                               ? "bg-[#3D4C63] text-white border-[#3D4C63]"
                               : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
-                          }`}
+                            }`}
                         >
                           <input
                             type="checkbox"

@@ -19,7 +19,6 @@ interface TransactionFormProps {
   isSubmitting: boolean;
   inventoryItems: InventoryItem[];
   suppliers: Supplier[];
-  users: User[];
   currentUser: User | null;
 }
 
@@ -30,7 +29,6 @@ export default function TransactionForm({
   isSubmitting,
   inventoryItems,
   suppliers,
-  users,
   currentUser,
 }: TransactionFormProps) {
   const [formData, setFormData] = useState<{
@@ -80,7 +78,7 @@ export default function TransactionForm({
     if (selectedItem) {
       const defaultCost = selectedItem.cost_price || 0;
       const defaultSellingPrice = selectedItem.selling_price || 0;
-      
+
       // Only auto-populate for NEW transactions (not editing)
       if (!transaction) {
         if (isPurchase) {
@@ -102,12 +100,12 @@ export default function TransactionForm({
   const quantity = isPurchase ? Number(formData.qty_in || 0) : Number(formData.qty_out || 0);
   const unitCost = isPurchase ? Number(formData.in_cost || 0) : Number(formData.out_cost || 0);
   const defaultCostPrice = selectedItem?.cost_price || 0;
-  
+
   // Check if a discount is applied (unit cost is less than default cost price)
   const hasDiscount = isPurchase && defaultCostPrice > 0 && unitCost < defaultCostPrice && unitCost > 0;
   const discountAmount = hasDiscount ? defaultCostPrice - unitCost : 0;
   const discountPercentage = hasDiscount ? ((discountAmount / defaultCostPrice) * 100).toFixed(1) : 0;
-  
+
   // Calculate total using the actual unit cost (with or without discount)
   const totalInCost = isPurchase ? quantity * unitCost : 0;
   const totalOutCost = isSale ? quantity * unitCost : 0;
@@ -228,7 +226,7 @@ export default function TransactionForm({
               </select>
               {selectedItem && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Cost Price: {formatCurrency(selectedItem.cost_price || 0)} | 
+                  Cost Price: {formatCurrency(selectedItem.cost_price || 0)} |
                   Selling Price: {formatCurrency(selectedItem.selling_price || 0)}
                 </p>
               )}
@@ -255,8 +253,8 @@ export default function TransactionForm({
                   <label className="block font-medium mb-1 text-sm flex items-center gap-2">
                     Unit Cost (Purchase Price) *
                     <div className="relative inline-block">
-                      <HelpCircle 
-                        className="w-4 h-4 text-blue-600 cursor-help" 
+                      <HelpCircle
+                        className="w-4 h-4 text-blue-600 cursor-help"
                         onMouseEnter={() => setShowDiscountTooltip(true)}
                         onMouseLeave={() => setShowDiscountTooltip(false)}
                       />
@@ -264,8 +262,8 @@ export default function TransactionForm({
                         <div className="absolute left-6 top-0 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 z-50 shadow-lg">
                           <div className="font-semibold mb-1">Got a discount?</div>
                           <div>
-                            The default cost price is shown below. If you received a discounted price from your supplier, 
-                            simply change this amount to the actual discounted price you paid. The system will automatically 
+                            The default cost price is shown below. If you received a discounted price from your supplier,
+                            simply change this amount to the actual discounted price you paid. The system will automatically
                             calculate your savings.
                           </div>
                           <div className="absolute -left-1 top-1 w-2 h-2 bg-gray-900 transform rotate-45"></div>
@@ -288,13 +286,13 @@ export default function TransactionForm({
                   </div>
                   {selectedItem && (
                     <p className="text-xs text-blue-600 mt-1 font-medium">
-                      💡 Item's standard cost: {formatCurrency(selectedItem.cost_price || 0)} 
+                      💡 Item&apos;s standard cost: {formatCurrency(selectedItem.cost_price || 0)}
                       {formData.in_cost && Number(formData.in_cost) !== selectedItem.cost_price && (
                         <span className="text-gray-600"> → You entered: {formatCurrency(Number(formData.in_cost))}</span>
                       )}
                     </p>
                   )}
-                  
+
                   {/* Discount Applied Notification */}
                   {hasDiscount && (
                     <div className="flex items-start gap-2 mt-2 p-2.5 bg-green-50 border border-green-300 rounded-lg">
@@ -302,7 +300,7 @@ export default function TransactionForm({
                       <div className="text-xs text-green-800">
                         <div className="font-semibold">🎉 Discount Applied: {discountPercentage}% off!</div>
                         <div className="mt-1">
-                          You're saving {formatCurrency(discountAmount)} per unit
+                          You&apos;re saving {formatCurrency(discountAmount)} per unit
                           <br />
                           Original: {formatCurrency(defaultCostPrice)} → Discounted: {formatCurrency(unitCost)}
                         </div>
@@ -363,7 +361,7 @@ export default function TransactionForm({
                   </div>
                   {selectedItem && (
                     <p className="text-xs text-blue-600 mt-1 font-medium">
-                      💡 Item's standard selling price: {formatCurrency(selectedItem.selling_price || 0)}
+                      💡 Item&apos;s standard selling price: {formatCurrency(selectedItem.selling_price || 0)}
                       {formData.out_cost && Number(formData.out_cost) !== selectedItem.selling_price && (
                         <span className="text-gray-600"> → You entered: {formatCurrency(Number(formData.out_cost))}</span>
                       )}
@@ -436,7 +434,7 @@ export default function TransactionForm({
             </div>
 
             {/* Receiver */}
-            <div>
+            {/**  <div>
               <label className="block font-medium mb-1 text-sm">Received By</label>
               <input
                 type="text"
@@ -444,7 +442,7 @@ export default function TransactionForm({
                 readOnly
                 className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 text-gray-600"
               />
-            </div>
+            </div>*/}
 
             {/* Transaction Date */}
             <div>

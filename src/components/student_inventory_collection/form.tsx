@@ -214,7 +214,7 @@ export default function CollectionForm({
             </div>
 
             {/* Given By */}
-            <div>
+            {/** <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Given By (User)
               </label>
@@ -236,7 +236,8 @@ export default function CollectionForm({
                   </option>
                 ))}
               </select>
-            </div>
+            </div>*/}
+          
 
             {/* Received Date */}
             <div>

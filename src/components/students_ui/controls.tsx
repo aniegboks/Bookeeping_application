@@ -25,9 +25,9 @@ export default function Controls({
 }: ControlsProps) {
   return (
     <div className="bg-white rounded-sm border border-gray-200 p-4 border-b-0">
-      <div className="flex flex-col lg:flex-row gap-4 items-center">
+      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
         {/* Search */}
-        <div className="flex w-full">
+        <div className="">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -41,49 +41,52 @@ export default function Controls({
         </div>
 
         {/* Status Filter */}
-        <div className="w-full lg:w-48">
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <select
-              value={statusFilter}
-              onChange={(e) => onStatusFilterChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] appearance-none bg-white"
-            >
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="graduated">Graduated</option>
-              <option value="transferred">Transferred</option>
-            </select>
+        <div className="flex gap-4">  
+          <div className="w-full lg:w-48">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <select
+                value={statusFilter}
+                onChange={(e) => onStatusFilterChange(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] appearance-none bg-white"
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="graduated">Graduated</option>
+                <option value="transferred">Transferred</option>
+              </select>
+            </div>
           </div>
+
+          {/* Gender Filter */}
+          <div className="w-full lg:w-48">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <select
+                value={genderFilter}
+                onChange={(e) => onGenderFilterChange(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] appearance-none bg-white"
+              >
+                <option value="">All Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Only show Add Button if user has create permission */}
+          {canCreate && (
+            <button
+              onClick={onAdd}
+              className="bg-[#3D4C63] text-white px-6 py-2 rounded-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap w-full lg:w-auto justify-center text-sm"
+            >
+              <Plus size={20} />
+              Add Student
+            </button>
+          )}
         </div>
 
-        {/* Gender Filter */}
-        <div className="w-full lg:w-48">
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <select
-              value={genderFilter}
-              onChange={(e) => onGenderFilterChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63] appearance-none bg-white"
-            >
-              <option value="">All Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Only show Add Button if user has create permission */}
-        {canCreate && (
-          <button
-            onClick={onAdd}
-            className="bg-[#3D4C63] text-white px-6 py-2 rounded-sm flex items-center gap-2 hover:bg-[#495C79] transition-colors whitespace-nowrap w-full lg:w-auto justify-center text-sm"
-          >
-            <Plus size={20} />
-            Add Student
-          </button>
-        )}
       </div>
     </div>
   );

@@ -28,35 +28,45 @@ export interface UpdateUserInput {
 }
 
 /**
+ * User metadata structure within Supabase Auth
+ */
+export interface UserMetadata {
+  name?: string;
+  username?: string;
+  roles?: string[];
+  [key: string]: unknown;
+}
+
+/**
  * Auth-specific types for Supabase endpoints
  */
 export interface AuthUser {
   id: string;
   email: string;
   phone: string;
-  user_metadata: {
-    name?: string;
-    username?: string;
-    roles?: string[];
-    [key: string]: any;
-  };
+  user_metadata: UserMetadata;
+  created_at?: string;
+  last_sign_in_at?: string;
 }
 
 export interface CreateAuthUserInput {
   email: string;
   password: string;
   phone: string;
-  user_metadata?: {
-    name?: string;
-    username?: string;
-    roles?: string[];
-    [key: string]: any;
-  };
+  user_metadata?: UserMetadata;
 }
 
+/**
+ * Response structure from POST /api/v1/auth/create-user
+ */
 export interface CreateAuthUserResponse {
-  id?: string;
-  email?: string;
-  created_at?: string;
-  [key: string]: any;
+  user?: {
+    id?: string;
+    email?: string;
+    phone?: string;
+    user_metadata?: UserMetadata;
+    created_at?: string;
+    last_sign_in_at?: string;
+  };
+  [key: string]: unknown;
 }

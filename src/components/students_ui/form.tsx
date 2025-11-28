@@ -239,8 +239,7 @@ export default function StudentForm({
                   ))}
                 </select>
               </div>
-
-              <div>
+              {/**<div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Created By <span className="text-gray-500">*</span>
                 </label>
@@ -260,7 +259,8 @@ export default function StudentForm({
                     </option>
                   ))}
                 </select>
-              </div>
+              </div> */}
+
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

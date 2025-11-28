@@ -231,7 +231,7 @@ export default function EntitlementForm({
             </div>
 
             {/* Created By */}
-            <div className="pb-4 md:col-span-2">
+            {/** <div className="pb-4 md:col-span-2">
               <label
                 htmlFor="created_by"
                 className="block text-sm font-medium text-gray-700 mb-1"
@@ -255,7 +255,8 @@ export default function EntitlementForm({
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
+           
           </div>
 
           {/* Notes */}

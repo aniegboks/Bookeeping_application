@@ -1,4 +1,3 @@
-
 // components/suppliers_ui/suppliers_page.tsx
 'use client';
 
@@ -14,11 +13,11 @@ import SuppliersTable from '@/components/suppliers_ui/suppliers_table';
 import SupplierModal from '@/components/suppliers_ui/suppliers_modal';
 import Container from '@/components/ui/container';
 import DeleteModal from '@/components/suppliers_ui/delete_modal';
-import LoadingSpinner from '@/components/ui/loading_spinner';
+import SmallLoader from '@/components/ui/small_loader';
+import LoadingSpinner from '../ui/loading_spinner';
 import { Download } from 'lucide-react';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import SmallLoader from '@/components/ui/small_loader';
 
 type SupplierPayload = Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'created_by'>;
 
@@ -154,7 +153,7 @@ export default function SuppliersDashboard() {
     try {
       // Fetch balances for export
       const balancesResponse = await fetch('/api/proxy/suppliers/balances');
-      let balances: Record<string, number> = {};
+      const balances: Record<string, number> = {};
 
       if (balancesResponse.ok) {
         const balanceData = await balancesResponse.json();
@@ -211,7 +210,7 @@ export default function SuppliersDashboard() {
 
   return (
     <div className="relative h-[100dvh] w-full bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      {loading && <SmallLoader/>}
+      {loading && <LoadingSpinner/>}
 
       <div className="w-full">
         <Container>

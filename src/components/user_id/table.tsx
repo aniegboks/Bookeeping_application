@@ -40,13 +40,11 @@ export default function UserTable({
 
   // ✅ Normalize users: convert `role` → `roles[]`
   const normalizedUsers = useMemo(() => {
-    return users.map((u: any) => ({
+    return users.map((u) => ({
       ...u,
       roles: Array.isArray(u.roles)
         ? u.roles
-        : u.role
-          ? [u.role]
-          : [],
+        : [],
     }));
   }, [users]);
 

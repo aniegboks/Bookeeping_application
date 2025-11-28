@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
+import { use } from "react";
 
 import { supplierTransactionsApi } from "@/lib/supplier_transaction";
 import { supplierApi } from "@/lib/suppliers";
@@ -28,11 +29,12 @@ import BulkUploadForm from "@/components/supplier_transaction/bulk_upload";
 import DeleteModal from "@/components/supplier_transaction/delete_modal";
 
 interface SupplierTransactionsPageProps {
-    params: { id: string }; // route param from [id]/page.tsx
+    params: Promise<{ id: string }>; // Changed to Promise
 }
 
 export default function SupplierTransactionsPage({ params }: SupplierTransactionsPageProps) {
-    const supplierId = params.id;
+    // Unwrap the params promise
+    const { id: supplierId } = use(params);
 
     const { canPerformAction } = useUser();
     const canCreate = canPerformAction("Supplier Transactions", "create");
@@ -81,7 +83,6 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
             setInitialLoading(false);
         }
     };
-
 
     useEffect(() => {
         loadInitialData();
@@ -148,6 +149,18 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
         toast.success("Exported successfully!");
     };
 
+    if (initialLoading) {
+        return (
+            <div className="mx-6">
+                <Container>
+                    <div className="flex items-center justify-center py-16">
+                        <Loader />
+                    </div>
+                </Container>
+            </div>
+        );
+    }
+
     return (
         <div className="mx-6">
             <Container>
@@ -192,7 +205,10 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
                                     setIsSubmitting(false);
                                 }
                             }}
-                            onCancel={() => setShowForm(false)}
+                            onCancel={() => {
+                                setShowForm(false);
+                                setEditingTransaction(null);
+                            }}
                             isSubmitting={isSubmitting}
                             suppliers={[supplier!]}
                         />
@@ -222,8 +238,18 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
 
                     <TransactionTable
                         transactions={filteredTransactions}
-                        onEdit={(t) => canUpdate && setEditingTransaction(t) && setShowForm(true)}
-                        onDelete={(t) => canDelete && (setDeletingTransaction(t), setShowDeleteModal(true))}
+                        onEdit={(t) => {
+                            if (canUpdate) {
+                                setEditingTransaction(t);
+                                setShowForm(true);
+                            }
+                        }}
+                        onDelete={(t) => {
+                            if (canDelete) {
+                                setDeletingTransaction(t);
+                                setShowDeleteModal(true);
+                            }
+                        }}
                         loading={loading}
                         suppliers={[supplier!]}
                         onRefresh={loadTransactions}

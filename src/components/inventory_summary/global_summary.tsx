@@ -259,7 +259,7 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="text-sm  text-blue-700">
+                      <span className="text-sm  text-gray-900">
                         ₦{item.total_amount_paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>

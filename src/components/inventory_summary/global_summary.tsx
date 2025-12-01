@@ -10,6 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 import { CombinedInventory } from "./inventory_report_container";
 
 interface InventoryReportTableProps {
@@ -52,56 +53,65 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
       return;
     }
 
-    const headers = [
-      "SKU",
-      "Suppliers",
-      "Item Name",
-      "Brand",
-      "Category",
-      "Purchases",
-      "Distributed",
-      "Stock",
-      "Total Cost",
-      "Amount Paid",
-      "Cost Price",
-      "Selling Price",
-      "Profit",
-      "Margin (%)",
-      "Classes Count",
-      "Classes Distributed To",
-      "Receivers",
-      "UOM",
-      "Status",
+    // Prepare data for Excel
+    const worksheetData = filteredData.map((r) => ({
+      "SKU": r.id,
+      "Suppliers": r.supplier_names,
+      "Item Name": r.name,
+      "Brand": r.brand,
+      "Category": r.category,
+      "Purchases": r.total_purchases,
+      "Distributed": r.total_distributed,
+      "Stock": r.current_stock,
+      "Total Cost": r.total_cost,
+      "Amount Paid": r.total_amount_paid,
+      "Cost Price": r.cost_price,
+      "Selling Price": r.selling_price,
+      "Profit": r.profit,
+      "Margin (%)": r.margin,
+      "Classes Count": r.class_count,
+      "Classes Distributed To": r.class_names,
+      "Receivers": r.receiver_names,
+      "UOM": r.uom,
+      "Status": r.is_low_stock ? "Low" : "OK",
+    }));
+
+    // Create workbook and worksheet
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory Report");
+
+    // Set column widths for better readability
+    const columnWidths = [
+      { wch: 35 }, // SKU
+      { wch: 25 }, // Suppliers
+      { wch: 30 }, // Item Name
+      { wch: 20 }, // Brand
+      { wch: 20 }, // Category
+      { wch: 12 }, // Purchases
+      { wch: 12 }, // Distributed
+      { wch: 10 }, // Stock
+      { wch: 15 }, // Total Cost
+      { wch: 15 }, // Amount Paid
+      { wch: 15 }, // Cost Price
+      { wch: 15 }, // Selling Price
+      { wch: 15 }, // Profit
+      { wch: 12 }, // Margin (%)
+      { wch: 15 }, // Classes Count
+      { wch: 30 }, // Classes Distributed To
+      { wch: 25 }, // Receivers
+      { wch: 10 }, // UOM
+      { wch: 12 }, // Status
     ];
+    worksheet["!cols"] = columnWidths;
 
-    const rows = filteredData.map((r) => [
-      r.id,
-      r.supplier_names,
-      r.name,
-      r.brand,
-      r.category,
-      r.total_purchases,
-      r.total_distributed,
-      r.current_stock,
-      r.total_cost.toFixed(2),
-      r.total_amount_paid.toFixed(2),
-      r.cost_price.toFixed(2),
-      r.selling_price.toFixed(2),
-      r.profit.toFixed(2),
-      r.margin.toFixed(2),
-      r.class_count,
-      r.class_names,
-      r.receiver_names,
-      r.uom,
-      r.is_low_stock ? "Low" : "OK",
-    ]);
+    // Generate filename with timestamp
+    const filename = `inventory_enhanced_report_${Date.now()}.xlsx`;
 
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `inventory_enhanced_report_${Date.now()}.csv`;
-    link.click();
+    // Write and download the file
+    XLSX.writeFile(workbook, filename);
+
+    toast.success("Excel file exported successfully!");
   }
 
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -130,7 +140,7 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
           className="flex items-center gap-2 px-5 py-2.5 bg-[#3D4C63] text-white text-sm font-medium rounded-sm hover:bg-[#495C79] transition-all shadow-sm hover:shadow"
         >
           <Download className="w-4 h-4" />
-          Export CSV
+          Export Excel
         </button>
       </div>
 
@@ -225,9 +235,8 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
                 {currentData.map((item, index) => (
                   <tr
                     key={item.id}
-                    className={`transition-colors duration-150 hover:bg-gray-50 ${
-                      index % 2 === 0 ? "bg-white" : "bg-white"
-                    }`}
+                    className={`transition-colors duration-150 hover:bg-gray-50 ${index % 2 === 0 ? "bg-white" : "bg-white"
+                      }`}
                   >
                     <td className="px-6 py-4 text-sm text-gray-900 font-mono">
                       {item.id.substring(0, 8)}...

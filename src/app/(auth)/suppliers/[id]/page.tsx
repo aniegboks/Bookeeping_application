@@ -10,6 +10,8 @@ import { use } from "react";
 
 import { supplierTransactionsApi } from "@/lib/supplier_transaction";
 import { supplierApi } from "@/lib/suppliers";
+import { inventoryTransactionApi } from "@/lib/inventory_transactions";
+import { inventoryItemApi } from "@/lib/inventory_item"; // Assuming you have this
 
 import {
     SupplierTransaction,
@@ -18,6 +20,8 @@ import {
     BulkUpsertTransactionItem,
 } from "@/lib/types/supplier_transactions";
 import { Supplier } from "@/lib/types/suppliers";
+import { InventoryTransaction } from "@/lib/types/inventory_transactions";
+import { InventoryItem } from "@/lib/types/inventory_item";// Assuming you have this
 
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
@@ -29,11 +33,10 @@ import BulkUploadForm from "@/components/supplier_transaction/bulk_upload";
 import DeleteModal from "@/components/supplier_transaction/delete_modal";
 
 interface SupplierTransactionsPageProps {
-    params: Promise<{ id: string }>; // Changed to Promise
+    params: Promise<{ id: string }>;
 }
 
 export default function SupplierTransactionsPage({ params }: SupplierTransactionsPageProps) {
-    // Unwrap the params promise
     const { id: supplierId } = use(params);
 
     const { canPerformAction } = useUser();
@@ -43,6 +46,8 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
 
     const [supplier, setSupplier] = useState<Supplier | null>(null);
     const [transactions, setTransactions] = useState<SupplierTransaction[]>([]);
+    const [inventoryTransactions, setInventoryTransactions] = useState<InventoryTransaction[]>([]);
+    const [items, setItems] = useState<InventoryItem[]>([]);
 
     const [searchTerm, setSearchTerm] = useState("");
     const [filterTransactionType, setFilterTransactionType] = useState("");
@@ -59,22 +64,25 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingTransaction, setDeletingTransaction] = useState<SupplierTransaction | null>(null);
 
-    // Helper: status & type
     const getTransactionStatus = (t: SupplierTransaction) => (t.credit > 0 ? "completed" : "pending");
     const getTransactionType = (t: SupplierTransaction) => (t.credit > 0 ? "payment" : "purchase");
 
-    // Load supplier + transactions
+    // Load supplier + transactions + inventory transactions + items
     const loadInitialData = async () => {
         try {
             setLoading(true);
 
-            const [supplierData, transactionData] = await Promise.all([
+            const [supplierData, transactionData, inventoryData, itemsData] = await Promise.all([
                 supplierApi.getById(supplierId),
                 supplierTransactionsApi.getAll({ supplier_id: supplierId }),
+                inventoryTransactionApi.getAll(),
+                inventoryItemApi.getAll().catch(() => []), // Gracefully handle if items API doesn't exist
             ]);
 
             setSupplier(supplierData);
             setTransactions(transactionData);
+            setInventoryTransactions(inventoryData);
+            setItems(itemsData);
         } catch (err) {
             console.error(err);
             toast.error("Failed to load supplier data");
@@ -88,15 +96,19 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
         loadInitialData();
     }, [supplierId]);
 
-    // Reload transactions only
     const loadTransactions = async () => {
         try {
             setLoading(true);
 
-            // Use getAll with a filter for supplier_id instead of non-existent getBySupplier
-            const data = await supplierTransactionsApi.getAll({ supplier_id: supplierId });
+            const [transactionData, inventoryData, itemsData] = await Promise.all([
+                supplierTransactionsApi.getAll({ supplier_id: supplierId }),
+                inventoryTransactionApi.getAll(),
+                inventoryItemApi.getAll().catch(() => []),
+            ]);
 
-            setTransactions(data);
+            setTransactions(transactionData);
+            setInventoryTransactions(inventoryData);
+            setItems(itemsData);
         } catch (err) {
             console.error(err);
             toast.error("Failed to reload transactions");
@@ -105,7 +117,6 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
         }
     };
 
-    // Filtered & searched transactions
     const filteredTransactions = transactions.filter((t) => {
         const type = getTransactionType(t);
         const status = getTransactionStatus(t);
@@ -120,22 +131,37 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
         return matchesSearch && matchesType && matchesStatus;
     });
 
-    // Export
     const handleExport = () => {
         if (!filteredTransactions.length) return toast.error("No data to export!");
 
-        const dataToExport = filteredTransactions.map((t) => ({
-            "Reference No": t.reference_no || "—",
-            Supplier: supplier?.name || "Unknown",
-            Type: getTransactionType(t),
-            "Credit Amount": t.credit,
-            "Debit Amount": t.debit,
-            Status: getTransactionStatus(t),
-            "Transaction Date": new Date(t.transaction_date).toLocaleDateString(),
-            Notes: t.notes || "",
-            "Created At": new Date(t.created_at).toLocaleString(),
-            "Updated At": new Date(t.updated_at).toLocaleString(),
-        }));
+        const dataToExport = filteredTransactions.map((t) => {
+            // Find related inventory transactions by reference_no (not supplier_transaction_id)
+            const relatedInvTransactions = inventoryTransactions.filter(
+                (inv) => inv.reference_no === t.reference_no
+            );
+
+            // Get item names from item_id (not item_name which doesn't exist)
+            const itemNames = relatedInvTransactions
+                .map((inv) => {
+                    const item = items.find((i) => i.id === inv.item_id);
+                    return item?.name || "Unknown Item";
+                })
+                .join(", ");
+
+            return {
+                "Reference No": t.reference_no || "—",
+                Supplier: supplier?.name || "Unknown",
+                "Item Name(s)": itemNames || "—",
+                Type: getTransactionType(t),
+                "Credit Amount": t.credit,
+                "Debit Amount": t.debit,
+                Status: getTransactionStatus(t),
+                "Transaction Date": new Date(t.transaction_date).toLocaleDateString(),
+                Notes: t.notes || "",
+                "Created At": new Date(t.created_at).toLocaleString(),
+                "Updated At": new Date(t.updated_at).toLocaleString(),
+            };
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
@@ -171,7 +197,7 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
                     <Controls
                         searchTerm={searchTerm}
                         onSearchChange={setSearchTerm}
-                        filterSupplierId={""} // not needed, page is supplier-specific
+                        filterSupplierId={""}
                         onFilterSupplierIdChange={() => { }}
                         filterTransactionType={filterTransactionType}
                         onFilterTransactionTypeChange={setFilterTransactionType}
@@ -238,6 +264,8 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
 
                     <TransactionTable
                         transactions={filteredTransactions}
+                        inventoryTransactions={inventoryTransactions}
+                        inventoryItem={items}
                         onEdit={(t) => {
                             if (canUpdate) {
                                 setEditingTransaction(t);

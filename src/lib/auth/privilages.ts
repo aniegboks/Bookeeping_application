@@ -36,7 +36,7 @@ interface RolePrivilegesResponse {
 /*                         SUPER ADMIN OVERRIDE HELPERS                        */
 /* -------------------------------------------------------------------------- */
 
-const SUPER_ADMIN_ROLES = ["SUPER_ADMIN", ];
+const SUPER_ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
 
 export function isSuperAdmin(roleCodes: string[]): boolean {
   return roleCodes.some((role) =>
@@ -53,24 +53,31 @@ export const MODULE_TO_RESOURCE: Record<string, string> = {
   'Brands': 'brands',
   'Categories': 'categories',
   'Sub Categories': 'sub_categories',
+  'UOM': 'uoms',
   'Unit of Measurements': 'uoms',
   'Academic Sessions': 'academic_session_terms',
   'Classes': 'school_classes',
   'Students': 'students',
   'Teachers': 'class_teachers',
-  'Inventory Items': 'inventory_items',
+  //'Inventory Items': 'inventory_items',
+  'Inventory': 'inventory_items',
   'Inventory Transactions': 'inventory_transactions',
   'Inventory Summary': 'inventory_summary',
   'Suppliers': 'suppliers',
   'Supplier Transactions': 'supplier_transactions',
   'Entitlements': 'class_inventory_entitlements',
-  'Student Collections': 'student_inventory_collection',
+  'StudentInventoryCollection': 'student_inventory_collection',
+  'Student Inventory Collection': 'student_inventory_collection',
   'Distributions': 'inventory_transactions',
   'Collection Summary': 'inventory_summary',
   'Collection Report': 'inventory_summary',
   'Users': 'users',
   'Roles': 'roles',
+  'RoleMenus': 'role_menus',
+  'Student Inventory Report': 'student_inventory_report',
+  'Role Menus': 'role_menus',
   'Privileges': 'role_privileges',
+  'RolePrivileges': 'role_privileges',
   'Menus': 'menus',
   'Settings': 'settings',
 };
@@ -232,7 +239,7 @@ export function canPerformAction(
   if (!patterns) return false;
 
   const allowed = modulePrivileges.some((priv) =>
-    patterns.some((pattern) => 
+    patterns.some((pattern) =>
       priv.description.startsWith(pattern) && priv.status === 'active'
     )
   );

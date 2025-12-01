@@ -366,11 +366,10 @@ export default function BulkUpsertModal({
                                 <button
                                     type="button"
                                     onClick={() => setUpsertMode('merge')}
-                                    className={`p-4 border-2 rounded-lg text-left transition ${
-                                        upsertMode === 'merge'
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-gray-300 hover:border-gray-400'
-                                    }`}
+                                    className={`p-4 border-2 rounded-lg text-left transition ${upsertMode === 'merge'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-gray-300 hover:border-gray-400'
+                                        }`}
                                 >
                                     <div className="flex items-center gap-2 mb-1">
                                         <Plus className="w-5 h-5 text-blue-600" />
@@ -383,11 +382,10 @@ export default function BulkUpsertModal({
                                 <button
                                     type="button"
                                     onClick={() => setUpsertMode('replace')}
-                                    className={`p-4 border-2 rounded-lg text-left transition ${
-                                        upsertMode === 'replace'
-                                            ? 'border-red-500 bg-red-50'
-                                            : 'border-gray-300 hover:border-gray-400'
-                                    }`}
+                                    className={`p-4 border-2 rounded-lg text-left transition ${upsertMode === 'replace'
+                                        ? 'border-red-500 bg-red-50'
+                                        : 'border-gray-300 hover:border-gray-400'
+                                        }`}
                                 >
                                     <div className="flex items-center gap-2 mb-1">
                                         <RefreshCw className="w-5 h-5 text-red-600" />
@@ -502,16 +500,14 @@ export default function BulkUpsertModal({
                         </div>
 
                         {/* Info Box */}
-                        <div className={`border rounded-md p-4 mt-4 ${
-                            upsertMode === 'replace' 
-                                ? 'bg-red-50 border-red-200' 
-                                : 'bg-blue-50 border-blue-200'
-                        }`}>
-                            <p className={`text-sm ${
-                                upsertMode === 'replace' ? 'text-red-800' : 'text-blue-800'
+                        <div className={`border rounded-md p-4 mt-4 ${upsertMode === 'replace'
+                            ? 'bg-red-50 border-red-200'
+                            : 'bg-blue-50 border-blue-200'
                             }`}>
+                            <p className={`text-sm ${upsertMode === 'replace' ? 'text-red-800' : 'text-blue-800'
+                                }`}>
                                 <strong>{upsertMode === 'replace' ? '⚠️ Warning:' : 'ℹ️ Note:'}</strong>{' '}
-                                {upsertMode === 'replace' 
+                                {upsertMode === 'replace'
                                     ? 'This will DELETE all existing privileges for this role and replace them with only the ones listed above.'
                                     : 'This will add new privileges or update existing ones. Other privileges for this role will remain unchanged.'
                                 }
@@ -532,11 +528,10 @@ export default function BulkUpsertModal({
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className={`px-4 py-2 text-white rounded-md transition disabled:opacity-50 flex items-center gap-2 ${
-                                upsertMode === 'replace'
-                                    ? 'bg-red-600 hover:bg-red-700'
-                                    : 'bg-gray-700 hover:bg-gray-800'
-                            }`}
+                            className={`px-4 py-2 text-white rounded-md transition disabled:opacity-50 flex items-center gap-2 ${upsertMode === 'replace'
+                                ? 'bg-red-600 hover:bg-red-700'
+                                : 'bg-gray-700 hover:bg-gray-800'
+                                }`}
                         >
                             {isSubmitting ? (
                                 <>

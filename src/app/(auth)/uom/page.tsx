@@ -6,8 +6,8 @@ import UOMManagement from "@/components/uom_ui/uom_page";
 
 export default function UOMPageWrapper() {
   return (
-    <ProtectedPage 
-      module="UOM" 
+    <ProtectedPage
+      module="UOM"
       requiredAction="read"
       redirectTo="/dashboard"
     >

@@ -20,7 +20,7 @@ import { Download } from 'lucide-react';
 export default function UOMsPage() {
   // Get permission checker from UserContext
   const { canPerformAction } = useUser();
-  
+
   // Check permissions for different actions
   const canCreate = canPerformAction("UOM", "create");
   const canUpdate = canPerformAction("UOM", "update");

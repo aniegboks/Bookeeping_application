@@ -36,7 +36,7 @@ interface RolePrivilegesResponse {
 /*                         SUPER ADMIN OVERRIDE HELPERS                        */
 /* -------------------------------------------------------------------------- */
 
-const SUPER_ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "CHAIRMAN"];
+const SUPER_ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", ""];
 
 export function isSuperAdmin(roleCodes: string[]): boolean {
   return roleCodes.some((role) =>

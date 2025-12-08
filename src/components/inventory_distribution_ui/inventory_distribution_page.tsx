@@ -220,11 +220,7 @@ export default function ClassInventoryDistributionsPage() {
     <div>
       <Container>
         <div className="mt-4 pb-8">
-          <StatsCards
-            distributions={distributions}
-            filteredDistributions={filteredDistributions}
-          />
-
+  
           <Controls
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}

@@ -251,7 +251,6 @@ export default function UsersPage() {
       <div className="mx-8">
         <Container>
           <div className="mt-4 pb-8">
-            <StatsCards users={users} filteredUsers={filteredUsers} />
             <Controls
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}

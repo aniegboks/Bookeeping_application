@@ -92,7 +92,9 @@ export default function BulkUploadForm({
     value: CreateClassInventoryEntitlementInput[K]
   ) => {
     setRows((prev) =>
-      prev.map((row) => (row.tempId === _tempId ? { ...row, [field]: value } : row))
+      prev.map((row) =>
+        row.tempId === _tempId ? { ...row, [field]: value } : row
+      )
     );
     setError("");
   };
@@ -109,7 +111,10 @@ export default function BulkUploadForm({
     }
 
     const invalidRows: number[] = [];
-    const consolidatedMap = new Map<string, CreateClassInventoryEntitlementInput>();
+    const consolidatedMap = new Map<
+      string,
+      CreateClassInventoryEntitlementInput
+    >();
 
     rows.forEach((row, i) => {
       if (
@@ -136,7 +141,9 @@ export default function BulkUploadForm({
           created_by: cleanRow.created_by,
         });
         toast.error(
-          `Consolidating duplicate entry for row ${i + 1}. Quantity is now ${newQuantity}.`,
+          `Consolidating duplicate entry for row ${
+            i + 1
+          }. Quantity is now ${newQuantity}.`,
           { duration: 5000, icon: "🔄" }
         );
       } else {
@@ -145,7 +152,9 @@ export default function BulkUploadForm({
     });
 
     if (invalidRows.length > 0) {
-      setError(`Please fill all required fields for row(s): ${invalidRows.join(", ")}`);
+      setError(
+        `Please fill all required fields for row(s): ${invalidRows.join(", ")}`
+      );
       return;
     }
 
@@ -184,7 +193,10 @@ export default function BulkUploadForm({
 
         {(error || isDataMissing) && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle
+              size={20}
+              className="text-red-600 flex-shrink-0 mt-0.5"
+            />
             <p className="text-sm text-red-800">
               {isDataMissing
                 ? "⚠️ Data Warning: Dropdown options failed to load. Cannot submit."
@@ -200,19 +212,30 @@ export default function BulkUploadForm({
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      {["Class", "Inventory Item", "Session Term", "Quantity", "Notes", "Action"].map(
-                        (header) => (
-                          <th
-                            key={header}
-                            className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            {header}
-                            {["Class", "Inventory Item", "Session Term", "Quantity", "Created By"].includes(header) && (
-                              <span className="text-red-500">*</span>
-                            )}
-                          </th>
-                        )
-                      )}
+                      {[
+                        "Class",
+                        "Inventory Item",
+                        "Session Term",
+                        "Quantity",
+                        "Notes",
+                        "Action",
+                      ].map((header) => (
+                        <th
+                          key={header}
+                          className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          {header}
+                          {[
+                            "Class",
+                            "Inventory Item",
+                            "Session Term",
+                            "Quantity",
+                            "Created By",
+                          ].includes(header) && (
+                            <span className="text-red-500">*</span>
+                          )}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -221,7 +244,9 @@ export default function BulkUploadForm({
                         <td className="px-3 py-2">
                           <select
                             value={row.class_id}
-                            onChange={(e) => updateRow(row.tempId, "class_id", e.target.value)}
+                            onChange={(e) =>
+                              updateRow(row.tempId, "class_id", e.target.value)
+                            }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting || isDataMissing}
                           >
@@ -236,7 +261,13 @@ export default function BulkUploadForm({
                         <td className="px-3 py-2">
                           <select
                             value={row.inventory_item_id}
-                            onChange={(e) => updateRow(row.tempId, "inventory_item_id", e.target.value)}
+                            onChange={(e) =>
+                              updateRow(
+                                row.tempId,
+                                "inventory_item_id",
+                                e.target.value
+                              )
+                            }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting || isDataMissing}
                           >
@@ -251,7 +282,13 @@ export default function BulkUploadForm({
                         <td className="px-3 py-2">
                           <select
                             value={row.session_term_id}
-                            onChange={(e) => updateRow(row.tempId, "session_term_id", e.target.value)}
+                            onChange={(e) =>
+                              updateRow(
+                                row.tempId,
+                                "session_term_id",
+                                e.target.value
+                              )
+                            }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting || isDataMissing}
                           >
@@ -269,7 +306,13 @@ export default function BulkUploadForm({
                             min={0}
                             value={row.quantity}
                             onChange={(e) =>
-                              updateRow(row.tempId, "quantity", e.target.value === "" ? 0 : parseInt(e.target.value))
+                              updateRow(
+                                row.tempId,
+                                "quantity",
+                                e.target.value === ""
+                                  ? 0
+                                  : parseInt(e.target.value)
+                              )
                             }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting}
@@ -279,16 +322,24 @@ export default function BulkUploadForm({
                           <input
                             type="text"
                             value={row.notes}
-                            onChange={(e) => updateRow(row.tempId, "notes", e.target.value)}
+                            onChange={(e) =>
+                              updateRow(row.tempId, "notes", e.target.value)
+                            }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             placeholder="Optional notes"
                             disabled={isSubmitting}
                           />
                         </td>
-                        {/**  <td className="px-3 py-2">
+                        <td className="px-3 py-2">
                           <select
                             value={row.created_by}
-                            onChange={(e) => updateRow(row.tempId, "created_by", e.target.value)}
+                            onChange={(e) =>
+                              updateRow(
+                                row.tempId,
+                                "created_by",
+                                e.target.value
+                              )
+                            }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting || isDataMissing}
                           >
@@ -299,7 +350,7 @@ export default function BulkUploadForm({
                               </option>
                             ))}
                           </select>
-                        </td>*/}
+                        </td>
                         <td className="px-3 py-2 text-center">
                           <button
                             type="button"
@@ -343,7 +394,9 @@ export default function BulkUploadForm({
                     Saving {rows.length}...
                   </>
                 ) : (
-                  `Create ${rows.length} Entitlement${rows.length > 1 ? "s" : ""}`
+                  `Create ${rows.length} Entitlement${
+                    rows.length > 1 ? "s" : ""
+                  }`
                 )}
               </button>
             </div>

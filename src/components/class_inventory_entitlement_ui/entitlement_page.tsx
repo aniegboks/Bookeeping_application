@@ -346,7 +346,6 @@ export default function ClassInventoryEntitlementsPage() {
       <Container>
         <div className="mt-2 pb-8">
           {/* Stats */}
-          <StatsCards entitlements={entitlements} filteredEntitlements={filteredEntitlements} />
 
           {/* Controls */}
           <Controls

@@ -45,9 +45,7 @@ export default function DistributionCollectionReport({
     teacher_id: "",
   });
 
-  useEffect(() => {
-    fetchDistributions();
-  }, []);
+  // Remove auto-fetch on mount - only fetch when filters are applied
 
   useEffect(() => {
     filterDistributions();
@@ -59,7 +57,7 @@ export default function DistributionCollectionReport({
       setError(null);
 
       const params: FilterParams = {};
-      
+
       // Only include non-empty filter values
       if (filterParams?.inventory_item_id) {
         params.inventory_item_id = filterParams.inventory_item_id;
@@ -87,7 +85,10 @@ export default function DistributionCollectionReport({
         toast.error("No distribution records found for the selected filters.");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch distribution data";
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch distribution data";
       setError(errorMessage);
       toast.error(errorMessage);
       console.error("Error fetching distributions:", err);
@@ -117,7 +118,7 @@ export default function DistributionCollectionReport({
   const applyFilters = () => {
     // Build filter params object with only non-empty values
     const filterParams: FilterParams = {};
-    
+
     if (filters.inventory_item_id?.trim()) {
       filterParams.inventory_item_id = filters.inventory_item_id;
     }
@@ -147,52 +148,78 @@ export default function DistributionCollectionReport({
     fetchDistributions();
   };
 
-  const exportToCSV = () => {
+  const exportToExcel = () => {
     if (filteredData.length === 0) {
       toast.error("No data to export");
       return;
     }
 
-    const headers = [
-      "Item Name",
-      "SKU",
-      "Category",
-      "Distributed",
-      "Received",
-      "Balance",
-      "Last Distribution",
+    // Prepare data for Excel
+    const worksheetData = [
+      // Header row
+      [
+        "Item Name",
+        "SKU",
+        "Category",
+        "Distributed",
+        "Received",
+        "Balance",
+        "Last Distribution",
+      ],
+      // Data rows
+      ...filteredData.map((d) => [
+        d.inventory_items.name,
+        d.inventory_items.sku,
+        d.inventory_items.categories.name,
+        d.total_distributed ?? d.total_distributed_quantity ?? 0,
+        d.total_received ?? d.total_received_quantity ?? 0,
+        d.balance_quantity,
+        new Date(d.last_distribution_date).toLocaleDateString(),
+      ]),
     ];
-    
-    const rows = filteredData.map((d) => [
-      `"${d.inventory_items.name.replace(/"/g, '""')}"`,
-      d.inventory_items.sku,
-      `"${d.inventory_items.categories.name.replace(/"/g, '""')}"`,
-      d.total_distributed ?? d.total_distributed_quantity ?? 0,
-      d.total_received ?? d.total_received_quantity ?? 0,
-      d.balance_quantity,
-      new Date(d.last_distribution_date).toLocaleDateString(),
-    ]);
 
-    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `distribution-report-${new Date().toISOString().split("T")[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-    
-    toast.success("Report exported successfully");
+    // Create worksheet
+    import("xlsx")
+      .then((XLSX) => {
+        const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+        // Set column widths
+        ws["!cols"] = [
+          { wch: 30 }, // Item Name
+          { wch: 15 }, // SKU
+          { wch: 20 }, // Category
+          { wch: 12 }, // Distributed
+          { wch: 12 }, // Received
+          { wch: 12 }, // Balance
+          { wch: 18 }, // Last Distribution
+        ];
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Distribution Report");
+
+        // Generate Excel file and trigger download
+        XLSX.writeFile(
+          wb,
+          `distribution-report-${new Date().toISOString().split("T")[0]}.xlsx`
+        );
+
+        toast.success("Report exported successfully");
+      })
+      .catch((err) => {
+        console.error("Error exporting to Excel:", err);
+        toast.error("Failed to export report");
+      });
   };
 
   const stats = filteredData.reduce(
     (acc, d) => ({
       totalDistributed:
-        acc.totalDistributed + (d.total_distributed ?? d.total_distributed_quantity ?? 0),
+        acc.totalDistributed +
+        (d.total_distributed ?? d.total_distributed_quantity ?? 0),
       totalReceived:
-        acc.totalReceived + (d.total_received ?? d.total_received_quantity ?? 0),
+        acc.totalReceived +
+        (d.total_received ?? d.total_received_quantity ?? 0),
       totalBalance: acc.totalBalance + d.balance_quantity,
     }),
     { totalDistributed: 0, totalReceived: 0, totalBalance: 0 }
@@ -200,71 +227,68 @@ export default function DistributionCollectionReport({
 
   const hasActiveFilters = Object.keys(activeFilters).length > 0;
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-sm p-12 border border-gray-200">
-        <div className="flex flex-col items-center justify-center">
-          <RefreshCw className="animate-spin w-8 h-8 text-blue-600 mb-3" />
-          <span className="text-gray-700 font-medium">Loading distribution data...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white rounded-sm mb-6 border border-gray-200">
       {/* Header + Filters */}
       <div className="border-b border-gray-200 p-6">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Distribution Collection Report</h2>
-            <p className="text-sm text-gray-500">Track inventory distributions and collections</p>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Distribution Collection Report
+            </h2>
+            <p className="text-sm text-gray-500">
+              Track inventory distributions and collections
+            </p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50 transition-colors ${
-                hasActiveFilters ? 'border-blue-500 bg-blue-50 text-blue-700' : ''
+                showFilters ? "border-blue-500 bg-blue-50 text-blue-700" : ""
               }`}
             >
-              <Filter className="h-4 w-4" /> Filters
-              {hasActiveFilters && (
-                <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {Object.keys(activeFilters).length}
-                </span>
-              )}
+              <Filter className="h-4 w-4" />{" "}
+              {showFilters ? "Hide Filters" : "Show Filters"}
             </button>
             <button
-              onClick={exportToCSV}
+              onClick={exportToExcel}
               disabled={filteredData.length === 0}
               className="flex items-center gap-2 px-4 py-2 bg-[#3D4C63] text-white rounded-md hover:bg-[#2f3a4e] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
-              <Download size={16} /> Export
+              <Download size={16} /> Export to Excel
             </button>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="bg-blue-50 border border-blue-200 p-4 rounded-sm">
-            <p className="text-sm text-blue-700 font-medium">Total Distributed</p>
-            <p className="text-2xl font-bold text-blue-900">
-              {stats.totalDistributed.toLocaleString()}
-            </p>
+        {/* Stats - Only show when data is loaded */}
+        {distributions.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-sm">
+              <p className="text-sm text-blue-700 font-medium">
+                Total Distributed
+              </p>
+              <p className="text-2xl font-bold text-blue-900">
+                {stats.totalDistributed.toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-green-50 border border-green-200 p-4 rounded-sm">
+              <p className="text-sm text-green-700 font-medium">
+                Total Received
+              </p>
+              <p className="text-2xl font-bold text-green-900">
+                {stats.totalReceived.toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-purple-50 border border-purple-200 p-4 rounded-sm">
+              <p className="text-sm text-purple-700 font-medium">
+                Current Balance
+              </p>
+              <p className="text-2xl font-bold text-purple-900">
+                {stats.totalBalance.toLocaleString()}
+              </p>
+            </div>
           </div>
-          <div className="bg-green-50 border border-green-200 p-4 rounded-sm">
-            <p className="text-sm text-green-700 font-medium">Total Received</p>
-            <p className="text-2xl font-bold text-green-900">
-              {stats.totalReceived.toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-purple-50 border border-purple-200 p-4 rounded-sm">
-            <p className="text-sm text-purple-700 font-medium">Current Balance</p>
-            <p className="text-2xl font-bold text-purple-900">
-              {stats.totalBalance.toLocaleString()}
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* Filter Dropdowns */}
         {showFilters && (
@@ -277,7 +301,10 @@ export default function DistributionCollectionReport({
                 <select
                   value={filters.inventory_item_id}
                   onChange={(e) =>
-                    setFilters({ ...filters, inventory_item_id: e.target.value })
+                    setFilters({
+                      ...filters,
+                      inventory_item_id: e.target.value,
+                    })
                   }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 >
@@ -291,10 +318,14 @@ export default function DistributionCollectionReport({
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Class</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  Class
+                </label>
                 <select
                   value={filters.class_id}
-                  onChange={(e) => setFilters({ ...filters, class_id: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, class_id: e.target.value })
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 >
                   <option value="">All Classes</option>
@@ -327,10 +358,14 @@ export default function DistributionCollectionReport({
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Teacher</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  Teacher
+                </label>
                 <select
                   value={filters.teacher_id}
-                  onChange={(e) => setFilters({ ...filters, teacher_id: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, teacher_id: e.target.value })
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
                 >
                   <option value="">All Teachers</option>
@@ -364,25 +399,30 @@ export default function DistributionCollectionReport({
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-2 mb-4">
             {Object.entries(activeFilters).map(([key, value]) => {
-              const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              const label = key
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase());
               let displayValue = value;
-              
-              if (key === 'inventory_item_id') {
-                const item = inventoryItems.find(i => i.id === value);
+
+              if (key === "inventory_item_id") {
+                const item = inventoryItems.find((i) => i.id === value);
                 displayValue = item?.name || value;
-              } else if (key === 'class_id') {
-                const cls = classes.find(c => c.id === value);
+              } else if (key === "class_id") {
+                const cls = classes.find((c) => c.id === value);
                 displayValue = cls?.name || value;
-              } else if (key === 'session_term_id') {
-                const sess = sessions.find(s => s.id === value);
+              } else if (key === "session_term_id") {
+                const sess = sessions.find((s) => s.id === value);
                 displayValue = sess?.name || value;
-              } else if (key === 'teacher_id') {
-                const teacher = teachers.find(t => t.id === value);
+              } else if (key === "teacher_id") {
+                const teacher = teachers.find((t) => t.id === value);
                 displayValue = teacher?.name || value;
               }
-              
+
               return (
-                <span key={key} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
+                <span
+                  key={key}
+                  className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full"
+                >
                   <span className="font-medium">{label}:</span> {displayValue}
                 </span>
               );
@@ -390,103 +430,176 @@ export default function DistributionCollectionReport({
           </div>
         )}
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4"  />
-          <input
-            type="text"
-            placeholder="Search by item name, SKU, or category..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
-          />
-        </div>
+        {/* Search Bar - Only show when data is loaded */}
+        {distributions.length > 0 && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search by item name, SKU, or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#3D4C63] focus:border-[#3D4C63]"
+            />
+          </div>
+        )}
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 text-sm">{error}</p>
-          <button
-            onClick={() => fetchDistributions(activeFilters)}
-            className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
-          >
-            Try again
-          </button>
+      {/* Loading State */}
+      {loading && (
+        <div className="p-12 border-t border-gray-200">
+          <div className="flex flex-col items-center justify-center">
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-4">
+                <svg
+                  className="animate-spin h-10 w-10 text-gray-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <span className="text-gray-700 font-medium">
+              Loading distribution data...
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-6 py-3 text-left font-medium text-gray-600">Item</th>
-              <th className="px-6 py-3 text-left font-medium text-gray-600">Category</th>
-              <th className="px-6 py-3 text-right font-medium text-gray-600">Distributed</th>
-              <th className="px-6 py-3 text-right font-medium text-gray-600">Received</th>
-              <th className="px-6 py-3 text-right font-medium text-gray-600">Balance</th>
-              <th className="px-6 py-3 text-left font-medium text-gray-600">
-                Last Distribution
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.length > 0 ? (
-              filteredData.map((d) => (
-                <tr key={d.inventory_item_id} className="border-b hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{d.inventory_items.name}</div>
-                    <div className="text-xs text-gray-500">SKU: {d.inventory_items.sku}</div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-700">{d.inventory_items.categories.name}</td>
-                  <td className="px-6 py-4 text-right text-gray-900">
-                    {(d.total_distributed ?? d.total_distributed_quantity ?? 0).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-right text-gray-900">
-                    {(d.total_received ?? d.total_received_quantity ?? 0).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-right font-semibold text-gray-900">
-                    {d.balance_quantity.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-gray-700">
-                    {new Date(d.last_distribution_date).toLocaleDateString()}
-                  </td>
+      {/* Table - Only show when data is loaded and not loading */}
+      {!loading && distributions.length > 0 && (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-6 py-3 text-left font-medium text-gray-600">
+                    Item
+                  </th>
+                  <th className="px-6 py-3 text-left font-medium text-gray-600">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-right font-medium text-gray-600">
+                    Distributed
+                  </th>
+                  <th className="px-6 py-3 text-right font-medium text-gray-600">
+                    Received
+                  </th>
+                  <th className="px-6 py-3 text-right font-medium text-gray-600">
+                    Balance
+                  </th>
+                  <th className="px-6 py-3 text-left font-medium text-gray-600">
+                    Last Distribution
+                  </th>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
-                  <div className="text-gray-400 mb-2">
-                    <Search className="mx-auto mb-2" size={48} />
-                  </div>
-                  <p className="text-gray-600 font-medium">No distribution records found</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {hasActiveFilters || searchTerm 
-                      ? "Try adjusting your filters or search terms"
-                      : "No distribution data available"}
-                  </p>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {filteredData.length > 0 ? (
+                  filteredData.map((d) => (
+                    <tr
+                      key={d.inventory_item_id}
+                      className="border-b hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900">
+                          {d.inventory_items.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          SKU: {d.inventory_items.sku}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-700">
+                        {d.inventory_items.categories.name}
+                      </td>
+                      <td className="px-6 py-4 text-right text-gray-900">
+                        {(
+                          d.total_distributed ??
+                          d.total_distributed_quantity ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-right text-gray-900">
+                        {(
+                          d.total_received ??
+                          d.total_received_quantity ??
+                          0
+                        ).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-right font-semibold text-gray-900">
+                        {d.balance_quantity.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-gray-700">
+                        {new Date(
+                          d.last_distribution_date
+                        ).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="text-gray-400 mb-2">
+                        <Search className="mx-auto mb-2" size={48} />
+                      </div>
+                      <p className="text-gray-600 font-medium">
+                        No distribution records found
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Try adjusting your search terms
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Footer */}
-      <div className="border-t bg-gray-50 px-6 py-4 flex justify-between items-center text-sm text-gray-600">
-        <span>
-          Showing <strong>{filteredData.length}</strong> of <strong>{distributions.length}</strong> records
-        </span>
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="text-[#3D4C63] hover:text-[#2f3a4e] font-medium transition-colors"
-          >
-            Clear all filters
-          </button>
-        )}
-      </div>
+          {/* Footer */}
+          <div className="border-t bg-gray-50 px-6 py-4 flex justify-between items-center text-sm text-gray-600">
+            <span>
+              Showing <strong>{filteredData.length}</strong> of{" "}
+              <strong>{distributions.length}</strong> records
+            </span>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-[#3D4C63] hover:text-[#2f3a4e] font-medium transition-colors"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Empty State - Show when no data and not loading */}
+      {!loading && distributions.length === 0 && (
+        <div className="p-12 text-center border-t border-gray-200">
+          <div className="text-gray-400 mb-4">
+            <Filter className="mx-auto mb-3" size={64} />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No Data Available
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Click Show Filters above and apply filters to view distribution data
+          </p>
+        </div>
+      )}
     </div>
   );
 }

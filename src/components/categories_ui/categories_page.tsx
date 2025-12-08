@@ -222,18 +222,6 @@ export default function CategoriesManagement() {
     <div className="px-6 py-6">
       <Container>
         {/* STATS CARDS */}
-        <StatsCards
-          total={categories.length}
-          addedToday={
-            categories.filter(
-              (c) =>
-                new Date(c.created_at).toDateString() ===
-                new Date().toDateString()
-            ).length
-          }
-          searchResults={filteredCategories.length}
-          viewMode={viewMode}
-        />
 
         {/* CONTROLS */}
         <div className="bg-white rounded-sm border border-gray-200">

@@ -12,13 +12,17 @@ import {
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { CombinedInventory } from "./inventory_report_container";
+import SmallLoader from "../ui/small_loader";
 
 interface InventoryReportTableProps {
   data: CombinedInventory[];
   loading: boolean;
 }
 
-export function InventoryReportTable({ data, loading }: InventoryReportTableProps) {
+export function InventoryReportTable({
+  data,
+  loading,
+}: InventoryReportTableProps) {
   const [filteredData, setFilteredData] = useState<CombinedInventory[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -55,25 +59,25 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
 
     // Prepare data for Excel
     const worksheetData = filteredData.map((r) => ({
-      "SKU": r.id,
-      "Suppliers": r.supplier_names,
+      SKU: r.id,
+      Suppliers: r.supplier_names,
       "Item Name": r.name,
-      "Brand": r.brand,
-      "Category": r.category,
-      "Purchases": r.total_purchases,
-      "Distributed": r.total_distributed,
-      "Stock": r.current_stock,
+      Brand: r.brand,
+      Category: r.category,
+      Purchases: r.total_purchases,
+      Distributed: r.total_distributed,
+      Stock: r.current_stock,
       "Total Cost": r.total_cost,
       "Amount Paid": r.total_amount_paid,
       "Cost Price": r.cost_price,
       "Selling Price": r.selling_price,
-      "Profit": r.profit,
+      Profit: r.profit,
       "Margin (%)": r.margin,
       "Classes Count": r.class_count,
       "Classes Distributed To": r.class_names,
-      "Receivers": r.receiver_names,
-      "UOM": r.uom,
-      "Status": r.is_low_stock ? "Low" : "OK",
+      Receivers: r.receiver_names,
+      UOM: r.uom,
+      Status: r.is_low_stock ? "Low" : "OK",
     }));
 
     // Create workbook and worksheet
@@ -147,7 +151,9 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
       {/* Search Bar */}
       <div className="mb-6">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          </div>
           <input
             type="text"
             placeholder="Search by name, category, brand, supplier or class..."
@@ -160,10 +166,32 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
 
       {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#3D4C63] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500 font-medium">Loading inventory data...</p>
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-4">
+            <svg
+              className="animate-spin h-10 w-10 text-gray-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8H4z"
+              />
+            </svg>
+
+            <p className="text-gray-600 font-medium text-sm">
+              Loading inventory data...
+            </p>
           </div>
         </div>
       ) : (
@@ -235,15 +263,22 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
                 {currentData.map((item, index) => (
                   <tr
                     key={item.id}
-                    className={`transition-colors duration-150 hover:bg-gray-50 ${index % 2 === 0 ? "bg-white" : "bg-white"
-                      }`}
+                    className={`transition-colors duration-150 hover:bg-gray-50 ${
+                      index % 2 === 0 ? "bg-white" : "bg-white"
+                    }`}
                   >
                     <td className="px-6 py-4 text-sm text-gray-900 font-mono">
                       {item.id.substring(0, 8)}...
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.supplier_names}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.brand}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {item.supplier_names}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {item.name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {item.brand}
+                    </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-900 text-xs">
                         {item.category}
@@ -260,31 +295,61 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="text-sm text-gray-900">{item.current_stock}</span>
+                      <span className="text-sm text-gray-900">
+                        {item.current_stock}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span className="text-sm text-gray-900">
-                        ₦{item.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₦
+                        {item.total_cost.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span className="text-sm  text-gray-900">
-                        ₦{item.total_amount_paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₦
+                        {item.total_amount_paid.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right text-sm text-gray-900">
-                      ₦{item.cost_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₦
+                      {item.cost_price.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="px-6 py-4 text-right text-sm text-gray-900">
-                      ₦{item.selling_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₦
+                      {item.selling_price.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={`text-sm ${item.profit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        ₦{item.profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <span
+                        className={`text-sm ${
+                          item.profit >= 0 ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        ₦
+                        {item.profit.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={`text-sm ${item.margin >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      <span
+                        className={`text-sm ${
+                          item.margin >= 0 ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
                         {item.margin.toFixed(2)}%
                       </span>
                     </td>
@@ -294,7 +359,8 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {item.class_names && item.class_names !== "No Distribution" ? (
+                      {item.class_names &&
+                      item.class_names !== "No Distribution" ? (
                         <div className="flex flex-wrap gap-1">
                           {item.class_names
                             .split(",")
@@ -309,12 +375,18 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
                             ))}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-xs italic">No Distribution</span>
+                        <span className="text-gray-400 text-xs italic">
+                          No Distribution
+                        </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.receiver_names}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {item.receiver_names}
+                    </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="text-xs font-medium text-gray-900 uppercase">{item.uom}</span>
+                      <span className="text-xs font-medium text-gray-900 uppercase">
+                        {item.uom}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-center">
                       {item.is_low_stock ? (
@@ -353,7 +425,9 @@ export function InventoryReportTable({ data, loading }: InventoryReportTableProp
                 Page {currentPage} of {totalPages}
               </span>
               <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >

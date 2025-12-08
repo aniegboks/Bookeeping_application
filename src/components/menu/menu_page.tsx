@@ -201,7 +201,6 @@ export default function MenusManagement() {
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
         </div>
 
-        <MenuStatsCards menus={menus} filteredMenus={filteredMenus} />
 
         <MenusTable
           menus={filteredMenus}

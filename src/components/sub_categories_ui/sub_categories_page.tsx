@@ -236,13 +236,6 @@ export default function SubCategoriesPage() {
       <div className="mx-6">
         <Container>
           <div className="bg mt-6">
-            <StatsCards
-              total={categories.length}
-              addedToday={subCategories.length}
-              searchResults={filteredSubCategories.length}
-              viewMode={viewMode}
-            />
-
             <div className="bg-white rounded-lg border border-gray-200">
               <Controls
                 searchTerm={searchTerm}

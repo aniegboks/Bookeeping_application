@@ -118,7 +118,6 @@ export default function AcademicSessionsManagement() {
         </div>
 
         {/* Stats */}
-        <StatsCards sessions={sessions} />
 
         {/* Table */}
         <SessionsTable

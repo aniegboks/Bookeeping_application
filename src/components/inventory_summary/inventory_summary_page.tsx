@@ -43,6 +43,7 @@ export default function InventorySummaryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBulkLoader, setShowBulkLoader] = useState(false);
+  const [showAdditionalData, setShowAdditionalData] = useState(false);
 
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -177,42 +178,55 @@ export default function InventorySummaryPage() {
 
       <InventoryReportContainer />
 
-
-      <div className="my-8">
-        <InventorySummaryTable
-          summaries={summaries}
-          canUpdate={canUpdate}
-          canDelete={canDelete}
-        />
+      <div className="mt-6">
+        <button
+          onClick={() => setShowAdditionalData(!showAdditionalData)}
+          className="px-4 py-2 text-sm font-medium bg-[#3D4C63] text-white rounded-sm hover:bg-[#2f3a4e] transition-colors"
+        >
+          {showAdditionalData ? "Hide Additional Data" : "Show Additional Data"}
+        </button>
       </div>
 
-      {/* Only show Bulk Load button if user has create permission */}
-      {canCreate && (
-        <div className="mt-4 flex justify-start">
-          <button
-            onClick={handleOpenBulkLoader}
-            className="px-4 py-2 text-sm font-sm bg-[#3D4C63] text-white rounded-sm hover:bg-[#2f3a4e] transition-colors"
-          >
-            Bulk Load Inventories
-          </button>
-        </div>
+      {showAdditionalData && (
+        <>
+          <div className="my-8">
+            <InventorySummaryTable
+              summaries={summaries}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
+            />
+          </div>
+          
+          {/* Only show Bulk Load button if user has create permission */}
+          {canCreate && (
+            <div className="mt-4 flex justify-start">
+              <button
+                onClick={handleOpenBulkLoader}
+                className="px-4 py-2 text-sm font-sm bg-[#3D4C63] text-white rounded-sm hover:bg-[#2f3a4e] transition-colors"
+              >
+                Bulk Load Inventories
+              </button>
+            </div>
+          )}
+          
+          {showBulkLoader && (
+            <BulkInventoryLoader
+              isOpen={showBulkLoader}
+              onClose={() => setShowBulkLoader(false)}
+              onLoad={handleBulkLoad}
+            />
+          )}
+          
+          <div className="mt-4">
+            <DistributionCollectionReport
+              inventoryItems={inventoryItems}
+              classes={classes}
+              sessions={sessions}
+              teachers={teachers}
+            />
+          </div>
+        </>
       )}
-
-      {showBulkLoader && (
-        <BulkInventoryLoader
-          isOpen={showBulkLoader}
-          onClose={() => setShowBulkLoader(false)}
-          onLoad={handleBulkLoad}
-        />
-      )}
-      <div className="mt-4">
-        <DistributionCollectionReport
-          inventoryItems={inventoryItems}
-          classes={classes}
-          sessions={sessions}
-          teachers={teachers}
-        />
-      </div>
     </div>
   );
 }

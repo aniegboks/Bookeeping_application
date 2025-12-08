@@ -361,7 +361,6 @@ export default function StudentInventoryCollectionPage() {
     <div className="mx-6">
       <Container>
         <div className="mt-2 pb-8">
-          <StatsCards collections={collections} filteredCollections={filteredCollections} />
           <Controls
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}

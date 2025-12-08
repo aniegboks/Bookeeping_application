@@ -306,7 +306,6 @@ export default function RoleMenusPage() {
     <div className="mx-6">
       <Container>
         <div className="mt-2 pb-8">
-          <RoleMenusStats roleMenus={roleMenus} />
 
           <div className="flex justify-between items-center mb-4 mt-8 gap-4">
             <div className="flex gap-3 flex-1">

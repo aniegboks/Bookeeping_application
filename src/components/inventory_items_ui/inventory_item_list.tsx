@@ -57,7 +57,9 @@ function LowStockAlert({ lowStockItems }: { lowStockItems: InventoryItem[] }) {
                 <AlertTriangle className="w-5 h-5 text-white animate-pulse" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-sm">Low Stock Alert</h3>
+                <h3 className="text-white font-bold text-sm">
+                  Low Stock Alert
+                </h3>
                 <p className="text-red-100 text-xs">
                   {lowStockItems.length} item
                   {lowStockItems.length !== 1 ? "s" : ""} running low
@@ -171,7 +173,8 @@ export default function InventoryItemList({
   const itemsPerPage = 10;
 
   const sortedItems = [...filteredItems].sort(
-    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    (a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   );
 
   const totalPages = Math.ceil(sortedItems.length / itemsPerPage);
@@ -193,8 +196,7 @@ export default function InventoryItemList({
     return (computeProfit(item) / selling) * 100;
   };
 
-  const formatMargin = (item: InventoryItem) =>
-    computeMargin(item).toFixed(2);
+  const formatMargin = (item: InventoryItem) => computeMargin(item).toFixed(2);
 
   const isLowStock = (item: InventoryItem) =>
     item.current_stock <= item.low_stock_threshold;
@@ -231,8 +233,6 @@ export default function InventoryItemList({
                   "Name",
                   "Selling Price",
                   "Cost Price",
-                  "Estimated Profit",
-                  "Margin",
                   "Current Stock",
                   "Updated At",
                   ...(hasAnyActionPermission ? ["Actions"] : []),
@@ -259,35 +259,15 @@ export default function InventoryItemList({
                   <td className="px-6 py-4 text-gray-700">
                     {formatCurrency(Number(item.cost_price ?? 0))}
                   </td>
-                  <td className="px-2 py-1">
-                    <span
-                      className={`inline-block px-2 py-1 text-center font-semibold rounded-full text-xs ${computeProfit(item) > 0
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                        }`}
-                    >
-                      {formatCurrency(computeProfit(item))}
-                    </span>
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${computeProfit(item) > 0
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                        }`}
-                    >
-                      {formatMargin(item)}%
-                    </span>
-                  </td>
 
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${isLowStock(item)
-                          ? "bg-red-100 text-red-800"
-                          : "bg-green-100 text-green-800"
-                          }`}
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          isLowStock(item)
+                            ? "bg-red-100 text-red-800"
+                            : "bg-green-100 text-green-800"
+                        }`}
                       >
                         {item.current_stock} {item.uom_name}
                       </span>

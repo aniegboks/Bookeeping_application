@@ -218,10 +218,7 @@ export default function InventoryPage() {
       const name = item.name || "";
       const sellingPrice = item.selling_price ?? 0;
       const costPrice = item.cost_price ?? 0;
-      const estimatedProfit = sellingPrice - costPrice;
-
-      const margin =
-        sellingPrice > 0 ? ((estimatedProfit / sellingPrice) * 100).toFixed(2) + "%" : "0.00%";
+     
 
       const updatedAt = item.updated_at
         ? new Date(item.updated_at).toLocaleString("en-NG", {
@@ -238,8 +235,6 @@ export default function InventoryPage() {
         Name: name,
         "Selling Price": `₦${sellingPrice.toLocaleString()}`,
         "Cost Price": `₦${costPrice.toLocaleString()}`,
-        "Estimated Profit": `₦${estimatedProfit.toLocaleString()}`,
-        Margin: margin,
         "Updated At": updatedAt,
       };
     });
@@ -275,7 +270,6 @@ export default function InventoryPage() {
     <div className="px-8 mt-2">
       <Container>
         {/* Stats */}
-        <StatsCards items={inventoryItems} filteredItems={filteredInventoryItems} />
 
         {/* Form Section */}
         {showForm && canShowForm() ? (

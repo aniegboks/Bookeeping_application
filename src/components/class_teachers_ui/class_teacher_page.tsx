@@ -267,7 +267,6 @@ export default function ClassTeachersPage() {
     <div>
       <Container>
         <div className="mt-4 pb-8">
-          <StatsCards teachers={teachers} filteredTeachers={filteredTeachers} />
 
           <Controls
             searchTerm={searchTerm}

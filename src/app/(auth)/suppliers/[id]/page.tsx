@@ -193,7 +193,6 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
                 <div className="mt-2 pb-8">
                     <h1 className="text-2xl font-semibold mb-4">{supplier?.name}</h1>
 
-                    <StatsCards transactions={transactions} filteredTransactions={filteredTransactions} />
                     <Controls
                         searchTerm={searchTerm}
                         onSearchChange={setSearchTerm}

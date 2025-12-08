@@ -255,14 +255,7 @@ export default function StudentInventoryReportPage() {
                 )}
 
                 {/* Statistics Cards */}
-                {collections.length > 0 && (
-                    <ReportStatsCards
-                        total={stats.total}
-                        eligible={stats.eligible}
-                        received={stats.received}
-                        pending={stats.pending}
-                    />
-                )}
+                
 
                 {/* Table with Pagination */}
                 <ReportTablePagination

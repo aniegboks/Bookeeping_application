@@ -244,7 +244,6 @@ export default function SchoolClassesPage() {
     <div className="mx-6">
       <Container>
         <div className="mt-4 pb-8">
-          <StatsCards classes={classes} filteredClasses={filteredClasses} />
           <Controls
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}

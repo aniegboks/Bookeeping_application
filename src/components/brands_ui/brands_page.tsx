@@ -194,8 +194,6 @@ export default function BrandsManagement() {
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
         </div>
 
-        <StatsCards brands={brands} filteredBrands={filteredBrands} />
-
         <BrandsTable
           brands={filteredBrands}
           searchTerm={searchTerm}

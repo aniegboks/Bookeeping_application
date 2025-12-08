@@ -214,7 +214,6 @@ export default function SuppliersDashboard() {
 
       <div className="w-full">
         <Container>
-          <StatsCards suppliers={suppliers} />
 
           <SuppliersFilters
             searchTerm={searchTerm}

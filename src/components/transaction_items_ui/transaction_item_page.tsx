@@ -351,7 +351,6 @@ export default function InventoryTransactionsPage() {
 
     return (
         <Container>
-            <StatsCards transactions={transactions} filteredTransactions={filteredTransactions} />
             <Controls
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}

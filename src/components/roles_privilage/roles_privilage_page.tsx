@@ -392,7 +392,6 @@ export default function RolePrivilegesPage() {
     <div className="mx-6">
       <Container>
         <div className="mt-2 pb-8">
-          <StatsCards privileges={privileges} />
 
           <div className="flex justify-between items-center mb-4 mt-8 gap-4">
             <div className="flex gap-3 flex-1 items-center">

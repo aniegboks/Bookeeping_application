@@ -201,7 +201,6 @@ export default function UOMsPage() {
               </div>
             )}
 
-            {!showForm && <StatsCards uoms={uoms} filteredUOMs={filteredUOMs} />}
 
             {showForm ? (
               <UOMForm

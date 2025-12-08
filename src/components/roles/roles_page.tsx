@@ -229,7 +229,6 @@ export default function RolesPage() {
       <Container>
         <div className="mt-2 pb-8">
           {/* Stats Cards */}
-          <StatsCards roles={roles} />
 
           {/* Controls */}
           <div className="flex justify-between items-center mb-4 mt-8">

@@ -24,10 +24,8 @@ import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
 
 export default function ClassTeachersPage() {
-  // Get permission checker from UserContext
   const { canPerformAction } = useUser();
   
-  // Check permissions for different actions
   const canCreate = canPerformAction("Teachers", "create");
   const canUpdate = canPerformAction("Teachers", "update");
   const canDelete = canPerformAction("Teachers", "delete");
@@ -56,12 +54,22 @@ export default function ClassTeachersPage() {
     try {
       const data = await classTeacherApi.getAll();
       setTeachers(data);
+      
+      // Only show success on initial load
+      if (initialLoading) {
+        toast.success(`Successfully loaded ${data.length} teacher assignment${data.length !== 1 ? 's' : ''}`);
+      }
     } catch (err) {
       console.error("Failed to load class teachers:", err);
+      
       const errorMessage = err instanceof Error 
-        ? `Failed to load class teachers. ${err.message}`
-        : "Failed to load class teachers.";
-      toast.error(errorMessage);
+        ? err.message 
+        : "Unable to load teacher assignments. Please refresh the page or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: "top-center",
+      });
     } finally {
       setLoading(false);
     }
@@ -73,10 +81,14 @@ export default function ClassTeachersPage() {
       setClasses(data);
     } catch (err) {
       console.error("Failed to load classes:", err);
+      
       const errorMessage = err instanceof Error 
-        ? `Failed to load classes. ${err.message}`
-        : "Failed to load classes.";
-      toast.error(errorMessage);
+        ? err.message 
+        : "Unable to load classes. Some features may not work correctly.";
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+      });
     }
   };
 
@@ -86,10 +98,14 @@ export default function ClassTeachersPage() {
       setUsers(data);
     } catch (err) {
       console.error("Failed to load users/teachers:", err);
+      
       const errorMessage = err instanceof Error 
-        ? `Failed to load users/teachers. ${err.message}`
-        : "Failed to load users/teachers.";
-      toast.error(errorMessage);
+        ? err.message 
+        : "Unable to load users. Some features may not work correctly.";
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+      });
     }
   };
 
@@ -109,6 +125,7 @@ export default function ClassTeachersPage() {
   const filteredTeachers: ClassTeacher[] = teachers.filter((teacher) => {
     const matchesSearch =
       teacher.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       teacher.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       teacher.class_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (teacher.teacher_id ?? "").toLowerCase().includes(searchTerm.toLowerCase());
@@ -119,7 +136,6 @@ export default function ClassTeachersPage() {
 
   // --- CRUD Handlers ---
   const handleFormSubmit = async (data: CreateClassTeacherInput | UpdateClassTeacherInput) => {
-    // Double-check permissions
     if (editingTeacher && !canUpdate) {
       toast.error("You don't have permission to update teacher assignments");
       return;
@@ -130,21 +146,35 @@ export default function ClassTeachersPage() {
     }
 
     setIsSubmitting(true);
+    const isCreating = !editingTeacher;
+    const teacherIdentifier = editingTeacher?.name || data.name;
+    const className = classes.find(c => c.id === data.class_id)?.name || "class";
+    
     const loadingToast = toast.loading(
-      editingTeacher ? "Updating teacher assignment..." : "Creating teacher assignment..."
+      isCreating 
+        ? `Assigning ${teacherIdentifier} to ${className}...` 
+        : `Updating assignment for ${teacherIdentifier}...`
     );
 
     try {
       if (editingTeacher) {
         const updateData: UpdateClassTeacherInput = data;
-        await classTeacherApi.update(editingTeacher.id, updateData);
+        const updated = await classTeacherApi.update(editingTeacher.id, updateData);
+        
         toast.dismiss(loadingToast);
-        toast.success("Teacher assignment updated successfully!");
+        toast.success(
+          `Teacher assignment updated: ${updated.name} is now assigned to ${classes.find(c => c.id === updated.class_id)?.name || 'class'}`,
+          { duration: 4000 }
+        );
       } else {
         const createData: CreateClassTeacherInput = data as CreateClassTeacherInput;
-        await classTeacherApi.create(createData);
+        const created = await classTeacherApi.create(createData);
+        
         toast.dismiss(loadingToast);
-        toast.success("Teacher assignment created successfully!");
+        toast.success(
+          `Teacher assigned successfully: ${created.name} is now assigned to ${className}`,
+          { duration: 4000 }
+        );
       }
 
       setShowForm(false);
@@ -152,26 +182,34 @@ export default function ClassTeachersPage() {
       await loadTeachers();
     } catch (err) {
       toast.dismiss(loadingToast);
-      const message = err instanceof Error ? err.message : "Failed to save teacher assignment";
       console.error("Form submission failed:", err);
-      toast.error(message);
+      
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Unable to save teacher assignment. Please check your input and try again.";
+      
+      toast.error(errorMessage, {
+        duration: 6000,
+        position: "top-center",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleEdit = (teacher: ClassTeacher) => {
-    // Check permission before opening form
     if (!canUpdate) {
       toast.error("You don't have permission to update teacher assignments");
       return;
     }
     setEditingTeacher(teacher);
     setShowForm(true);
+    
+    const className = classes.find(c => c.id === teacher.class_id)?.name || "class";
+    toast(`Editing assignment: ${teacher.name} → ${className}`, { icon: "✏️" });
   };
 
   const handleDeleteRequest = (teacher: ClassTeacher) => {
-    // Check permission before opening modal
     if (!canDelete) {
       toast.error("You don't have permission to delete teacher assignments");
       return;
@@ -183,27 +221,40 @@ export default function ClassTeachersPage() {
   const confirmDelete = async () => {
     if (!deletingTeacher) return;
     
-    // Double-check permission before deleting
     if (!canDelete) {
       toast.error("You don't have permission to delete teacher assignments");
       return;
     }
 
     setIsDeleting(true);
-    const loadingToast = toast.loading("Deleting teacher assignment...");
+    const teacherName = deletingTeacher.name || deletingTeacher.email;
+    const className = classes.find(c => c.id === deletingTeacher.class_id)?.name || "class";
+    const loadingToast = toast.loading(`Removing ${teacherName} from ${className}...`);
 
     try {
       await classTeacherApi.delete(deletingTeacher.id);
+      
       toast.dismiss(loadingToast);
-      toast.success("Teacher assignment deleted successfully!");
+      toast.success(
+        `Teacher assignment deleted: ${teacherName} removed from ${className}`,
+        { duration: 4000 }
+      );
+      
       setShowDeleteModal(false);
       setDeletingTeacher(null);
       await loadTeachers();
     } catch (err) {
       toast.dismiss(loadingToast);
-      const message = err instanceof Error ? err.message : "Failed to delete teacher assignment";
       console.error("Delete failed:", err);
-      toast.error(message);
+      
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Unable to delete teacher assignment. Please try again or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 6000,
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -216,7 +267,6 @@ export default function ClassTeachersPage() {
   };
 
   const handleAdd = () => {
-    // Check permission before opening form
     if (!canCreate) {
       toast.error("You don't have permission to create teacher assignments");
       return;
@@ -228,30 +278,43 @@ export default function ClassTeachersPage() {
   // --- Export to Excel ---
   const exportToExcel = () => {
     if (filteredTeachers.length === 0) {
-      toast("No data to export", { icon: "ℹ️" });
+      toast("No teacher assignments to export", { icon: "⚠️" });
       return;
     }
 
-    const data = filteredTeachers.map((t) => {
-      const classInfo = classes.find((c) => c.id === t.class_id);
+    try {
+      const data = filteredTeachers.map((t) => {
+        const classInfo = classes.find((c) => c.id === t.class_id);
 
-      return {
-        "Teacher Name": t.name || "",
-        "Teacher Email": t.email || "",
-        "Class": classInfo?.name || "",
-        "Role": t.role || "",
-        "Status": t.status || "",
-        "Assigned At": t.assigned_at ? new Date(t.assigned_at).toLocaleDateString() : "",
-      };
-    });
+        return {
+          "Teacher Name": t.name || "",
+          "Teacher Email": t.email || "",
+          "Class": classInfo?.name || "",
+          "Role": t.role || "",
+          "Status": t.status || "",
+          "Assigned At": t.assigned_at ? new Date(t.assigned_at).toLocaleDateString() : "",
+        };
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Teachers");
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Teachers");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(blob, `teachers_export_${new Date().toISOString()}.xlsx`);
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+      
+      const fileName = `teacher_assignments_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(blob, fileName);
+      
+      toast.success(
+        `Successfully exported ${filteredTeachers.length} teacher assignment${filteredTeachers.length !== 1 ? 's' : ''} to ${fileName}`
+      );
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Failed to export teacher assignments. Please try again or contact support.", {
+        duration: 4000,
+      });
+    }
   };
 
   // --- UI Rendering ---
@@ -267,7 +330,6 @@ export default function ClassTeachersPage() {
     <div>
       <Container>
         <div className="mt-4 pb-8">
-
           <Controls
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -312,15 +374,17 @@ export default function ClassTeachersPage() {
 
           <div className="mt-4 flex justify-start">
             <button
-              className="px-4 py-2 rounded bg-[#3D4C63] hover:bg-[#495C79] text-white transition"
+              className="px-4 py-2 rounded bg-[#3D4C63] hover:bg-[#495C79] text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={exportToExcel}
+              disabled={filteredTeachers.length === 0}
             >
               <span className="flex gap-2">
                 <Download className="w-5 h-5" />
-                Export
+                Export {filteredTeachers.length > 0 && `(${filteredTeachers.length})`}
               </span>
             </button>
           </div>
+
           {showDeleteModal && deletingTeacher && (
             <DeleteModal
               teacher={deletingTeacher}

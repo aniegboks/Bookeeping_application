@@ -16,17 +16,24 @@ import Trends from "@/components/brands_ui/trends";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-// safe error message extractor
+// Enhanced error message extractor
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
+  if (error instanceof Error) {
+    // Return the error message directly (already user-friendly from API layer)
+    return error.message;
+  }
+  
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  // Fallback for unknown error types
+  return "An unexpected error occurred. Please try again.";
 }
 
 export default function BrandsManagement() {
-  // Get permission checker from UserContext
   const { canPerformAction } = useUser();
   
-  // Check permissions for different actions
   const canCreate = canPerformAction("Brands", "create");
   const canUpdate = canPerformAction("Brands", "update");
   const canDelete = canPerformAction("Brands", "delete");
@@ -54,7 +61,12 @@ export default function BrandsManagement() {
       const data = await brandsApi.getAll();
       setBrands(data);
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error) || "Failed to load brands");
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 5000,
+        position: 'top-right',
+      });
+      console.error('Failed to fetch brands:', error);
     } finally {
       setLoading(false);
     }
@@ -67,9 +79,10 @@ export default function BrandsManagement() {
   const resetForm = () => setFormData({ name: "" });
 
   const openCreateModal = () => {
-    // Check permission before opening modal
     if (!canCreate) {
-      toast.error("You don't have permission to create brands");
+      toast.error("You don't have permission to create brands", {
+        duration: 4000,
+      });
       return;
     }
     setEditingBrand(null);
@@ -78,9 +91,10 @@ export default function BrandsManagement() {
   };
 
   const openEditModal = (brand: Brand) => {
-    // Check permission before opening modal
     if (!canUpdate) {
-      toast.error("You don't have permission to update brands");
+      toast.error("You don't have permission to update brands", {
+        duration: 4000,
+      });
       return;
     }
     setEditingBrand(brand);
@@ -89,9 +103,25 @@ export default function BrandsManagement() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name.trim()) return toast.error("Brand name is required");
+    // Client-side validation
+    const trimmedName = formData.name.trim();
     
-    // Double-check permissions before submitting
+    if (!trimmedName) {
+      toast.error("Brand name is required and cannot be empty");
+      return;
+    }
+    
+    if (trimmedName.length < 2) {
+      toast.error("Brand name must be at least 2 characters long");
+      return;
+    }
+    
+    if (trimmedName.length > 100) {
+      toast.error("Brand name cannot exceed 100 characters");
+      return;
+    }
+    
+    // Permission check
     if (editingBrand && !canUpdate) {
       toast.error("You don't have permission to update brands");
       return;
@@ -101,46 +131,65 @@ export default function BrandsManagement() {
       return;
     }
 
+    // Check for duplicate names (case-insensitive)
+    const isDuplicate = brands.some(
+      b => 
+        b.name.toLowerCase() === trimmedName.toLowerCase() && 
+        b.id !== editingBrand?.id
+    );
+    
+    if (isDuplicate) {
+      toast.error(`A brand named "${trimmedName}" already exists. Please use a different name.`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       if (editingBrand) {
         const updated = await brandsApi.update(editingBrand.id, {
-          name: formData.name.trim(),
+          name: trimmedName,
         });
         setBrands(brands.map((b) => (b.id === editingBrand.id ? updated : b)));
-        toast.success("Brand updated successfully!");
+        toast.success(`Brand "${updated.name}" updated successfully!`, {
+          duration: 3000,
+        });
       } else {
-        const created = await brandsApi.create({ name: formData.name.trim() });
+        const created = await brandsApi.create({ name: trimmedName });
         setBrands([...brands, created]);
-        toast.success("Brand created successfully!");
+        toast.success(`Brand "${created.name}" created successfully!`, {
+          duration: 3000,
+        });
       }
       setShowModal(false);
       setEditingBrand(null);
       resetForm();
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 5000,
+        position: 'top-right',
+      });
+      console.error('Failed to save brand:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Open delete modal
   const openDeleteModal = (id: string, name: string) => {
-    // Check permission before opening modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete brands");
+      toast.error("You don't have permission to delete brands", {
+        duration: 4000,
+      });
       return;
     }
     setBrandToDelete({ id, name });
     setShowDeleteModal(true);
   };
 
-  // Confirm delete
   const confirmDelete = async () => {
     if (!brandToDelete) return;
     
-    // Double-check permission before deleting
     if (!canDelete) {
       toast.error("You don't have permission to delete brands");
       return;
@@ -150,9 +199,16 @@ export default function BrandsManagement() {
     try {
       await brandsApi.delete(brandToDelete.id);
       setBrands(brands.filter((b) => b.id !== brandToDelete.id));
-      toast.success("Brand deleted successfully!");
+      toast.success(`Brand "${brandToDelete.name}" deleted successfully!`, {
+        duration: 3000,
+      });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error) || "Failed to delete brand");
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 5000,
+        position: 'top-center',
+      });
+      console.error('Failed to delete brand:', error);
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -160,30 +216,46 @@ export default function BrandsManagement() {
     }
   };
 
-  // Export to Excel
   const exportToExcel = () => {
-    if (brands.length === 0) {
-      toast.error("No brands to export");
-      return;
+    try {
+      if (brands.length === 0) {
+        toast.error("No brands available to export");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(
+        brands.map((b) => ({
+          ID: b.id,
+          Name: b.name,
+          "Created At": new Date(b.created_at).toLocaleString(),
+          "Updated At": new Date(b.updated_at).toLocaleString(),
+        }))
+      );
+      
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Brands");
+
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+      
+      const data = new Blob([excelBuffer], { 
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      });
+      
+      const fileName = `brands_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(data, fileName);
+      
+      toast.success(`Exported ${brands.length} brand(s) successfully!`, {
+        duration: 3000,
+      });
+    } catch (error) {
+      toast.error("Failed to export brands. Please try again.", {
+        duration: 4000,
+      });
+      console.error('Export error:', error);
     }
-
-    const worksheet = XLSX.utils.json_to_sheet(
-      brands.map((b) => ({
-        ID: b.id,
-        Name: b.name,
-        "Created At": b.created_at,
-        "Updated At": b.updated_at,
-      }))
-    );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Brands");
-
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
-    });
-    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(data, "brands.xlsx");
   };
 
   if (loading) return <LoadingSpinner />;
@@ -201,7 +273,6 @@ export default function BrandsManagement() {
           openCreateModal={openCreateModal}
           openEditModal={openEditModal}
           handleDelete={openDeleteModal}
-          // Pass permissions to the table
           canCreate={canCreate}
           canUpdate={canUpdate}
           canDelete={canDelete}
@@ -210,10 +281,13 @@ export default function BrandsManagement() {
         <div className="flex items-center justify-start mt-4">
           <button
             onClick={exportToExcel}
-            className="flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm hover:opacity-90 transition"
+            disabled={brands.length === 0}
+            className={`flex items-center gap-2 bg-[#3D4C63] text-white px-4 py-2 rounded-sm text-sm hover:opacity-90 transition ${
+              brands.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
             <Download className="w-5 h-5" />
-            <span>Export</span>
+            <span>Export to Excel</span>
           </button>
         </div>
         

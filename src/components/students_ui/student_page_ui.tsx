@@ -12,22 +12,18 @@ import { User } from "@/lib/types/user";
 
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
-import StatsCards from "@/components/students_ui/stats_card";
 import Controls from "@/components/students_ui/controls";
 import StudentTable from "@/components/students_ui/table";
 import StudentForm from "@/components/students_ui/form";
 import DeleteModal from "@/components/students_ui/delete_modal";
-import StudentStatusChart from "@/components/students_ui/trends";
 import { CreateStudentInput, UpdateStudentInput } from "@/lib/types/students";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";
 
 export default function StudentsPage() {
-  // Get permission checker from UserContext
   const { canPerformAction } = useUser();
   
-  // Check permissions for different actions
   const canCreate = canPerformAction("Students", "create");
   const canUpdate = canPerformAction("Students", "update");
   const canDelete = canPerformAction("Students", "delete");
@@ -63,11 +59,23 @@ export default function StudentsPage() {
       setStudents(studentsData);
       setClasses(classesData);
       setUsers(usersData);
+      
+      // Success notification only on initial load
+      if (initialLoading) {
+        toast.success(`Successfully loaded ${studentsData.length} student${studentsData.length !== 1 ? 's' : ''}`);
+      }
     } catch (err: unknown) {
       console.error("Failed to load data:", err);
-      if (err instanceof Error)
-        toast.error("Failed to load data: " + err.message);
-      else toast.error("Failed to load data");
+      
+      // Display detailed error message
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Unable to load student data. Please refresh the page or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: "top-center",
+      });
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -99,44 +107,52 @@ export default function StudentsPage() {
       return;
     }
 
-    const exportData = filteredStudents.map((student) => {
-      const studentClass = classes.find((cls) => cls.id === student.class_id);
+    try {
+      const exportData = filteredStudents.map((student) => {
+        const studentClass = classes.find((cls) => cls.id === student.class_id);
 
-      return {
-        "Admission Number": student.admission_number,
-        "First Name": student.first_name,
-        "Middle Name": student.middle_name || "-",
-        "Last Name": student.last_name,
-        "Gender": student.gender,
-        "Date of Birth": student.date_of_birth
-          ? new Date(student.date_of_birth).toLocaleDateString()
-          : "-",
-        "Class": studentClass?.name || "-",
-        "Guardian Name": student.guardian_name,
-        "Guardian Email": student.guardian_email || "-",
-        "Guardian Contact": student.guardian_contact || "-",
-        "Address": student.address || "-",
-        "Status": student.status,
-        "Created At": student.created_at
-          ? new Date(student.created_at).toLocaleDateString()
-          : "-",
-      };
-    });
+        return {
+          "Admission Number": student.admission_number,
+          "First Name": student.first_name,
+          "Middle Name": student.middle_name || "-",
+          "Last Name": student.last_name,
+          "Gender": student.gender,
+          "Date of Birth": student.date_of_birth
+            ? new Date(student.date_of_birth).toLocaleDateString()
+            : "-",
+          "Class": studentClass?.name || "-",
+          "Guardian Name": student.guardian_name,
+          "Guardian Email": student.guardian_email || "-",
+          "Guardian Contact": student.guardian_contact || "-",
+          "Address": student.address || "-",
+          "Status": student.status,
+          "Created At": student.created_at
+            ? new Date(student.created_at).toLocaleDateString()
+            : "-",
+        };
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(data, "students.xlsx");
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+      
+      const fileName = `students_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(data, fileName);
 
-    toast.success("Students exported successfully!");
+      toast.success(`Successfully exported ${filteredStudents.length} student${filteredStudents.length !== 1 ? 's' : ''} to ${fileName}`);
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export students. Please try again or contact support.", {
+        duration: 4000,
+      });
+    }
   };
 
   // Form submission
   const handleFormSubmit = async (data: CreateStudentInput | UpdateStudentInput) => {
-    // Double-check permissions before submitting
     if (editingStudent && !canUpdate) {
       toast.error("You don't have permission to update students");
       return;
@@ -153,13 +169,19 @@ export default function StudentsPage() {
 
     try {
       if (editingStudent) {
-        await studentApi.update(editingStudent.id, data as UpdateStudentInput);
+        const updated = await studentApi.update(editingStudent.id, data as UpdateStudentInput);
         toast.dismiss(loadingToast);
-        toast.success("Student updated successfully!");
+        toast.success(
+          `Student ${updated.first_name} ${updated.last_name} updated successfully!`,
+          { duration: 4000 }
+        );
       } else {
-        await studentApi.create(data as CreateStudentInput);
+        const created = await studentApi.create(data as CreateStudentInput);
         toast.dismiss(loadingToast);
-        toast.success("Student created successfully!");
+        toast.success(
+          `Student ${created.first_name} ${created.last_name} (${created.admission_number}) created successfully!`,
+          { duration: 4000 }
+        );
       }
 
       setShowForm(false);
@@ -168,9 +190,16 @@ export default function StudentsPage() {
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Form submission failed:", err);
-      if (err instanceof Error)
-        toast.error("Failed to save student: " + err.message);
-      else toast.error("Failed to save student");
+      
+      // Display the detailed error message from the API
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Unable to save student. Please check your input and try again.";
+      
+      toast.error(errorMessage, {
+        duration: 6000,
+        position: "top-center",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -178,18 +207,17 @@ export default function StudentsPage() {
 
   // Edit
   const handleEdit = (student: Student) => {
-    // Check permission before opening form
     if (!canUpdate) {
       toast.error("You don't have permission to update students");
       return;
     }
     setEditingStudent(student);
     setShowForm(true);
+    toast(`Editing ${student.first_name} ${student.last_name}`, { icon: "✏️" });
   };
 
   // Delete
   const handleDeleteRequest = (student: Student) => {
-    // Check permission before opening modal
     if (!canDelete) {
       toast.error("You don't have permission to delete students");
       return;
@@ -201,28 +229,39 @@ export default function StudentsPage() {
   const confirmDelete = async () => {
     if (!deletingStudent) return;
 
-    // Double-check permission before deleting
     if (!canDelete) {
       toast.error("You don't have permission to delete students");
       return;
     }
 
     setIsDeleting(true);
-    const loadingToast = toast.loading("Deleting student...");
+    const loadingToast = toast.loading(
+      `Deleting ${deletingStudent.first_name} ${deletingStudent.last_name}...`
+    );
 
     try {
       await studentApi.delete(deletingStudent.id);
       toast.dismiss(loadingToast);
-      toast.success("Student deleted successfully!");
+      toast.success(
+        `Student ${deletingStudent.first_name} ${deletingStudent.last_name} (${deletingStudent.admission_number}) deleted successfully!`,
+        { duration: 4000 }
+      );
       setShowDeleteModal(false);
       setDeletingStudent(null);
       await loadData();
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Delete failed:", err);
-      if (err instanceof Error)
-        toast.error("Failed to delete student: " + err.message);
-      else toast.error("Failed to delete student");
+      
+      // Display the detailed error message from the API
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Unable to delete student. Please try again or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 6000,
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -235,7 +274,6 @@ export default function StudentsPage() {
   };
 
   const handleAdd = () => {
-    // Check permission before opening form
     if (!canCreate) {
       toast.error("You don't have permission to create students");
       return;
@@ -295,15 +333,17 @@ export default function StudentsPage() {
 
           <div className="flex justify-start my-4">
             <button
-              className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition"
+              className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleExport}
+              disabled={filteredStudents.length === 0}
             >
               <span className="flex gap-2">
                 <Download className="w-5 h-5" />
-                Export
+                Export {filteredStudents.length > 0 && `(${filteredStudents.length})`}
               </span>
             </button>
           </div>
+
           {showDeleteModal && deletingStudent && (
             <DeleteModal
               student={deletingStudent}

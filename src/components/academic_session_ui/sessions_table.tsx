@@ -1,5 +1,4 @@
-
-// components/academic_session_ui/sessions_table.tsx (Updated)
+// components/academic_session_ui/sessions_table.tsx
 "use client";
 
 import { useState } from "react";
@@ -7,7 +6,6 @@ import { AcademicSession } from "@/lib/types/academic_session";
 import { BookOpen, Plus, PenSquare, Trash2, ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react";
 import toast from "react-hot-toast";
 
-// Delete modal component
 function DeleteConfirmModal({
   open,
   onClose,
@@ -88,7 +86,6 @@ function DeleteConfirmModal({
   );
 }
 
-// Main sessions table component with pagination and permissions
 export default function SessionsTable({
   sessions,
   setSessions,
@@ -117,38 +114,88 @@ export default function SessionsTable({
     currentPage * itemsPerPage
   );
 
-  // Check if user has any action permissions
   const hasAnyActionPermission = canUpdate || canDelete;
 
   const handleDelete = async (id: string) => {
-    // Double-check permission before deleting
     if (!canDelete) {
-      toast.error("You don't have permission to delete academic sessions");
+      toast.error("Access denied: You don't have permission to delete academic sessions. Please contact your administrator.", {
+        duration: 4000,
+      });
       return;
     }
 
     setDeleting(true);
     try {
       const res = await fetch(`/api/academic_session/${id}`, { method: "DELETE" });
+      
       if (!res.ok) {
         let errorMessage = "Failed to delete session";
+        
+        // Try to get detailed error from response
         try {
           const errorData = await res.json();
-          errorMessage = errorData.error || errorMessage;
+          
+          if (errorData.error) {
+            // Parse specific error types
+            if (errorData.error.includes("foreign key") || errorData.error.includes("constraint")) {
+              errorMessage = "Cannot delete this session: It is currently being used by students, classes, or other records. Please remove those associations first.";
+            } else if (errorData.error.includes("not found")) {
+              errorMessage = "Session not found: This session may have already been deleted.";
+            } else if (errorData.error.includes("active")) {
+              errorMessage = "Cannot delete active session: Please set the session status to inactive before deleting.";
+            } else {
+              errorMessage = errorData.error;
+            }
+          }
         } catch {
+          // If JSON parsing fails, try to get text response
           const text = await res.text();
-          if (text) errorMessage = text;
+          if (text) {
+            errorMessage = text;
+          } else {
+            // Status-specific errors
+            if (res.status === 404) {
+              errorMessage = "Session not found: This session may have already been deleted.";
+            } else if (res.status === 403) {
+              errorMessage = "Access denied: You don't have permission to delete this session.";
+            } else if (res.status === 409) {
+              errorMessage = "Conflict: This session cannot be deleted because it's being used by other records.";
+            } else if (res.status === 500) {
+              errorMessage = "Server error: Something went wrong on our end. Please try again later or contact support.";
+            } else {
+              errorMessage = `Unable to delete session (Error ${res.status}). Please try again.`;
+            }
+          }
         }
+        
         throw new Error(errorMessage);
       }
+      
+      // Success
       setSessions((prev) => prev.filter((s) => s.id !== id));
-      toast.success("Academic session deleted successfully!");
+      toast.success("Academic session deleted successfully!", {
+        duration: 3000,
+      });
+      
+      // Adjust pagination if needed
       if (paginatedSessions.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
     } catch (err: unknown) {
-      if (err instanceof Error) toast.error(err.message);
-      else toast.error("Failed to delete academic session");
+      // Handle network errors
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        toast.error("Network error: Unable to connect to the server. Please check your internet connection and try again.", {
+          duration: 5000,
+        });
+      } else if (err instanceof Error) {
+        toast.error(err.message, {
+          duration: 5000,
+        });
+      } else {
+        toast.error("An unexpected error occurred while deleting the session. Please try again.", {
+          duration: 4000,
+        });
+      }
     } finally {
       setDeleting(false);
       setDeleteId(null);
@@ -156,9 +203,10 @@ export default function SessionsTable({
   };
 
   const openDeleteModal = (id: string) => {
-    // Check permission before opening delete modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete academic sessions");
+      toast.error("Access denied: You don't have permission to delete academic sessions. Please contact your administrator.", {
+        duration: 4000,
+      });
       return;
     }
     setDeleteId(id);
@@ -178,7 +226,6 @@ export default function SessionsTable({
           <h2 className="text-lg font-semibold text-[#171D26] tracking-tighter">
             Academic Sessions
           </h2>
-          {/* Only show Add New Session button if user has create permission */}
           {canCreate && (
             <button
               onClick={openCreateModal}
@@ -201,7 +248,6 @@ export default function SessionsTable({
                     {h}
                   </th>
                 ))}
-                {/* Only show Actions column if user has any action permission */}
                 {hasAnyActionPermission && (
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -233,10 +279,8 @@ export default function SessionsTable({
                       {session.status}
                     </span>
                   </td>
-                  {/* Only show action buttons if user has permissions */}
                   {hasAnyActionPermission && (
                     <td className="px-6 py-4 text-sm flex gap-2">
-                      {/* Only show Edit button if user can update */}
                       {canUpdate && (
                         <button
                           onClick={() => openEditModal(session)}
@@ -246,7 +290,6 @@ export default function SessionsTable({
                           <PenSquare className="h-4 w-4" />
                         </button>
                       )}
-                      {/* Only show Delete button if user can delete */}
                       {canDelete && (
                         <button
                           onClick={() => openDeleteModal(session.id)}
@@ -288,7 +331,6 @@ export default function SessionsTable({
           )}
         </div>
 
-        {/* Pagination Controls */}
         {sessions.length > itemsPerPage && (
           <div className="flex justify-end gap-2 mt-4">
             <button

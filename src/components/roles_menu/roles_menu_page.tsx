@@ -67,8 +67,9 @@ export default function RoleMenusPage() {
       const data = await rolesApi.getAll();
       setRoles(data);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load roles. Please refresh the page and try again.";
       console.error("Failed to load roles:", err);
-      toast.error("Failed to load roles");
+      toast.error(message, { duration: 5000 });
     }
   };
 
@@ -78,8 +79,9 @@ export default function RoleMenusPage() {
       const data = await menusApi.getAll();
       setMenus(data);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load available menus. Please refresh the page and try again.";
       console.error("Failed to load menus:", err);
-      toast.error("Failed to load menus");
+      toast.error(message, { duration: 5000 });
     }
   };
 
@@ -92,8 +94,13 @@ export default function RoleMenusPage() {
         : await roleMenusApi.getAll();
       setRoleMenus(data);
     } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : roleCode 
+          ? `Failed to load menu assignments for the selected role. Please try again.`
+          : "Failed to load menu assignments. Please refresh the page and try again.";
       console.error("Failed to load role-menu assignments:", err);
-      toast.error("Failed to load assignments");
+      toast.error(message, { duration: 5000 });
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -135,33 +142,43 @@ export default function RoleMenusPage() {
 
   // Export to Excel
   const handleExport = () => {
-    if (!filteredRoleMenus.length) return toast.error("No data to export!");
+    if (!filteredRoleMenus.length) {
+      toast.error("No menu assignments available to export. Please assign menus to roles first.", { duration: 4000 });
+      return;
+    }
 
-    const dataToExport = filteredRoleMenus.map((rm) => ({
-      "Role Code": rm.role_code,
-      "Role Name": rm.role?.name || "N/A",
-      "Menu Caption": rm.menu?.caption || "N/A",
-      "Menu Route": rm.menu?.route || "N/A",
-      "Assignment ID": rm.id,
-    }));
+    try {
+      const dataToExport = filteredRoleMenus.map((rm) => ({
+        "Role Code": rm.role_code,
+        "Role Name": rm.role?.name || "N/A",
+        "Menu Caption": rm.menu?.caption || "N/A",
+        "Menu Route": rm.menu?.route || "N/A",
+        "Assignment ID": rm.id,
+      }));
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Role Menus");
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Role Menus");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    saveAs(blob, `role_menus_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success("Spreadsheet exported successfully!");
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      
+      const fileName = `role_menus_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      saveAs(blob, fileName);
+      
+      toast.success(`Successfully exported ${filteredRoleMenus.length} menu assignments to ${fileName}`, { duration: 4000 });
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export data. Please try again or contact support if the problem persists.", { duration: 5000 });
+    }
   };
 
   // Open create form
   const handleCreateClick = () => {
-    // Check permission before opening form
     if (!canCreate) {
-      toast.error("You don't have permission to assign menus");
+      toast.error("Access denied. You do not have permission to assign menus to roles. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setEditingRoleMenu(null);
@@ -170,9 +187,8 @@ export default function RoleMenusPage() {
 
   // Open edit form
   const handleEditClick = (roleMenu: RoleMenu) => {
-    // Check permission before opening form
     if (!canUpdate) {
-      toast.error("You don't have permission to update menu assignments");
+      toast.error("Access denied. You do not have permission to update menu assignments. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setEditingRoleMenu(roleMenu);
@@ -183,32 +199,46 @@ export default function RoleMenusPage() {
   const handleFormSubmit = async (
     data: CreateRoleMenuPayload | UpdateRoleMenuPayload
   ) => {
-    // Double-check permissions before submitting
     if (editingRoleMenu && !canUpdate) {
-      toast.error("You don't have permission to update menu assignments");
+      toast.error("Access denied. You do not have permission to update menu assignments.", { duration: 5000 });
       return;
     }
     if (!editingRoleMenu && !canCreate) {
-      toast.error("You don't have permission to assign menus");
+      toast.error("Access denied. You do not have permission to assign menus to roles.", { duration: 5000 });
       return;
     }
 
     setIsSubmitting(true);
     const loadingToast = toast.loading(
-      editingRoleMenu ? "Updating assignment..." : "Creating assignment..."
+      editingRoleMenu ? "Updating menu assignment..." : "Creating new menu assignment..."
     );
+    
     try {
-      if (editingRoleMenu)
+      if (editingRoleMenu) {
         await roleMenusApi.update(editingRoleMenu.id, data as UpdateRoleMenuPayload);
-      else await roleMenusApi.create(data as CreateRoleMenuPayload);
-
-      toast.success(editingRoleMenu ? "Assignment updated!" : "Assignment created!");
+        toast.success(
+          `Successfully updated menu assignment for ${editingRoleMenu.role?.name || editingRoleMenu.role_code}`,
+          { duration: 4000 }
+        );
+      } else {
+        await roleMenusApi.create(data as CreateRoleMenuPayload);
+        toast.success(
+          "Successfully assigned menu to role. Users with this role can now access the menu.",
+          { duration: 4000 }
+        );
+      }
+      
       setShowForm(false);
       setEditingRoleMenu(null);
       await loadRoleMenus(selectedRole);
     } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : editingRoleMenu 
+          ? "Failed to update menu assignment. Please verify your changes and try again."
+          : "Failed to create menu assignment. Please check your input and try again.";
       console.error("Form submission failed:", err);
-      toast.error("Failed to save assignment");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsSubmitting(false);
@@ -217,9 +247,8 @@ export default function RoleMenusPage() {
 
   // Delete handlers
   const handleDeleteRequest = (roleMenu: RoleMenu) => {
-    // Check permission before opening delete modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete menu assignments");
+      toast.error("Access denied. You do not have permission to delete menu assignments. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setDeletingRoleMenu(roleMenu);
@@ -229,23 +258,29 @@ export default function RoleMenusPage() {
   const confirmDelete = async () => {
     if (!deletingRoleMenu) return;
     
-    // Double-check permission before deleting
     if (!canDelete) {
-      toast.error("You don't have permission to delete menu assignments");
+      toast.error("Access denied. You do not have permission to delete menu assignments.", { duration: 5000 });
       return;
     }
 
     setIsDeleting(true);
-    const loadingToast = toast.loading("Deleting assignment...");
+    const loadingToast = toast.loading("Removing menu assignment...");
+    
     try {
       await roleMenusApi.delete(deletingRoleMenu.id);
-      toast.success("Assignment deleted!");
+      toast.success(
+        `Successfully removed ${deletingRoleMenu.menu?.caption || "menu"} from ${deletingRoleMenu.role?.name || deletingRoleMenu.role_code}. Users with this role will no longer see this menu.`,
+        { duration: 4000 }
+      );
       setShowDeleteModal(false);
       setDeletingRoleMenu(null);
       await loadRoleMenus(selectedRole);
     } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : "Failed to delete menu assignment. The assignment may have already been removed. Please refresh the page.";
       console.error("Delete failed:", err);
-      toast.error("Failed to delete assignment");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsDeleting(false);
@@ -254,9 +289,8 @@ export default function RoleMenusPage() {
 
   // Bulk assign
   const handleBulkAssignClick = () => {
-    // Check permission before opening bulk assign modal
     if (!canCreate) {
-      toast.error("You don't have permission to bulk assign menus");
+      toast.error("Access denied. You do not have permission to bulk assign menus. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setShowBulkAssignModal(true);
@@ -266,23 +300,29 @@ export default function RoleMenusPage() {
     role_code: string;
     menu_ids: string[];
   }) => {
-    // Double-check permission
     if (!canCreate) {
-      toast.error("You don't have permission to bulk assign menus");
+      toast.error("Access denied. You do not have permission to bulk assign menus.", { duration: 5000 });
       return;
     }
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading("Bulk assigning menus...");
+    const loadingToast = toast.loading(`Assigning ${payload.menu_ids.length} menus to role...`);
 
     try {
       await roleMenusApi.bulkAssign(payload);
-      toast.success("Bulk assignment successful!");
+      const roleName = roles.find(r => r.code === payload.role_code)?.name || payload.role_code;
+      toast.success(
+        `Successfully assigned ${payload.menu_ids.length} menus to ${roleName}. Users with this role can now access these menus.`,
+        { duration: 5000 }
+      );
       setShowBulkAssignModal(false);
       await loadRoleMenus(selectedRole);
     } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : "Failed to bulk assign menus. Some menus may already be assigned to this role. Please review your selection and try again.";
       console.error("Bulk assign failed:", err);
-      toast.error("Failed to bulk assign menus");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsSubmitting(false);
@@ -292,7 +332,7 @@ export default function RoleMenusPage() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingRoleMenu(null);
-    toast("Action canceled", { icon: "ℹ️" });
+    toast("Operation canceled. No changes were made.", { duration: 3000 });
   };
 
   if (initialLoading)
@@ -330,7 +370,6 @@ export default function RoleMenusPage() {
               </select>
             </div>
             <div className="flex gap-3">
-              {/* Only show Assign Menu button if user has create permission */}
               {canCreate && (
                 <button
                   onClick={handleCreateClick}
@@ -339,7 +378,6 @@ export default function RoleMenusPage() {
                   <Plus className="w-5 h-5" /> Assign Menu
                 </button>
               )}
-              {/* Only show Bulk Assign button if user has create permission */}
               {canCreate && (
                 <button
                   onClick={handleBulkAssignClick}
@@ -363,7 +401,6 @@ export default function RoleMenusPage() {
             onEdit={handleEditClick}
             onDelete={handleDeleteRequest}
             onRefresh={() => loadRoleMenus(selectedRole)}
-            // Pass permissions to the table
             canUpdate={canUpdate}
             canDelete={canDelete}
           />
@@ -412,7 +449,7 @@ export default function RoleMenusPage() {
               onCancel={() => {
                 setShowDeleteModal(false);
                 setDeletingRoleMenu(null);
-                toast("Delete canceled", { icon: "ℹ️" });
+                toast("Delete operation canceled. No changes were made.", { duration: 3000 });
               }}
               isDeleting={isDeleting}
             />
@@ -425,7 +462,7 @@ export default function RoleMenusPage() {
               onSubmit={handleBulkAssign}
               onCancel={() => {
                 setShowBulkAssignModal(false);
-                toast("Bulk assign canceled", { icon: "ℹ️" });
+                toast("Bulk assign operation canceled. No changes were made.", { duration: 3000 });
               }}
               isSubmitting={isSubmitting}
             />

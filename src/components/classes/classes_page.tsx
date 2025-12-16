@@ -59,10 +59,16 @@ export default function SchoolClassesPage() {
       setClassTeachers(teacherData);
       setUsers(userData);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
       console.error("Failed to load data:", err);
-      toast.error("Failed to load data: " + message);
+      
+      if (err instanceof Error) {
+        toast.error(err.message, { duration: 5000 });
+      } else {
+        toast.error(
+          "Unable to load class information. Please refresh the page or contact support if the problem continues.",
+          { duration: 5000 }
+        );
+      }
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -103,35 +109,54 @@ export default function SchoolClassesPage() {
   const handleFormSubmit = async (data: CreateSchoolClassInput | UpdateSchoolClassInput) => {
     // Double-check permissions
     if (editingClass && !canUpdate) {
-      toast.error("You don't have permission to update classes");
+      toast.error("You don't have permission to update classes. Please contact your administrator.", {
+        duration: 4000,
+      });
       return;
     }
     if (!editingClass && !canCreate) {
-      toast.error("You don't have permission to create classes");
+      toast.error("You don't have permission to create classes. Please contact your administrator.", {
+        duration: 4000,
+      });
       return;
     }
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading(editingClass ? "Updating class..." : "Creating class...");
+    const loadingToast = toast.loading(
+      editingClass ? "Updating class information..." : "Creating new class..."
+    );
 
     try {
       if (editingClass) {
         await schoolClassApi.update(editingClass.id, data as UpdateSchoolClassInput);
+        toast.success(`Class "${editingClass.name}" has been updated successfully!`, {
+          duration: 3000,
+        });
       } else {
-        await schoolClassApi.create(data as CreateSchoolClassInput);
+        const createdClass = await schoolClassApi.create(data as CreateSchoolClassInput);
+        toast.success(`Class "${(data as CreateSchoolClassInput).name}" has been created successfully!`, {
+          duration: 3000,
+        });
       }
 
-      toast.success(editingClass ? "Class updated!" : "Class created!");
       toast.dismiss(loadingToast);
       setShowForm(false);
       setEditingClass(null);
       await loadData();
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
-      const message =
-        err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
       console.error("Form submission failed:", err);
-      toast.error("Failed to save class: " + message);
+      
+      if (err instanceof Error) {
+        toast.error(err.message, { duration: 5000 });
+      } else {
+        toast.error(
+          editingClass 
+            ? "Unable to update the class. Please check your input and try again."
+            : "Unable to create the class. Please check your input and try again.",
+          { duration: 5000 }
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -140,7 +165,9 @@ export default function SchoolClassesPage() {
   const handleEdit = (schoolClass: SchoolClass) => {
     // Check permission before opening form
     if (!canUpdate) {
-      toast.error("You don't have permission to update classes");
+      toast.error("You don't have permission to update classes. Please contact your administrator.", {
+        duration: 4000,
+      });
       return;
     }
     setEditingClass(schoolClass);
@@ -150,7 +177,9 @@ export default function SchoolClassesPage() {
   const handleDeleteRequest = (schoolClass: SchoolClass) => {
     // Check permission before opening modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete classes");
+      toast.error("You don't have permission to delete classes. Please contact your administrator.", {
+        duration: 4000,
+      });
       return;
     }
     setDeletingClass(schoolClass);
@@ -162,26 +191,36 @@ export default function SchoolClassesPage() {
     
     // Double-check permission before deleting
     if (!canDelete) {
-      toast.error("You don't have permission to delete classes");
+      toast.error("You don't have permission to delete classes. Please contact your administrator.", {
+        duration: 4000,
+      });
       return;
     }
 
     setIsDeleting(true);
-    const loadingToast = toast.loading("Deleting class...");
+    const loadingToast = toast.loading(`Deleting class "${deletingClass.name}"...`);
 
     try {
       await schoolClassApi.delete(deletingClass.id);
-      toast.success("Class deleted successfully!");
+      toast.success(`Class "${deletingClass.name}" has been deleted successfully!`, {
+        duration: 3000,
+      });
       toast.dismiss(loadingToast);
       setShowDeleteModal(false);
       setDeletingClass(null);
       await loadData();
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
-      const message =
-        err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
       console.error("Delete failed:", err);
-      toast.error("Failed to delete class: " + message);
+      
+      if (err instanceof Error) {
+        toast.error(err.message, { duration: 5000 });
+      } else {
+        toast.error(
+          `Unable to delete class "${deletingClass.name}". Please try again or contact support if the problem persists.`,
+          { duration: 5000 }
+        );
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -190,13 +229,18 @@ export default function SchoolClassesPage() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingClass(null);
-    toast("Form canceled", { icon: "ℹ️" });
+    toast("Class form has been closed", { 
+      icon: "ℹ️",
+      duration: 2000,
+    });
   };
 
   const handleAdd = () => {
     // Check permission before opening form
     if (!canCreate) {
-      toast.error("You don't have permission to create classes");
+      toast.error("You don't have permission to create classes. Please contact your administrator.", {
+        duration: 4000,
+      });
       return;
     }
     setEditingClass(null);
@@ -206,31 +250,47 @@ export default function SchoolClassesPage() {
   // -------------------- EXCEL EXPORT --------------------
   const exportToExcel = () => {
     if (classesWithNames.length === 0) {
-      toast("No data to export", { icon: "ℹ️" });
+      toast("No class data available to export. Try adjusting your filters.", { 
+        icon: "ℹ️",
+        duration: 3000,
+      });
       return;
     }
 
-    const dataToExport = classesWithNames.map((schoolClass) => {
-      const createdByUser = users.find((u) => u.id === schoolClass.created_by);
-      const createdByName =
-        createdByUser?.username ?? createdByUser?.name ?? schoolClass.created_by;
+    try {
+      const dataToExport = classesWithNames.map((schoolClass) => {
+        const createdByUser = users.find((u) => u.id === schoolClass.created_by);
+        const createdByName =
+          createdByUser?.username ?? createdByUser?.name ?? schoolClass.created_by;
 
-      return {
-        "Class Name": schoolClass.name,
-        Status: schoolClass.status.charAt(0).toUpperCase() + schoolClass.status.slice(1),
-        "Created By": createdByName,
-        "Created At": new Date(schoolClass.created_at).toLocaleString(),
-        "Updated At": new Date(schoolClass.updated_at).toLocaleString(),
-      };
-    });
+        return {
+          "Class Name": schoolClass.name,
+          Status: schoolClass.status.charAt(0).toUpperCase() + schoolClass.status.slice(1),
+          "Class Teacher": schoolClass.teacher_name,
+          "Created By": createdByName,
+          "Created At": new Date(schoolClass.created_at).toLocaleString(),
+          "Updated At": new Date(schoolClass.updated_at).toLocaleString(),
+        };
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "SchoolClasses");
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "SchoolClasses");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(blob, `SchoolClasses_${new Date().toISOString()}.xlsx`);
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+      const fileName = `SchoolClasses_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(blob, fileName);
+
+      toast.success(`Successfully exported ${classesWithNames.length} class records to Excel!`, {
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Failed to export data to Excel. Please try again.", {
+        duration: 4000,
+      });
+    }
   };
 
   if (initialLoading)
@@ -256,7 +316,7 @@ export default function SchoolClassesPage() {
           {showForm && (
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
               <h2 className="text-xl font-semibold text-[#171D26] mb-4">
-                {editingClass ? "Edit Class" : "Create New Class"}
+                {editingClass ? `Edit Class: ${editingClass.name}` : "Create New Class"}
               </h2>
               <ClassForm
                 schoolClass={editingClass || undefined}
@@ -282,14 +342,17 @@ export default function SchoolClassesPage() {
           <div className="mt-4 flex justify-start">
             <button
               onClick={exportToExcel}
-              className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition"
+              className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={classesWithNames.length === 0}
+              title={classesWithNames.length === 0 ? "No data to export" : "Export to Excel"}
             >
               <span className="flex items-center gap-2">
                 <Download className="w-5 h-5" />
-                Export
+                Export to Excel
               </span>
             </button>
           </div>
+
           {showDeleteModal && deletingClass && (
             <DeleteModal
               schoolClass={deletingClass}
@@ -297,7 +360,10 @@ export default function SchoolClassesPage() {
               onCancel={() => {
                 setShowDeleteModal(false);
                 setDeletingClass(null);
-                toast("Delete canceled", { icon: "ℹ️" });
+                toast("Delete action has been cancelled", { 
+                  icon: "ℹ️",
+                  duration: 2000,
+                });
               }}
               isDeleting={isDeleting}
             />

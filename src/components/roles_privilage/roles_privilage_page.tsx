@@ -66,8 +66,9 @@ export default function RolePrivilegesPage() {
       const data = await rolesApi.getAll();
       setRoles(data);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load roles. Please refresh the page and try again.";
       console.error("Failed to load roles:", err);
-      toast.error("Failed to load roles");
+      toast.error(message, { duration: 5000 });
     }
   };
 
@@ -108,8 +109,13 @@ export default function RolePrivilegesPage() {
         setPrivileges([]);
       }
     } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : roleCode 
+          ? `Failed to load privileges for the selected role. Please try again.`
+          : "Failed to load role privileges. Please refresh the page and try again.";
       console.error("Failed to load privileges:", err);
-      toast.error("Failed to load privileges");
+      toast.error(message, { duration: 5000 });
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -148,24 +154,35 @@ export default function RolePrivilegesPage() {
 
   // Export to Excel
   const handleExport = () => {
-    if (!filteredPrivileges.length) return toast.error("No data to export!");
+    if (!filteredPrivileges.length) {
+      toast.error("No privileges available to export. Please assign privileges to roles first.", { duration: 4000 });
+      return;
+    }
 
-    const dataToExport = filteredPrivileges.map((p) => ({
-      "Role Code": p.role_code,
-      Description: p.description,
-      Status: p.status,
-      "Created At": new Date(p.created_at).toLocaleString(),
-      "Updated At": new Date(p.updated_at).toLocaleString(),
-    }));
+    try {
+      const dataToExport = filteredPrivileges.map((p) => ({
+        "Role Code": p.role_code,
+        Description: p.description,
+        Status: p.status,
+        "Created At": new Date(p.created_at).toLocaleString(),
+        "Updated At": new Date(p.updated_at).toLocaleString(),
+      }));
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Role Privileges");
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Role Privileges");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    saveAs(blob, `role_privileges_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success("Spreadsheet exported successfully!");
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      
+      const fileName = `role_privileges_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      saveAs(blob, fileName);
+      
+      toast.success(`Successfully exported ${filteredPrivileges.length} privileges to ${fileName}`, { duration: 4000 });
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export data. Please try again or contact support if the problem persists.", { duration: 5000 });
+    }
   };
 
   // Handle inline update - sends changes to backend
@@ -173,9 +190,8 @@ export default function RolePrivilegesPage() {
     id: string,
     updates: Partial<RolePrivilege>
   ) => {
-    // Check permission before updating
     if (!canUpdate) {
-      toast.error("You don't have permission to update privileges");
+      toast.error("Access denied. You do not have permission to update privileges. Please contact your administrator for access.", { duration: 5000 });
       throw new Error("No update permission");
     }
 
@@ -184,13 +200,13 @@ export default function RolePrivilegesPage() {
       const privilege = privileges.find(p => p.id === id);
       
       if (!privilege) {
-        toast.error("Privilege not found");
+        toast.error("Privilege not found. It may have been deleted. Please refresh the page.", { duration: 5000 });
         throw new Error("Privilege not found");
       }
 
       // If no role selected, can't update
       if (!selectedRole) {
-        toast.error("Please select a specific role to edit privileges", { duration: 4000 });
+        toast.error("Please select a specific role from the dropdown to edit privileges.", { duration: 4000 });
         throw new Error("No role selected");
       }
 
@@ -214,24 +230,36 @@ export default function RolePrivilegesPage() {
       // Use bulk upsert endpoint to update
       await rolePrivilegesApi.bulkUpsert(upsertPayload);
 
+      // Show success message
+      const roleName = roles.find(r => r.code === selectedRole)?.name || selectedRole;
+      toast.success(`Successfully updated privilege for ${roleName}. Changes are now in effect.`, { duration: 4000 });
+
       // Reload privileges to get fresh data from backend
       await loadPrivileges(selectedRole);
 
     } catch (error) {
-      console.error("Error updating privilege:", error);
+      const message = error instanceof Error && error.message !== "No update permission" && error.message !== "Privilege not found" && error.message !== "No role selected"
+        ? error.message 
+        : "Failed to update privilege. Please try again.";
+      
+      if (error instanceof Error && (error.message === "No update permission" || error.message === "Privilege not found" || error.message === "No role selected")) {
+        // Error already shown, don't show duplicate
+      } else {
+        console.error("Error updating privilege:", error);
+        toast.error(message, { duration: 6000 });
+      }
       throw error;
     }
   };
 
   // Open edit form
   const handleEditClick = (privilege: RolePrivilege) => {
-    // Check permission before opening form
     if (!canUpdate) {
-      toast.error("You don't have permission to update privileges");
+      toast.error("Access denied. You do not have permission to update privileges. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     if (!selectedRole) {
-      toast.error("Please select a specific role to edit privileges", { duration: 4000 });
+      toast.error("Please select a specific role from the dropdown to edit privileges.", { duration: 4000 });
       return;
     }
     setEditingPrivilege(privilege);
@@ -240,29 +268,41 @@ export default function RolePrivilegesPage() {
 
   // Form submit (create/update)
   const handleFormSubmit = async (data: CreateRolePrivilegePayload | UpdateRolePrivilegePayload) => {
-    // Double-check permissions before submitting
     if (editingPrivilege && !canUpdate) {
-      toast.error("You don't have permission to update privileges");
+      toast.error("Access denied. You do not have permission to update privileges.", { duration: 5000 });
       return;
     }
     if (!editingPrivilege && !canCreate) {
-      toast.error("You don't have permission to create privileges");
+      toast.error("Access denied. You do not have permission to create privileges.", { duration: 5000 });
       return;
     }
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading(editingPrivilege ? "Updating privilege..." : "Creating privilege...");
+    const loadingToast = toast.loading(
+      editingPrivilege ? "Updating privilege..." : "Creating new privilege..."
+    );
+    
     try {
-      if (editingPrivilege) await rolePrivilegesApi.update(editingPrivilege.id, data as UpdateRolePrivilegePayload);
-      else await rolePrivilegesApi.create(data as CreateRolePrivilegePayload);
+      if (editingPrivilege) {
+        await rolePrivilegesApi.update(editingPrivilege.id, data as UpdateRolePrivilegePayload);
+        const roleName = roles.find(r => r.code === editingPrivilege.role_code)?.name || editingPrivilege.role_code;
+        toast.success(`Successfully updated privilege for ${roleName}. Changes are now in effect.`, { duration: 4000 });
+      } else {
+        await rolePrivilegesApi.create(data as CreateRolePrivilegePayload);
+        toast.success("Successfully created privilege. Users with this role now have the new permission.", { duration: 4000 });
+      }
 
-      toast.success(editingPrivilege ? "Privilege updated!" : "Privilege created!");
       setShowForm(false);
       setEditingPrivilege(null);
       await loadPrivileges(selectedRole);
     } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : editingPrivilege 
+          ? "Failed to update privilege. Please verify your changes and try again."
+          : "Failed to create privilege. Please check your input and try again.";
       console.error("Form submission failed:", err);
-      toast.error("Failed to save privilege");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsSubmitting(false);
@@ -271,13 +311,12 @@ export default function RolePrivilegesPage() {
 
   // Delete handlers
   const handleDeleteRequest = (privilege: RolePrivilege) => {
-    // Check permission before opening delete modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete privileges");
+      toast.error("Access denied. You do not have permission to delete privileges. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     if (!selectedRole) {
-      toast.error("Please select a specific role to delete privileges", { duration: 4000 });
+      toast.error("Please select a specific role from the dropdown to delete privileges.", { duration: 4000 });
       return;
     }
     
@@ -288,23 +327,30 @@ export default function RolePrivilegesPage() {
   const confirmDelete = async () => {
     if (!deletingPrivilege) return;
     
-    // Double-check permission before deleting
     if (!canDelete) {
-      toast.error("You don't have permission to delete privileges");
+      toast.error("Access denied. You do not have permission to delete privileges.", { duration: 5000 });
       return;
     }
 
     setIsDeleting(true);
-    const loadingToast = toast.loading("Deleting privilege...");
+    const loadingToast = toast.loading("Removing privilege...");
+    
     try {
       await rolePrivilegesApi.delete(deletingPrivilege.id);
-      toast.success("Privilege deleted!");
+      const roleName = roles.find(r => r.code === deletingPrivilege.role_code)?.name || deletingPrivilege.role_code;
+      toast.success(
+        `Successfully removed privilege from ${roleName}. Users with this role will no longer have this permission.`,
+        { duration: 4000 }
+      );
       setShowDeleteModal(false);
       setDeletingPrivilege(null);
       await loadPrivileges(selectedRole);
     } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : "Failed to delete privilege. The privilege may have already been removed. Please refresh the page.";
       console.error("Delete failed:", err);
-      toast.error("Failed to delete privilege");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsDeleting(false);
@@ -313,9 +359,8 @@ export default function RolePrivilegesPage() {
 
   // Bulk upsert
   const handleBulkUpsertClick = () => {
-    // Check permission before opening bulk upsert modal
     if (!canCreate && !canUpdate) {
-      toast.error("You don't have permission to manage privileges");
+      toast.error("Access denied. You do not have permission to manage privileges. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setShowBulkUpsertModal(true);
@@ -330,20 +375,25 @@ export default function RolePrivilegesPage() {
 
     // Check permissions based on mode
     if (mode === 'replace' && !canDelete) {
-      toast.error("You don't have permission to replace privileges (requires delete permission)");
+      toast.error("Access denied. Replace mode requires delete permission. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     if (!canCreate && !canUpdate) {
-      toast.error("You don't have permission to manage privileges");
+      toast.error("Access denied. You do not have permission to manage privileges.", { duration: 5000 });
       return;
     }
 
-    if (!role || Object.keys(privileges).length === 0)
-      return toast.error("Select role and add privileges");
+    if (!role || Object.keys(privileges).length === 0) {
+      toast.error("Please select a role and add at least one privilege before proceeding.", { duration: 4000 });
+      return;
+    }
 
     setIsSubmitting(true);
+    const privilegeCount = Object.values(privileges).reduce((sum, items) => sum + items.length, 0);
     const loadingToast = toast.loading(
-      mode === 'replace' ? "Replacing all privileges..." : "Bulk upserting privileges..."
+      mode === 'replace' 
+        ? `Replacing all privileges with ${privilegeCount} new privileges...` 
+        : `Upserting ${privilegeCount} privileges...`
     );
 
     try {
@@ -359,16 +409,23 @@ export default function RolePrivilegesPage() {
 
       await rolePrivilegesApi.bulkUpsert({ role, privileges: backendPayload });
 
+      const roleName = roles.find(r => r.code === role)?.name || role;
       toast.success(
         mode === 'replace' 
-          ? "All privileges replaced successfully!" 
-          : "Bulk upsert successful!"
+          ? `Successfully replaced all privileges for ${roleName}. ${privilegeCount} privileges are now active.`
+          : `Successfully upserted ${privilegeCount} privileges for ${roleName}. Changes are now in effect.`,
+        { duration: 5000 }
       );
       setShowBulkUpsertModal(false);
       await loadPrivileges(selectedRole);
     } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : mode === 'replace'
+          ? "Failed to replace privileges. Please review your input and try again."
+          : "Failed to bulk upsert privileges. Some privileges may already exist or have invalid data. Please review your input and try again.";
       console.error("Bulk upsert failed:", err);
-      toast.error("Failed to bulk upsert privileges");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsSubmitting(false);
@@ -378,7 +435,7 @@ export default function RolePrivilegesPage() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingPrivilege(null);
-    toast("Action canceled", { icon: "ℹ️" });
+    toast("Operation canceled. No changes were made.", { duration: 3000 });
   };
 
   if (initialLoading)
@@ -416,17 +473,16 @@ export default function RolePrivilegesPage() {
               </select>
               {selectedRole && (canUpdate || canDelete) && (
                 <span className="text-xs text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-200">
-                  ✓ Editing enabled for {selectedRole}
+                  Editing enabled for {selectedRole}
                 </span>
               )}
               {!selectedRole && (canUpdate || canDelete) && (
                 <span className="text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
-                  ⓘ Select a role to enable editing
+                  Select a role to enable editing
                 </span>
               )}
             </div>
             <div className="flex gap-3">
-              {/* Only show Bulk Upsert button if user has create or update permission */}
               {(canCreate || canUpdate) && (
                 <button
                   onClick={handleBulkUpsertClick}
@@ -451,7 +507,6 @@ export default function RolePrivilegesPage() {
             onDelete={handleDeleteRequest}
             onUpdate={handleUpdatePrivilege}
             onRefresh={() => loadPrivileges(selectedRole)}
-            // Pass permissions to the table
             canUpdate={canUpdate}
             canDelete={canDelete}
           />
@@ -491,7 +546,7 @@ export default function RolePrivilegesPage() {
               onCancel={() => {
                 setShowDeleteModal(false);
                 setDeletingPrivilege(null);
-                toast("Delete canceled", { icon: "ℹ️" });
+                toast("Delete operation canceled. No changes were made.", { duration: 3000 });
               }}
               isDeleting={isDeleting}
             />
@@ -503,7 +558,7 @@ export default function RolePrivilegesPage() {
               onSubmit={handleBulkUpsert}
               onCancel={() => {
                 setShowBulkUpsertModal(false);
-                toast("Bulk upsert canceled", { icon: "ℹ️" });
+                toast("Bulk upsert operation canceled. No changes were made.", { duration: 3000 });
               }}
               isSubmitting={isSubmitting}
             />

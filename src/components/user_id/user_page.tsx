@@ -21,10 +21,8 @@ import { Role } from "@/lib/types/roles";
 import { rolesApi } from "@/lib/roles";
 
 export default function UsersPage() {
-  // Get permission checker from UserContext
   const { canPerformAction } = useUser();
   
-  // Check permissions for different actions
   const canCreate = canPerformAction("Users", "create");
   const canUpdate = canPerformAction("Users", "update");
   const canDelete = canPerformAction("Users", "delete");
@@ -45,16 +43,19 @@ export default function UsersPage() {
   const loadRoles = async () => {
     try {
       const data = await rolesApi.getAll();
-      // Filter only active roles
       const activeRoles = data.filter(role => role.status === "active");
       setRoles(activeRoles);
     } catch (err: unknown) {
       console.error("Failed to load roles:", err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred while loading roles.";
-      toast.error("Failed to load roles: " + message);
+      
+      const errorMessage = err instanceof Error
+        ? err.message
+        : "Unable to load roles. Please refresh the page or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: "top-center",
+      });
     }
   };
 
@@ -63,13 +64,22 @@ export default function UsersPage() {
       setLoading(true);
       const data = await userApi.getAll();
       setUsers(data);
+      
+      // Only show success on initial load
+      if (initialLoading) {
+        toast.success(`Successfully loaded ${data.length} user${data.length !== 1 ? 's' : ''}`);
+      }
     } catch (err: unknown) {
       console.error("Failed to load users:", err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred while loading users.";
-      toast.error("Failed to load users: " + message);
+      
+      const errorMessage = err instanceof Error
+        ? err.message
+        : "Unable to load users. Please refresh the page or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: "top-center",
+      });
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -92,7 +102,6 @@ export default function UsersPage() {
   });
 
   const handleFormSubmit = async (data: CreateUserInput | UpdateUserInput) => {
-    // Check permissions before submitting
     if (editingUser && !canUpdate) {
       toast.error("You don't have permission to update users");
       return;
@@ -103,19 +112,25 @@ export default function UsersPage() {
     }
 
     setIsSubmitting(true);
+    const isCreating = !editingUser;
+    const userName = editingUser?.name || data.name || data.email;
     const loadingToast = toast.loading(
-      editingUser ? "Updating user..." : "Creating user..."
+      isCreating ? "Creating user..." : `Updating '${userName}'...`
     );
 
     try {
       if (editingUser) {
-        await userApi.update(editingUser.id, data as UpdateUserInput);
+        const updated = await userApi.update(editingUser.id, data as UpdateUserInput);
         toast.dismiss(loadingToast);
-        toast.success("User updated successfully!");
+        toast.success(`User '${updated.name || updated.email}' updated successfully!`, {
+          duration: 4000,
+        });
       } else {
-        await userApi.create(data as CreateUserInput);
+        const created = await userApi.create(data as CreateUserInput);
         toast.dismiss(loadingToast);
-        toast.success("User created successfully!");
+        toast.success(`User '${created.name || created.email}' created successfully!`, {
+          duration: 4000,
+        });
       }
 
       setShowForm(false);
@@ -124,28 +139,31 @@ export default function UsersPage() {
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Form submission failed:", err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred while saving the user.";
-      toast.error("Failed to save user: " + message);
+      
+      const errorMessage = err instanceof Error
+        ? err.message
+        : "Unable to save user. Please check your input and try again.";
+      
+      toast.error(errorMessage, {
+        duration: 6000,
+        position: "top-center",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleEdit = (user: User) => {
-    // Check permission before editing
     if (!canUpdate) {
       toast.error("You don't have permission to update users");
       return;
     }
     setEditingUser(user);
     setShowForm(true);
+    toast(`Editing '${user.name || user.email}'`, { icon: "✏️" });
   };
 
   const handleDeleteRequest = (user: User) => {
-    // Check permission before opening delete modal
     if (!canDelete) {
       toast.error("You don't have permission to delete users");
       return;
@@ -157,30 +175,36 @@ export default function UsersPage() {
   const confirmDelete = async () => {
     if (!deletingUser) return;
 
-    // Double-check permission before deleting
     if (!canDelete) {
       toast.error("You don't have permission to delete users");
       return;
     }
 
     setIsDeleting(true);
-    const loadingToast = toast.loading("Deleting user...");
+    const userName = deletingUser.name || deletingUser.email;
+    const loadingToast = toast.loading(`Deleting '${userName}'...`);
 
     try {
       await userApi.delete(deletingUser.id);
       toast.dismiss(loadingToast);
-      toast.success("User deleted successfully!");
+      toast.success(`User '${userName}' deleted successfully!`, {
+        duration: 4000,
+      });
       setShowDeleteModal(false);
       setDeletingUser(null);
       await loadUsers();
     } catch (err: unknown) {
       toast.dismiss(loadingToast);
       console.error("Delete failed:", err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred while deleting the user.";
-      toast.error("Failed to delete user: " + message);
+      
+      const errorMessage = err instanceof Error
+        ? err.message
+        : "Unable to delete user. Please try again or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 6000,
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -193,7 +217,6 @@ export default function UsersPage() {
   };
 
   const handleAdd = () => {
-    // Check permission before adding
     if (!canCreate) {
       toast.error("You don't have permission to create users");
       return;
@@ -204,38 +227,49 @@ export default function UsersPage() {
 
   const handleExport = () => {
     if (filteredUsers.length === 0) {
-      toast.error("No users to export!");
+      toast("No users to export", { icon: "⚠️" });
       return;
     }
 
-    const dataToExport = filteredUsers.map((u) => ({
-      Name: u.name || "",
-      Email: u.email || "",
-      Phone: u.phone || "",
-      Roles: u.roles && u.roles.length > 0 ? u.roles.join(", ") : "—",
-      CreatedAt: u.created_at
-        ? new Date(u.created_at).toLocaleString()
-        : "",
-      UpdatedAt: u.updated_at
-        ? new Date(u.updated_at).toLocaleString()
-        : "",
-    }));
+    try {
+      const dataToExport = filteredUsers.map((u) => ({
+        Name: u.name || "",
+        Email: u.email || "",
+        Phone: u.phone || "",
+        Roles: u.roles && u.roles.length > 0 ? u.roles.join(", ") : "—",
+        CreatedAt: u.created_at
+          ? new Date(u.created_at).toLocaleString()
+          : "",
+        UpdatedAt: u.updated_at
+          ? new Date(u.updated_at).toLocaleString()
+          : "",
+      }));
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
 
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
-    });
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
 
-    const blob = new Blob([excelBuffer], {
-      type: "application/octet-stream",
-    });
+      const blob = new Blob([excelBuffer], {
+        type: "application/octet-stream",
+      });
 
-    saveAs(blob, `users_export_${new Date().toISOString()}.xlsx`);
-    toast.success("Spreadsheet exported successfully!");
+      const fileName = `users_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(blob, fileName);
+      
+      toast.success(
+        `Successfully exported ${filteredUsers.length} user${filteredUsers.length !== 1 ? 's' : ''} to ${fileName}`
+      );
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Failed to export users. Please try again or contact support.", {
+        duration: 4000,
+      });
+    }
   };
 
   if (initialLoading) {
@@ -286,11 +320,12 @@ export default function UsersPage() {
             <div className="mt-4 flex justify-start">
               <button
                 onClick={handleExport}
-                className="bg-[#3D4C63] hover:bg-[#495C79] text-white font-medium py-2 px-4 rounded-sm shadow-sm transition-all"
+                disabled={filteredUsers.length === 0}
+                className="bg-[#3D4C63] hover:bg-[#495C79] text-white font-medium py-2 px-4 rounded-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="flex gap-2">
                   <Download className="w-5 h-5" />
-                  Export
+                  Export {filteredUsers.length > 0 && `(${filteredUsers.length})`}
                 </span>
               </button>
             </div>

@@ -1,43 +1,36 @@
-export type ClassTeacherRole =
-  | "class_teacher"
-  | "assistant_teacher"
-  | "subject_teacher"; 
+// lib/types/class_teacher.ts
 
-export type ClassTeacherStatus = "active" | "inactive" | "archived"; 
+// Updated to match API documentation - role is "CLASS_TEACHER" in uppercase
+export type ClassTeacherRole = "CLASS_TEACHER";
+
+export type ClassTeacherStatus = "active" | "inactive" | "archived";
 
 export interface ClassTeacher {
   id: string;
   class_id: string;
-  teacher_id?: string; 
+  teacher_id?: string;
+  name: string;
   email: string;
-  name: string; 
   role: ClassTeacherRole;
   status: ClassTeacherStatus;
-  assigned_at: string;
-  unassigned_at?: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
+  assigned_at?: string;
+  unassigned_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateClassTeacherInput {
   class_id: string;
+  name: string;
   email: string;
-  name: string; 
-  role?: ClassTeacherRole;
-  status?: ClassTeacherStatus;
-  assigned_at?: string;
-  unassigned_at?: string;
-  created_by: string;
+  role: ClassTeacherRole;
+  status: ClassTeacherStatus;
 }
 
 export interface UpdateClassTeacherInput {
   class_id?: string;
-  email?: string;
   name?: string;
+  email?: string;
   role?: ClassTeacherRole;
   status?: ClassTeacherStatus;
-  assigned_at?: string;
-  unassigned_at?: string;
-  created_by?: string;
 }

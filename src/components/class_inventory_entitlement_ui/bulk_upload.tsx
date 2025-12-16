@@ -58,8 +58,7 @@ export default function BulkUploadForm({
   const isDataMissing =
     classes.length === 0 ||
     inventoryItems.length === 0 ||
-    sessionTerms.length === 0 ||
-    users.length === 0;
+    sessionTerms.length === 0;
 
   function createEmptyRow(): EntitlementRow {
     return {
@@ -69,7 +68,6 @@ export default function BulkUploadForm({
       session_term_id: "",
       quantity: 0,
       notes: "",
-      created_by: "",
     };
   }
 
@@ -79,7 +77,7 @@ export default function BulkUploadForm({
 
   const removeRow = (_tempId: string) => {
     if (rows.length === 1) {
-      setError("You must have at least one row.");
+      toast.error("You must have at least one row to submit.");
       return;
     }
     setRows(rows.filter((r) => r.tempId !== _tempId));
@@ -105,7 +103,7 @@ export default function BulkUploadForm({
 
     if (isDataMissing) {
       setError(
-        "Cannot submit: Dropdown options failed to load. Please refresh."
+        "Cannot submit: Required dropdown options failed to load. Please refresh the page and try again."
       );
       return;
     }
@@ -117,33 +115,32 @@ export default function BulkUploadForm({
     >();
 
     rows.forEach((row, i) => {
+      // Validate required fields (removed created_by check)
       if (
         !row.class_id ||
         !row.inventory_item_id ||
         !row.session_term_id ||
-        !row.created_by ||
         row.quantity < 0
       ) {
         invalidRows.push(i + 1);
         return;
       }
 
+      // Create unique key for consolidation
       const key = `${row.class_id}-${row.inventory_item_id}-${row.session_term_id}`;
       const { tempId, ...cleanRow } = row;
 
       const existing = consolidatedMap.get(key);
       if (existing) {
+        // Consolidate duplicate entries by adding quantities
         const newQuantity = existing.quantity + cleanRow.quantity;
         consolidatedMap.set(key, {
           ...existing,
           quantity: newQuantity,
-          notes: cleanRow.notes,
-          created_by: cleanRow.created_by,
+          notes: cleanRow.notes || existing.notes, // Keep the latest non-empty note
         });
-        toast.error(
-          `Consolidating duplicate entry for row ${
-            i + 1
-          }. Quantity is now ${newQuantity}.`,
+        toast(
+          `Row ${i + 1}: Duplicate entry detected. Quantities consolidated to ${newQuantity}.`,
           { duration: 5000, icon: "🔄" }
         );
       } else {
@@ -153,16 +150,24 @@ export default function BulkUploadForm({
 
     if (invalidRows.length > 0) {
       setError(
-        `Please fill all required fields for row(s): ${invalidRows.join(", ")}`
+        `Please fill all required fields (Class, Inventory Item, Session Term, and Quantity) for row(s): ${invalidRows.join(", ")}`
       );
       return;
     }
 
     const finalData = Array.from(consolidatedMap.values());
 
-    if (finalData.length === 0 && rows.length > 0) {
-      setError("The final list of entitlements is empty.");
+    if (finalData.length === 0) {
+      setError("No valid entitlements to submit. Please check your data and try again.");
       return;
+    }
+
+    // Show info if consolidation happened
+    if (finalData.length < rows.length) {
+      toast.success(
+        `Consolidated ${rows.length} rows into ${finalData.length} unique entitlements.`,
+        { duration: 4000 }
+      );
     }
 
     await onSubmit(finalData);
@@ -177,15 +182,20 @@ export default function BulkUploadForm({
         className="bg-white rounded-lg max-w-6xl w-full p-6 my-8"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-semibold text-[#171D26]">
-            Bulk Create Entitlements
-          </h2>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-[#171D26]">
+              Bulk Create Entitlements
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Add multiple entitlements at once. Duplicate entries will be automatically consolidated.
+            </p>
+          </div>
           <button
             type="button"
             onClick={addRow}
             disabled={isSubmitting || isDataMissing}
-            className="flex items-center gap-2 text-[#171D26] transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors disabled:opacity-50"
           >
             <Plus size={16} /> Add Row
           </button>
@@ -199,7 +209,7 @@ export default function BulkUploadForm({
             />
             <p className="text-sm text-red-800">
               {isDataMissing
-                ? "⚠️ Data Warning: Dropdown options failed to load. Cannot submit."
+                ? "⚠️ Cannot load form data. Please refresh the page to try again."
                 : error}
             </p>
           </div>
@@ -213,34 +223,29 @@ export default function BulkUploadForm({
                   <thead className="bg-gray-50">
                     <tr>
                       {[
-                        "Class",
-                        "Inventory Item",
-                        "Session Term",
-                        "Quantity",
-                        "Notes",
-                        "Action",
+                        { label: "Class", required: true },
+                        { label: "Inventory Item", required: true },
+                        { label: "Session Term", required: true },
+                        { label: "Quantity", required: true },
+                        { label: "Notes", required: false },
+                        { label: "Action", required: false },
                       ].map((header) => (
                         <th
-                          key={header}
+                          key={header.label}
                           className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          {header}
-                          {[
-                            "Class",
-                            "Inventory Item",
-                            "Session Term",
-                            "Quantity",
-                            "Created By",
-                          ].includes(header) && (
-                            <span className="text-red-500">*</span>
+                          {header.label}
+                          {header.required && (
+                            <span className="text-red-500 ml-1">*</span>
                           )}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {rows.map((row) => (
+                    {rows.map((row, index) => (
                       <tr key={row.tempId} className="hover:bg-gray-50">
+                        {/* Class */}
                         <td className="px-3 py-2">
                           <select
                             value={row.class_id}
@@ -249,6 +254,7 @@ export default function BulkUploadForm({
                             }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting || isDataMissing}
+                            title={`Select class for row ${index + 1}`}
                           >
                             <option value="">Select Class</option>
                             {classes.map((c) => (
@@ -258,6 +264,8 @@ export default function BulkUploadForm({
                             ))}
                           </select>
                         </td>
+
+                        {/* Inventory Item */}
                         <td className="px-3 py-2">
                           <select
                             value={row.inventory_item_id}
@@ -270,6 +278,7 @@ export default function BulkUploadForm({
                             }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting || isDataMissing}
+                            title={`Select inventory item for row ${index + 1}`}
                           >
                             <option value="">Select Item</option>
                             {inventoryItems.map((item) => (
@@ -279,6 +288,8 @@ export default function BulkUploadForm({
                             ))}
                           </select>
                         </td>
+
+                        {/* Session Term */}
                         <td className="px-3 py-2">
                           <select
                             value={row.session_term_id}
@@ -291,6 +302,7 @@ export default function BulkUploadForm({
                             }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting || isDataMissing}
+                            title={`Select session term for row ${index + 1}`}
                           >
                             <option value="">Select Term</option>
                             {sessionTerms.map((term) => (
@@ -300,6 +312,8 @@ export default function BulkUploadForm({
                             ))}
                           </select>
                         </td>
+
+                        {/* Quantity */}
                         <td className="px-3 py-2">
                           <input
                             type="number"
@@ -316,8 +330,12 @@ export default function BulkUploadForm({
                             }
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             disabled={isSubmitting}
+                            placeholder="0"
+                            title={`Enter quantity for row ${index + 1}`}
                           />
                         </td>
+
+                        {/* Notes */}
                         <td className="px-3 py-2">
                           <input
                             type="text"
@@ -328,36 +346,18 @@ export default function BulkUploadForm({
                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                             placeholder="Optional notes"
                             disabled={isSubmitting}
+                            title={`Add notes for row ${index + 1}`}
                           />
                         </td>
-                        <td className="px-3 py-2">
-                          <select
-                            value={row.created_by}
-                            onChange={(e) =>
-                              updateRow(
-                                row.tempId,
-                                "created_by",
-                                e.target.value
-                              )
-                            }
-                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-                            disabled={isSubmitting || isDataMissing}
-                          >
-                            <option value="">Select User</option>
-                            {users.map((user) => (
-                              <option key={user.id} value={user.id}>
-                                {user.name || user.email || user.id}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
+
+                        {/* Action */}
                         <td className="px-3 py-2 text-center">
                           <button
                             type="button"
                             onClick={() => removeRow(row.tempId)}
                             disabled={isSubmitting || rows.length === 1}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-30"
-                            title="Remove row"
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={rows.length === 1 ? "Cannot remove the last row" : "Remove this row"}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -372,31 +372,29 @@ export default function BulkUploadForm({
 
           <div className="flex items-center justify-between pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              Total rows: <span className="font-semibold">{rows.length}</span>
+              Total rows: <span className="font-semibold text-[#3D4C63]">{rows.length}</span>
             </p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={onCancel}
                 disabled={isSubmitting}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
+                className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || isDataMissing}
-                className="px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-5 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Saving {rows.length}...
+                    Creating {rows.length}...
                   </>
                 ) : (
-                  `Create ${rows.length} Entitlement${
-                    rows.length > 1 ? "s" : ""
-                  }`
+                  `Create ${rows.length} Entitlement${rows.length > 1 ? "s" : ""}`
                 )}
               </button>
             </div>

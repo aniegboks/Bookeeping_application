@@ -25,17 +25,24 @@ interface Category {
   updated_at: string;
 }
 
-// Helper to extract error messages
+// Enhanced error message extractor
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
+  if (error instanceof Error) {
+    // Return the error message directly (already user-friendly from API layer)
+    return error.message;
+  }
+  
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  // Fallback for unknown error types
+  return "An unexpected error occurred. Please try again.";
 }
 
 export default function CategoriesManagement() {
-  // Get permission checker from UserContext
   const { canPerformAction } = useUser();
   
-  // Check permissions for different actions
   const canCreate = canPerformAction("Categories", "create");
   const canUpdate = canPerformAction("Categories", "update");
   const canDelete = canPerformAction("Categories", "delete");
@@ -52,9 +59,10 @@ export default function CategoriesManagement() {
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const openDeleteModal = (id: string, name: string) => {
-    // Check permission before opening modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete categories");
+      toast.error("You don't have permission to delete categories", {
+        duration: 4000,
+      });
       return;
     }
     setDeleteTarget({ id, name } as Category);
@@ -63,7 +71,6 @@ export default function CategoriesManagement() {
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     
-    // Double-check permission before deleting
     if (!canDelete) {
       toast.error("You don't have permission to delete categories");
       return;
@@ -72,9 +79,17 @@ export default function CategoriesManagement() {
     try {
       await deleteCategory(deleteTarget.id);
       setCategories(categories.filter((c) => c.id !== deleteTarget.id));
-      toast.success(`${deleteTarget.name} deleted successfully`);
+      toast.success(`Category "${deleteTarget.name}" deleted successfully!`, {
+        duration: 3000,
+        position: 'top-center',
+      });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 5000,
+        position: 'top-center',
+      });
+      console.error('Failed to delete category:', error);
     } finally {
       setDeleteTarget(null);
     }
@@ -92,7 +107,12 @@ export default function CategoriesManagement() {
       const data = await fetchCategories();
       setCategories(data);
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 5000,
+        position: 'top-center',
+      });
+      console.error('Failed to fetch categories:', error);
     } finally {
       setLoading(false);
     }
@@ -103,35 +123,96 @@ export default function CategoriesManagement() {
   }, []);
 
   const handleCreate = async () => {
-    if (!formData.name.trim()) return toast.error("Category name is required");
+    // Client-side validation
+    const trimmedName = formData.name.trim();
     
-    // Double-check permission before creating
+    if (!trimmedName) {
+      toast.error("Category name is required and cannot be empty");
+      return;
+    }
+    
+    if (trimmedName.length < 2) {
+      toast.error("Category name must be at least 2 characters long");
+      return;
+    }
+    
+    if (trimmedName.length > 100) {
+      toast.error("Category name cannot exceed 100 characters");
+      return;
+    }
+    
     if (!canCreate) {
       toast.error("You don't have permission to create categories");
       return;
     }
 
+    // Check for duplicate names (case-insensitive)
+    const isDuplicate = categories.some(
+      c => c.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    
+    if (isDuplicate) {
+      toast.error(`A category named "${trimmedName}" already exists. Please use a different name.`);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      const newCategory = await createCategory(formData.name.trim());
+      const newCategory = await createCategory(trimmedName);
       setCategories([...categories, newCategory]);
       setShowModal(false);
       resetForm();
-      toast.success("Category created successfully!");
+      toast.success(`Category "${newCategory.name}" created successfully!`, {
+        duration: 3000,
+        position: 'top-center',
+      });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 5000,
+        position: 'top-center',
+      });
+      console.error('Failed to create category:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleUpdate = async () => {
-    if (!editingCategory || !formData.name.trim())
-      return toast.error("Category name is required");
+    if (!editingCategory) return;
     
-    // Double-check permission before updating
+    // Client-side validation
+    const trimmedName = formData.name.trim();
+    
+    if (!trimmedName) {
+      toast.error("Category name is required and cannot be empty");
+      return;
+    }
+    
+    if (trimmedName.length < 2) {
+      toast.error("Category name must be at least 2 characters long");
+      return;
+    }
+    
+    if (trimmedName.length > 100) {
+      toast.error("Category name cannot exceed 100 characters");
+      return;
+    }
+    
     if (!canUpdate) {
       toast.error("You don't have permission to update categories");
+      return;
+    }
+
+    // Check for duplicate names (case-insensitive, excluding current category)
+    const isDuplicate = categories.some(
+      c => 
+        c.name.toLowerCase() === trimmedName.toLowerCase() && 
+        c.id !== editingCategory.id
+    );
+    
+    if (isDuplicate) {
+      toast.error(`A category named "${trimmedName}" already exists. Please use a different name.`);
       return;
     }
 
@@ -139,7 +220,7 @@ export default function CategoriesManagement() {
       setIsSubmitting(true);
       const updatedCategory = await updateCategory(
         editingCategory.id,
-        formData.name.trim()
+        trimmedName
       );
       setCategories(
         categories.map((c) =>
@@ -149,18 +230,27 @@ export default function CategoriesManagement() {
       setShowModal(false);
       setEditingCategory(null);
       resetForm();
-      toast.success("Category updated successfully!");
+      toast.success(`Category "${updatedCategory.name}" updated successfully!`, {
+        duration: 3000,
+        position: 'top-center',
+      });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 5000,
+        position: 'top-center',
+      });
+      console.error('Failed to update category:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const openEditModal = (category: Category) => {
-    // Check permission before opening modal
     if (!canUpdate) {
-      toast.error("You don't have permission to update categories");
+      toast.error("You don't have permission to update categories", {
+        duration: 4000,
+      });
       return;
     }
     setEditingCategory(category);
@@ -169,9 +259,10 @@ export default function CategoriesManagement() {
   };
 
   const openCreateModal = () => {
-    // Check permission before opening modal
     if (!canCreate) {
-      toast.error("You don't have permission to create categories");
+      toast.error("You don't have permission to create categories", {
+        duration: 4000,
+      });
       return;
     }
     setEditingCategory(null);
@@ -180,31 +271,46 @@ export default function CategoriesManagement() {
   };
 
   const exportCategoriesToExcel = () => {
-    if (categories.length === 0)
-      return toast.error("No categories to export");
+    try {
+      if (categories.length === 0) {
+        toast.error("No categories available to export");
+        return;
+      }
 
-    const worksheet = XLSX.utils.json_to_sheet(
-      categories.map((c) => ({
-        ID: c.id,
-        Name: c.name,
-        "Created At": formatDate(c.created_at),
-        "Updated At": formatDate(c.updated_at),
-      }))
-    );
+      const worksheet = XLSX.utils.json_to_sheet(
+        categories.map((c) => ({
+          ID: c.id,
+          Name: c.name,
+          "Created At": formatDate(c.created_at),
+          "Updated At": formatDate(c.updated_at),
+        }))
+      );
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Categories");
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Categories");
 
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
-    });
-    const data = new Blob([excelBuffer], {
-      type: "application/octet-stream",
-    });
-    saveAs(data, "categories.xlsx");
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+      
+      const data = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      
+      const fileName = `categories_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(data, fileName);
 
-    toast.success("Categories exported successfully!");
+      toast.success(`Exported ${categories.length} categor${categories.length === 1 ? 'y' : 'ies'} successfully!`, {
+        duration: 3000,
+        position: 'top-center',
+      });
+    } catch (error) {
+      toast.error("Failed to export categories. Please try again.", {
+        duration: 4000,
+      });
+      console.error('Export error:', error);
+    }
   };
 
   const formatDate = (date: string) =>
@@ -243,7 +349,7 @@ export default function CategoriesManagement() {
                     ? "No categories found"
                     : "No categories yet"}
                 </p>
-                {canCreate && (
+                {canCreate && !searchTerm && (
                   <button
                     onClick={openCreateModal}
                     className="mt-6 bg-[#3D4C63] text-white px-4 py-2 rounded-lg hover:bg-[#495C79] transition-colors"
@@ -279,10 +385,13 @@ export default function CategoriesManagement() {
           <div className="flex gap-2 mt-4">
             <button
               onClick={exportCategoriesToExcel}
-              className="flex text-sm items-center gap-2 bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-sm transition-colors"
+              disabled={categories.length === 0}
+              className={`flex text-sm items-center gap-2 bg-[#3D4C63] hover:bg-[#495C79] text-white px-4 py-2 rounded-sm transition-colors ${
+                categories.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <Download className="w-5 h-5" />
-              Export
+              Export to Excel
             </button>
           </div>
         </Container>

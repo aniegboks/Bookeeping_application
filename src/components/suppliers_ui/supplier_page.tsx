@@ -22,10 +22,8 @@ import { saveAs } from "file-saver";
 type SupplierPayload = Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'created_by'>;
 
 export default function SuppliersDashboard() {
-  // Get permission checker from UserContext
   const { canPerformAction } = useUser();
   
-  // Check permissions for different actions
   const canCreate = canPerformAction("Suppliers", "create");
   const canUpdate = canPerformAction("Suppliers", "update");
   const canDelete = canPerformAction("Suppliers", "delete");
@@ -48,10 +46,22 @@ export default function SuppliersDashboard() {
     try {
       const data = await supplierApi.getAll();
       setSuppliers(data);
-      toast.success('Suppliers loaded successfully');
+      
+      // Only show success on initial load
+      if (loading) {
+        toast.success(`Successfully loaded ${data.length} supplier${data.length !== 1 ? 's' : ''}`);
+      }
     } catch (err) {
       console.error('Error fetching suppliers:', err);
-      toast.error('Failed to fetch suppliers');
+      
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Unable to load suppliers. Please refresh the page or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: "top-center",
+      });
     } finally {
       setLoading(false);
     }
@@ -63,7 +73,6 @@ export default function SuppliersDashboard() {
 
   // --- Delete ---
   const handleDelete = (id: string, name?: string) => {
-    // Check permission before opening delete modal
     if (!canDelete) {
       toast.error("You don't have permission to delete suppliers");
       return;
@@ -76,21 +85,36 @@ export default function SuppliersDashboard() {
   const confirmDelete = async () => {
     if (!deletingId) return;
     
-    // Double-check permission before deleting
     if (!canDelete) {
       toast.error("You don't have permission to delete suppliers");
       return;
     }
 
     setIsDeleting(true);
+    const supplierName = selectedSupplierName || "supplier";
+    const loadingToast = toast.loading(`Deleting '${supplierName}'...`);
+
     try {
       await supplierApi.delete(deletingId);
       setSuppliers((prev) => prev.filter((s) => s.id !== deletingId));
       setShowDeleteModal(false);
-      toast.success(`Supplier "${selectedSupplierName}" deleted successfully`);
+      
+      toast.dismiss(loadingToast);
+      toast.success(`Supplier '${supplierName}' deleted successfully`, {
+        duration: 4000,
+      });
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete supplier');
+      toast.dismiss(loadingToast);
+      console.error("Delete failed:", err);
+      
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Unable to delete supplier. Please try again or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 6000,
+        position: "top-center",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -98,17 +122,16 @@ export default function SuppliersDashboard() {
 
   // --- Edit & Add ---
   const handleEdit = (supplier: Supplier) => {
-    // Check permission before opening edit modal
     if (!canUpdate) {
       toast.error("You don't have permission to update suppliers");
       return;
     }
     setSelectedSupplier(supplier);
     setShowEditModal(true);
+    toast(`Editing '${supplier.name}'`, { icon: "✏️" });
   };
 
   const handleAddClick = () => {
-    // Check permission before opening add modal
     if (!canCreate) {
       toast.error("You don't have permission to create suppliers");
       return;
@@ -123,33 +146,82 @@ export default function SuppliersDashboard() {
   };
 
   const handleSupplierSubmit = async (data: SupplierPayload) => {
+    const isCreating = showAddModal;
+    const loadingToast = toast.loading(
+      isCreating ? "Creating supplier..." : `Updating '${selectedSupplier?.name}'...`
+    );
+
     try {
-      if (showAddModal) {
-        // Double-check permission before creating
+      if (isCreating) {
         if (!canCreate) {
+          toast.dismiss(loadingToast);
           toast.error("You don't have permission to create suppliers");
           return;
         }
-        await supplierApi.create(data);
-        toast.success('Supplier created successfully');
+        const created = await supplierApi.create(data);
+        
+        toast.dismiss(loadingToast);
+        toast.success(`Supplier '${created.name}' created successfully`, {
+          duration: 4000,
+        });
       } else if (selectedSupplier) {
-        // Double-check permission before updating
         if (!canUpdate) {
+          toast.dismiss(loadingToast);
           toast.error("You don't have permission to update suppliers");
           return;
         }
-        await supplierApi.update(selectedSupplier.id, data);
-        toast.success(`Supplier "${selectedSupplier.name}" updated successfully`);
+        const updated = await supplierApi.update(selectedSupplier.id, data);
+        
+        toast.dismiss(loadingToast);
+        toast.success(`Supplier '${updated.name}' updated successfully`, {
+          duration: 4000,
+        });
       }
-      fetchSuppliers();
+      
+      await fetchSuppliers();
+      handleModalClose();
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to save supplier');
+      toast.dismiss(loadingToast);
+      console.error("Form submission failed:", err);
+      
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Unable to save supplier. Please check your input and try again.";
+      
+      toast.error(errorMessage, {
+        duration: 6000,
+        position: "top-center",
+      });
     }
   };
 
   // --- Export ALL filtered suppliers with balances ---
   const handleExport = async () => {
+    const filteredSuppliers = suppliers.filter((s) => {
+      const matchesSearch =
+        !searchTerm ||
+        searchTerm.trim() === '' ||
+        (s.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (s.contact_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (s.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (s.city?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
+      const matchesCountry =
+        !filterCountry ||
+        filterCountry === 'all' ||
+        filterCountry.trim() === '' ||
+        s.country === filterCountry;
+
+      return matchesSearch && matchesCountry;
+    });
+
+    if (filteredSuppliers.length === 0) {
+      toast("No suppliers to export", { icon: "⚠️" });
+      return;
+    }
+
+    const loadingToast = toast.loading("Preparing export...");
+
     try {
       // Fetch balances for export
       const balancesResponse = await fetch('/api/proxy/suppliers/balances');
@@ -160,25 +232,10 @@ export default function SuppliersDashboard() {
         balanceData.forEach((b: { supplier_id: string; balance: number }) => {
           balances[b.supplier_id] = b.balance;
         });
+      } else {
+        // If balances fail, continue without them
+        console.warn("Could not load supplier balances for export");
       }
-
-      const filteredSuppliers = suppliers.filter((s) => {
-        const matchesSearch =
-          !searchTerm ||
-          searchTerm.trim() === '' ||
-          (s.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-          (s.contact_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-          (s.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-          (s.city?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-
-        const matchesCountry =
-          !filterCountry ||
-          filterCountry === 'all' ||
-          filterCountry.trim() === '' ||
-          s.country === filterCountry;
-
-        return matchesSearch && matchesCountry;
-      });
 
       const exportData = filteredSuppliers.map((s) => ({
         Name: s.name,
@@ -200,11 +257,25 @@ export default function SuppliersDashboard() {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Suppliers');
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-      saveAs(blob, `suppliers_export_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.success(`Exported ${filteredSuppliers.length} suppliers successfully!`);
+      
+      const fileName = `suppliers_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(blob, fileName);
+      
+      toast.dismiss(loadingToast);
+      toast.success(
+        `Successfully exported ${filteredSuppliers.length} supplier${filteredSuppliers.length !== 1 ? 's' : ''} to ${fileName}`
+      );
     } catch (error) {
+      toast.dismiss(loadingToast);
       console.error('Export error:', error);
-      toast.error('Failed to export suppliers');
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Failed to export suppliers. Please try again or contact support.";
+      
+      toast.error(errorMessage, {
+        duration: 4000,
+      });
     }
   };
 
@@ -239,16 +310,16 @@ export default function SuppliersDashboard() {
           <div className="flex justify-start mt-4">
             <button
               onClick={handleExport}
-              className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition-all"
+              disabled={suppliers.length === 0}
+              className="px-4 py-2 bg-[#3D4C63] hover:bg-[#495C79] text-white rounded-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className='flex gap-2'>
                 <Download className='h-5 w-5' />
-                Export All
+                Export {suppliers.length > 0 && `(${suppliers.length})`}
               </span>
             </button>
           </div>
 
-          {/* Only show modals if user has appropriate permissions */}
           {(showAddModal || showEditModal) && (canCreate || canUpdate) && (
             <SupplierModal
               supplier={selectedSupplier}
@@ -264,7 +335,12 @@ export default function SuppliersDashboard() {
               supplierId={deletingId}
               supplierName={selectedSupplierName || ''}
               onConfirm={confirmDelete}
-              onCancel={() => setShowDeleteModal(false)}
+              onCancel={() => {
+                setShowDeleteModal(false);
+                setDeletingId(null);
+                setSelectedSupplierName(null);
+                toast("Delete canceled", { icon: "ℹ️" });
+              }}
               isDeleting={isDeleting}
             />
           )}

@@ -24,7 +24,7 @@ export interface CreateInventoryDistributionInput {
   received_by: string;
   receiver_name: string;
   notes?: string;
-  created_by: string;
+  created_by?: string; // Optional - backend will use authenticated user if not provided
 }
 
 export interface UpdateInventoryDistributionInput {

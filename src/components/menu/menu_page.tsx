@@ -53,8 +53,18 @@ export default function MenusManagement() {
       setLoading(true);
       const data = await menusApi.getAll();
       setMenus(data);
+      
+      // Optional: Show success message on initial load
+      if (data.length > 0) {
+        toast.success(`Successfully loaded ${data.length} menu${data.length !== 1 ? 's' : ''}`);
+      }
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error) || "Failed to load menus");
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 5000,
+        icon: '❌',
+      });
+      console.error("Failed to fetch menus:", error);
     } finally {
       setLoading(false);
     }
@@ -69,7 +79,10 @@ export default function MenusManagement() {
   const openCreateModal = () => {
     // Check permission before opening modal
     if (!canCreate) {
-      toast.error("You don't have permission to create menus");
+      toast.error("Access denied: You don't have permission to create menus. Please contact your administrator.", {
+        duration: 4000,
+        icon: '🚫',
+      });
       return;
     }
     setEditingMenu(null);
@@ -80,7 +93,10 @@ export default function MenusManagement() {
   const openEditModal = (menu: Menu) => {
     // Check permission before opening modal
     if (!canUpdate) {
-      toast.error("You don't have permission to update menus");
+      toast.error("Access denied: You don't have permission to update menus. Please contact your administrator.", {
+        duration: 4000,
+        icon: '🚫',
+      });
       return;
     }
     setEditingMenu(menu);
@@ -89,17 +105,45 @@ export default function MenusManagement() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.route.trim() || !formData.caption.trim()) {
-      return toast.error("Route and caption are required");
+    // Client-side validation
+    if (!formData.route.trim()) {
+      toast.error("Validation error: Menu route is required and cannot be empty.", {
+        duration: 4000,
+        icon: '⚠️',
+      });
+      return;
+    }
+    
+    if (!formData.caption.trim()) {
+      toast.error("Validation error: Menu caption is required and cannot be empty.", {
+        duration: 4000,
+        icon: '⚠️',
+      });
+      return;
+    }
+
+    // Check for valid route format (example validation)
+    if (!/^\/[\w\-\/]*$/.test(formData.route.trim())) {
+      toast.error("Validation error: Route must start with '/' and contain only letters, numbers, hyphens, and slashes.", {
+        duration: 5000,
+        icon: '⚠️',
+      });
+      return;
     }
     
     // Double-check permissions before submitting
     if (editingMenu && !canUpdate) {
-      toast.error("You don't have permission to update menus");
+      toast.error("Access denied: You don't have permission to update menus.", {
+        duration: 4000,
+        icon: '🚫',
+      });
       return;
     }
     if (!editingMenu && !canCreate) {
-      toast.error("You don't have permission to create menus");
+      toast.error("Access denied: You don't have permission to create menus.", {
+        duration: 4000,
+        icon: '🚫',
+      });
       return;
     }
 
@@ -112,20 +156,31 @@ export default function MenusManagement() {
           caption: formData.caption.trim(),
         });
         setMenus(menus.map((m) => (m.id === editingMenu.id ? updated : m)));
-        toast.success("Menu updated successfully!");
+        toast.success(`✅ Menu updated successfully! Route "${updated.route}" has been updated with the new caption "${updated.caption}".`, {
+          duration: 4000,
+          icon: '✨',
+        });
       } else {
         const created = await menusApi.create({ 
           route: formData.route.trim(), 
           caption: formData.caption.trim() 
         });
         setMenus([...menus, created]);
-        toast.success("Menu created successfully!");
+        toast.success(`✅ Menu created successfully! New menu "${created.caption}" (${created.route}) has been added to the system.`, {
+          duration: 4000,
+          icon: '🎉',
+        });
       }
       setShowModal(false);
       setEditingMenu(null);
       resetForm();
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 6000,
+        icon: '❌',
+      });
+      console.error(editingMenu ? "Failed to update menu:" : "Failed to create menu:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -135,7 +190,10 @@ export default function MenusManagement() {
   const openDeleteModal = (id: string, route: string) => {
     // Check permission before opening modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete menus");
+      toast.error("Access denied: You don't have permission to delete menus. Please contact your administrator.", {
+        duration: 4000,
+        icon: '🚫',
+      });
       return;
     }
     setMenuToDelete({ id, route });
@@ -148,7 +206,10 @@ export default function MenusManagement() {
     
     // Double-check permission before deleting
     if (!canDelete) {
-      toast.error("You don't have permission to delete menus");
+      toast.error("Access denied: You don't have permission to delete menus.", {
+        duration: 4000,
+        icon: '🚫',
+      });
       return;
     }
     
@@ -156,9 +217,17 @@ export default function MenusManagement() {
     try {
       await menusApi.delete(menuToDelete.id);
       setMenus(menus.filter((m) => m.id !== menuToDelete.id));
-      toast.success("Menu deleted successfully!");
+      toast.success(`✅ Menu deleted successfully! Menu "${menuToDelete.route}" has been permanently removed from the system.`, {
+        duration: 4000,
+        icon: '🗑️',
+      });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error) || "Failed to delete menu");
+      const errorMsg = getErrorMessage(error);
+      toast.error(errorMsg, {
+        duration: 6000,
+        icon: '❌',
+      });
+      console.error("Failed to delete menu:", error);
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -169,28 +238,44 @@ export default function MenusManagement() {
   // Export to Excel
   const exportToExcel = () => {
     if (menus.length === 0) {
-      toast.error("No menus to export");
+      toast.error("Export failed: No menus available to export. Please add some menus first.", {
+        duration: 4000,
+        icon: '📭',
+      });
       return;
     }
 
-    const worksheet = XLSX.utils.json_to_sheet(
-      menus.map((m) => ({
-        ID: m.id,
-        Route: m.route,
-        Caption: m.caption,
-        "Created At": m.created_at,
-        "Updated At": m.updated_at,
-      }))
-    );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Menus");
+    try {
+      const worksheet = XLSX.utils.json_to_sheet(
+        menus.map((m) => ({
+          ID: m.id,
+          Route: m.route,
+          Caption: m.caption,
+          "Created At": m.created_at,
+          "Updated At": m.updated_at,
+        }))
+      );
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Menus");
 
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
-    });
-    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(data, "menus.xlsx");
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+      const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+      saveAs(data, `menus_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast.success(`✅ Export successful! ${menus.length} menu${menus.length !== 1 ? 's' : ''} exported to Excel file.`, {
+        duration: 4000,
+        icon: '📊',
+      });
+    } catch (error) {
+      toast.error("Export failed: Unable to generate Excel file. Please try again or contact support.", {
+        duration: 5000,
+        icon: '❌',
+      });
+      console.error("Failed to export to Excel:", error);
+    }
   };
 
   if (loading) return <LoadingSpinner />;
@@ -200,7 +285,6 @@ export default function MenusManagement() {
       <Container>
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
         </div>
-
 
         <MenusTable
           menus={filteredMenus}

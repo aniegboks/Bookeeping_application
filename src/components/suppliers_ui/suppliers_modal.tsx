@@ -102,9 +102,9 @@ export default function SupplierModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-sm shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-slate-50 to-white">
+        <div className="p-6 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-slate-50 to-white rounded-sm">
           <h2 className="text-2xl font-bold text-slate-900">
             {mode === "add" ? "Add New Supplier" : "Edit Supplier"}
           </h2>

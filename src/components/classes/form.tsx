@@ -55,7 +55,7 @@ export default function ClassForm({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full p-6">
+      <div className="bg-white rounded-sm max-w-2xl w-full p-6">
         <h3 className="text-lg font-semibold text-[#171D26] mb-4 py-4">
           {schoolClass ? "Edit Class" : "Create New Class"}
         </h3>

@@ -11,7 +11,7 @@ import { use } from "react";
 import { supplierTransactionsApi } from "@/lib/supplier_transaction";
 import { supplierApi } from "@/lib/suppliers";
 import { inventoryTransactionApi } from "@/lib/inventory_transactions";
-import { inventoryItemApi } from "@/lib/inventory_item"; // Assuming you have this
+import { inventoryItemApi } from "@/lib/inventory_item";
 
 import {
     SupplierTransaction,
@@ -21,7 +21,7 @@ import {
 } from "@/lib/types/supplier_transactions";
 import { Supplier } from "@/lib/types/suppliers";
 import { InventoryTransaction } from "@/lib/types/inventory_transactions";
-import { InventoryItem } from "@/lib/types/inventory_item";// Assuming you have this
+import { InventoryItem } from "@/lib/types/inventory_item";
 
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
@@ -30,7 +30,6 @@ import Controls from "@/components/supplier_transaction/single_control";
 import TransactionTable from "@/components/supplier_transaction/table";
 import TransactionForm from "@/components/supplier_transaction/form";
 import BulkUploadForm from "@/components/supplier_transaction/bulk_upload";
-import DeleteModal from "@/components/supplier_transaction/delete_modal";
 
 interface SupplierTransactionsPageProps {
     params: Promise<{ id: string }>;
@@ -41,8 +40,6 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
 
     const { canPerformAction } = useUser();
     const canCreate = canPerformAction("Supplier Transactions", "create");
-    const canUpdate = canPerformAction("Supplier Transactions", "update");
-    const canDelete = canPerformAction("Supplier Transactions", "delete");
 
     const [supplier, setSupplier] = useState<Supplier | null>(null);
     const [transactions, setTransactions] = useState<SupplierTransaction[]>([]);
@@ -56,13 +53,10 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
     const [initialLoading, setInitialLoading] = useState(true);
     const [loading, setLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     const [showForm, setShowForm] = useState(false);
     const [showBulkForm, setShowBulkForm] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<SupplierTransaction | null>(null);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deletingTransaction, setDeletingTransaction] = useState<SupplierTransaction | null>(null);
 
     const getTransactionStatus = (t: SupplierTransaction) => (t.credit > 0 ? "completed" : "pending");
     const getTransactionType = (t: SupplierTransaction) => (t.credit > 0 ? "payment" : "purchase");
@@ -76,7 +70,7 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
                 supplierApi.getById(supplierId),
                 supplierTransactionsApi.getAll({ supplier_id: supplierId }),
                 inventoryTransactionApi.getAll(),
-                inventoryItemApi.getAll().catch(() => []), // Gracefully handle if items API doesn't exist
+                inventoryItemApi.getAll().catch(() => []),
             ]);
 
             setSupplier(supplierData);
@@ -135,12 +129,12 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
         if (!filteredTransactions.length) return toast.error("No data to export!");
 
         const dataToExport = filteredTransactions.map((t) => {
-            // Find related inventory transactions by reference_no (not supplier_transaction_id)
+            // Find related inventory transactions by reference_no
             const relatedInvTransactions = inventoryTransactions.filter(
                 (inv) => inv.reference_no === t.reference_no
             );
 
-            // Get item names from item_id (not item_name which doesn't exist)
+            // Get item names from item_id
             const itemNames = relatedInvTransactions
                 .map((inv) => {
                     const item = items.find((i) => i.id === inv.item_id);
@@ -261,27 +255,14 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
                         />
                     )}
 
+                    {/* Updated TransactionTable - removed edit/delete props */}
                     <TransactionTable
                         transactions={filteredTransactions}
                         inventoryTransactions={inventoryTransactions}
                         inventoryItem={items}
-                        onEdit={(t) => {
-                            if (canUpdate) {
-                                setEditingTransaction(t);
-                                setShowForm(true);
-                            }
-                        }}
-                        onDelete={(t) => {
-                            if (canDelete) {
-                                setDeletingTransaction(t);
-                                setShowDeleteModal(true);
-                            }
-                        }}
                         loading={loading}
                         suppliers={[supplier!]}
                         onRefresh={loadTransactions}
-                        canUpdate={canUpdate}
-                        canDelete={canDelete}
                     />
 
                     <div className="my-4 flex justify-start">
@@ -292,34 +273,6 @@ export default function SupplierTransactionsPage({ params }: SupplierTransaction
                             <Download className="w-5 h-5" /> Export
                         </button>
                     </div>
-
-                    {showDeleteModal && deletingTransaction && (
-                        <DeleteModal
-                            transactionId={deletingTransaction.id}
-                            transactionReference={deletingTransaction.reference_no || "N/A"}
-                            onConfirm={async () => {
-                                setIsDeleting(true);
-                                try {
-                                    await supplierTransactionsApi.delete(deletingTransaction.id);
-                                    toast.success("Transaction deleted!");
-                                    setShowDeleteModal(false);
-                                    setDeletingTransaction(null);
-                                    await loadTransactions();
-                                } catch (err) {
-                                    console.error(err);
-                                    toast.error("Delete failed");
-                                } finally {
-                                    setIsDeleting(false);
-                                }
-                            }}
-                            onCancel={() => {
-                                setShowDeleteModal(false);
-                                setDeletingTransaction(null);
-                                toast("Delete canceled", { icon: "ℹ️" });
-                            }}
-                            isDeleting={isDeleting}
-                        />
-                    )}
                 </div>
             </Container>
         </div>

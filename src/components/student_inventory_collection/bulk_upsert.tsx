@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Trash2, Users } from "lucide-react";
+import { Plus, Trash2, Users, AlertCircle, CheckCircle } from "lucide-react";
 import { CreateStudentInventoryCollectionInput } from "@/lib/types/student_inventory_collection";
 import { Student } from "@/lib/types/students";
 import { InventoryItem } from "@/lib/types/inventory_item";
@@ -97,8 +97,45 @@ export default function BulkUploadForm({
     );
   };
 
+  // Calculate total stock requirements and validation
+  const stockValidation = useMemo(() => {
+    const stockNeeded: Record<string, number> = {};
+    
+    rows.forEach(row => {
+      if (row.inventory_item_id && row.selectedStudents.length > 0) {
+        const key = row.inventory_item_id;
+        const totalQty = row.qty * row.selectedStudents.length;
+        stockNeeded[key] = (stockNeeded[key] || 0) + totalQty;
+      }
+    });
+
+    const validation: Record<string, { needed: number; available: number; valid: boolean; itemName: string }> = {};
+    
+    Object.entries(stockNeeded).forEach(([itemId, needed]) => {
+      const item = inventoryItems.find(i => i.id === itemId);
+      const available = item?.current_stock ?? 0;
+      validation[itemId] = {
+        needed,
+        available,
+        valid: needed <= available,
+        itemName: item?.name || 'Unknown Item'
+      };
+    });
+
+    return validation;
+  }, [rows, inventoryItems]);
+
+  const hasStockIssues = useMemo(() => {
+    return Object.values(stockValidation).some(v => !v.valid);
+  }, [stockValidation]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (hasStockIssues) {
+      return;
+    }
+    
     const submitData = rows.flatMap(({ tempId, selectedStudents, ...rest }) =>
       selectedStudents.map((sid) => ({ ...rest, student_id: sid }))
     );
@@ -107,6 +144,17 @@ export default function BulkUploadForm({
 
   const getFullName = (s: Student) =>
     [s.first_name, s.middle_name, s.last_name].filter(Boolean).join(" ");
+
+  const getRowStockInfo = (row: CollectionRow) => {
+    if (!row.inventory_item_id || row.selectedStudents.length === 0) return null;
+    
+    const item = inventoryItems.find(i => i.id === row.inventory_item_id);
+    const available = item?.current_stock ?? 0;
+    const needed = row.qty * row.selectedStudents.length;
+    const isValid = needed <= available;
+    
+    return { available, needed, isValid, itemName: item?.name || 'Unknown' };
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 overflow-auto p-4">
@@ -130,11 +178,39 @@ export default function BulkUploadForm({
           </button>
         </div>
 
+        {/* Stock Warning Summary */}
+        {hasStockIssues && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-medium text-red-900 mb-2">Insufficient Stock Detected</h3>
+                <div className="space-y-1 text-sm text-red-800">
+                  {Object.entries(stockValidation)
+                    .filter(([_, v]) => !v.valid)
+                    .map(([itemId, info]) => (
+                      <div key={itemId} className="flex justify-between">
+                        <span>{info.itemName}:</span>
+                        <span className="font-medium">
+                          Need {info.needed}, only {info.available} available
+                        </span>
+                      </div>
+                    ))}
+                </div>
+                <p className="mt-2 text-sm text-red-700">
+                  Please reduce quantities or remove items before submitting.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-5">
           {rows.map((row, index) => {
             const filteredStudents = students.filter(
               (s) => s.class_id === row.class_id
             );
+            const stockInfo = getRowStockInfo(row);
 
             return (
               <div
@@ -187,7 +263,7 @@ export default function BulkUploadForm({
                     <option value="">Select Item</option>
                     {inventoryItems.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.name}
+                        {item.name} ({item.current_stock ?? 0} available)
                       </option>
                     ))}
                   </select>
@@ -226,27 +302,28 @@ export default function BulkUploadForm({
                     required
                     disabled={isSubmitting}
                   />
-
-                  {/* Given By */}
-                  {/**   <select
-                    value={row.given_by || ""}
-                    onChange={(e) =>
-                      handleChange(row.tempId, "given_by", e.target.value)
-                    }
-                    className="p-2 border border-gray-300 rounded-lg text-sm"
-                    disabled={isSubmitting}
-                  >
-                    <option value="">Given By</option>
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>*/}
-
                 </div>
 
-                {/* ✅ Eligible / Received Checkboxes */}
+                {/* Stock Info for this row */}
+                {stockInfo && (
+                  <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${
+                    stockInfo.isValid 
+                      ? "bg-green-50 text-green-800 border border-green-200" 
+                      : "bg-red-50 text-red-800 border border-red-200"
+                  }`}>
+                    {stockInfo.isValid ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4" />
+                    )}
+                    <span>
+                      {stockInfo.needed} {stockInfo.itemName} needed for {row.selectedStudents.length} students
+                      {!stockInfo.isValid && ` (only ${stockInfo.available} available)`}
+                    </span>
+                  </div>
+                )}
+
+                {/* Eligible / Received Checkboxes */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
                   <div className="flex items-center">
                     <input
@@ -337,7 +414,7 @@ export default function BulkUploadForm({
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || hasStockIssues}
               className="px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isSubmitting ? (

@@ -110,4 +110,58 @@ export interface StudentInventoryCollection {
     eligible?: boolean;
     received?: boolean;
   }
-  
+  // lib/types/inventory_item.ts
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  unit_price?: number;
+  quantity_available: number; // Available stock quantity
+  quantity_total?: number; // Total quantity ever received
+  quantity_allocated?: number; // Quantity already allocated/assigned
+  reorder_level?: number;
+  supplier?: string;
+  location?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+  updated_by?: string;
+}
+
+export interface CreateInventoryItemInput {
+  name: string;
+  description?: string;
+  category?: string;
+  unit_price?: number;
+  quantity_available: number;
+  quantity_total?: number;
+  reorder_level?: number;
+  supplier?: string;
+  location?: string;
+  notes?: string;
+}
+
+export interface UpdateInventoryItemInput {
+  name?: string;
+  description?: string;
+  category?: string;
+  unit_price?: number;
+  quantity_available?: number;
+  quantity_total?: number;
+  reorder_level?: number;
+  supplier?: string;
+  location?: string;
+  notes?: string;
+}
+
+export interface InventoryItemFilters {
+  category?: string;
+  supplier?: string;
+  location?: string;
+  low_stock?: boolean; // Items below reorder level
+  out_of_stock?: boolean; // Items with quantity_available <= 0
+  search?: string;
+}

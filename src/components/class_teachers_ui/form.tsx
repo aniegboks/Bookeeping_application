@@ -10,19 +10,11 @@ import {
 import { SchoolClass } from "@/lib/types/classes";
 import { User } from "@/lib/types/user";
 
-// Helper to format date for datetime-local input
-const toDateTimeLocal = (dateString: string | undefined): string => {
-  if (!dateString) return "";
-  try {
-    return new Date(dateString).toISOString().slice(0, 16);
-  } catch {
-    return "";
-  }
-};
-
 interface TeacherFormProps {
   initialTeacher?: ClassTeacher;
-  onSubmit: (data: CreateClassTeacherInput | UpdateClassTeacherInput) => Promise<void>;
+  onSubmit: (
+    data: CreateClassTeacherInput | UpdateClassTeacherInput
+  ) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   classes: SchoolClass[];
@@ -38,14 +30,12 @@ export default function TeacherForm({
   users,
 }: TeacherFormProps) {
   const [formData, setFormData] = useState<CreateClassTeacherInput>({
-    class_id: initialTeacher?.class_id || (classes.length > 0 ? classes[0].id : ""),
+    class_id:
+      initialTeacher?.class_id || (classes.length > 0 ? classes[0].id : ""),
     name: initialTeacher?.name || "",
     email: initialTeacher?.email || "",
-    role: initialTeacher?.role || "class_teacher",
+    role: "CLASS_TEACHER", // Matches API spec
     status: initialTeacher?.status || "active",
-    assigned_at: initialTeacher?.assigned_at || new Date().toISOString(),
-    unassigned_at: initialTeacher?.unassigned_at || undefined,
-    created_by: "", // backend should handle this
   });
 
   // Update form data when initialTeacher changes
@@ -55,11 +45,8 @@ export default function TeacherForm({
         class_id: initialTeacher.class_id,
         name: initialTeacher.name || "",
         email: initialTeacher.email || "",
-        role: initialTeacher.role || "class_teacher",
+        role: "CLASS_TEACHER", // Matches API spec
         status: initialTeacher.status || "active",
-        assigned_at: initialTeacher.assigned_at || new Date().toISOString(),
-        unassigned_at: initialTeacher.unassigned_at || undefined,
-        created_by: "",
       });
     }
   }, [initialTeacher]);
@@ -74,13 +61,6 @@ export default function TeacherForm({
     }));
   };
 
-  const handleDateChange = (name: keyof CreateClassTeacherInput, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value ? new Date(value).toISOString() : undefined,
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(formData);
@@ -90,15 +70,14 @@ export default function TeacherForm({
 
   const FormContent = (
     <>
-      <h3 className="text-lg font-semibold text-[#171D26] mb-4 py-4">
-        {initialTeacher ? "Edit Teacher Assignment" : "Assign New Teacher"}
-      </h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-sm max-w-2xl w-full p-6">
+                   <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* 1. School Class */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              School Class <span className="text-gray-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              School Class <span className="text-red-500">*</span>
             </label>
             <select
               name="class_id"
@@ -121,59 +100,60 @@ export default function TeacherForm({
 
           {/* 2. Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Teacher Name <span className="text-gray-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Teacher Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
+              placeholder="John Doe"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
               required
               disabled={isSubmitting}
             />
           </div>
 
-          {/* 3. Email */}
+          {/* 3. Email - Always editable */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Email <span className="text-gray-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
+              placeholder="teacher@school.com"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
               required
               disabled={isSubmitting}
             />
+            {initialTeacher && (
+              <p className="mt-1 text-xs text-gray-500">
+                You can update the email address
+              </p>
+            )}
           </div>
 
-          {/* 4. Role */}
+          {/* 4. Role - Always CLASS_TEACHER (Display only) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Role <span className="text-gray-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Role
             </label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              required
-              disabled={isSubmitting}
-            >
-              <option value="class_teacher">Class Teacher</option>
-              <option value="assistant_teacher">Assistant Teacher</option>
-              <option value="subject_teacher">Subject Teacher</option>
-            </select>
+            <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700">
+              Class Teacher
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Role is automatically set to Class Teacher
+            </p>
           </div>
 
           {/* 5. Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Status <span className="text-gray-500">*</span>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status <span className="text-red-500">*</span>
             </label>
             <select
               name="status"
@@ -193,38 +173,9 @@ export default function TeacherForm({
               <option value="archived">Archived</option>
             </select>
           </div>
-
-          {/* 6. Assigned At */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Assigned At <span className="text-gray-500">*</span>
-            </label>
-            <input
-              type="datetime-local"
-              value={toDateTimeLocal(formData.assigned_at)}
-              onChange={(e) => handleDateChange("assigned_at", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {/* 7. Unassigned At */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 pt-4">
-              Unassigned At
-            </label>
-            <input
-              type="datetime-local"
-              value={toDateTimeLocal(formData.unassigned_at)}
-              onChange={(e) => handleDateChange("unassigned_at", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              disabled={isSubmitting}
-            />
-          </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4">
+        <div className="flex justify-end gap-3 pt-4 border-t">
           <button
             type="button"
             onClick={onCancel}
@@ -243,26 +194,30 @@ export default function TeacherForm({
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 Saving...
               </>
+            ) : initialTeacher ? (
+              "Update Assignment"
             ) : (
-              initialTeacher ? "Update Assignment" : "Create Assignment"
+              "Assign Teacher"
             )}
           </button>
         </div>
       </form>
+              </div>
+
+        </div>
     </>
   );
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-        {!hasData ? (
-          <div className="text-gray-500 py-8 text-center">
-            Loading classes...
-          </div>
-        ) : (
-          FormContent
-        )}
-      </div>
+    <div>
+      {!hasData ? (
+        <div className="text-gray-500 py-8 text-center">
+          <p className="mb-2">No classes available</p>
+          <p className="text-sm">Please create classes first before assigning teachers</p>
+        </div>
+      ) : (
+        FormContent
+      )}
     </div>
   );
 }

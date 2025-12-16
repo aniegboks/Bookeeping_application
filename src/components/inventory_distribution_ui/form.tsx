@@ -33,9 +33,8 @@ export default function DistributionForm({
   inventoryItems,
   academicSessions,
   classTeachers,
-  users,
 }: DistributionFormProps) {
-  const [formData, setFormData] = useState<CreateInventoryDistributionInput>({
+  const [formData, setFormData] = useState<Omit<CreateInventoryDistributionInput, 'created_by'>>({
     class_id: "",
     inventory_item_id: "",
     session_term_id: "",
@@ -44,10 +43,10 @@ export default function DistributionForm({
     received_by: "",
     receiver_name: "",
     notes: "",
-    created_by: "",
   });
 
   const [filteredTeachers, setFilteredTeachers] = useState<ClassTeacher[]>([]);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
   useEffect(() => {
     if (distribution) {
@@ -60,11 +59,11 @@ export default function DistributionForm({
         received_by: distribution.received_by,
         receiver_name: distribution.receiver_name,
         notes: distribution.notes || "",
-        created_by: distribution.created_by,
       });
     }
   }, [distribution]);
 
+  // Filter teachers when class changes
   useEffect(() => {
     if (formData.class_id) {
       const teachersForClass = classTeachers.filter(
@@ -79,16 +78,42 @@ export default function DistributionForm({
     }
   }, [formData.class_id, classTeachers]);
 
+  // Track selected inventory item for availability display
+  useEffect(() => {
+    if (formData.inventory_item_id) {
+      const item = inventoryItems.find((i) => i.id === formData.inventory_item_id);
+      setSelectedItem(item || null);
+    } else {
+      setSelectedItem(null);
+    }
+  }, [formData.inventory_item_id, inventoryItems]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.received_by) {
-      alert("Please select a class teacher");
+    // Validation
+    if (!formData.class_id) {
+      alert("Please select a class");
       return;
     }
 
-    if (!formData.created_by) {
-      alert("Please select who is creating this distribution");
+    if (!formData.inventory_item_id) {
+      alert("Please select an inventory item");
+      return;
+    }
+
+    if (!formData.session_term_id) {
+      alert("Please select a session term");
+      return;
+    }
+
+    if (!formData.received_by) {
+      alert("Please select a class teacher to receive the items");
+      return;
+    }
+
+    if (!formData.receiver_name.trim()) {
+      alert("Please enter the receiver's name");
       return;
     }
 
@@ -97,19 +122,24 @@ export default function DistributionForm({
       return;
     }
 
+    // Check if quantity exceeds available stock
+    if (selectedItem && formData.distributed_quantity > selectedItem.current_stock) {
+      const confirmProceed = window.confirm(
+        `Warning: You are trying to distribute ${formData.distributed_quantity} items, but only ${selectedItem.current_stock} are available in stock. Do you want to proceed anyway?`
+      );
+      if (!confirmProceed) {
+        return;
+      }
+    }
+
     const selectedTeacher = classTeachers.find((t) => t.id === formData.received_by);
     if (!selectedTeacher) {
       alert("Selected teacher is invalid");
       return;
     }
 
-    const creatorUser = users.find((u) => u.id === formData.created_by);
-    if (!creatorUser) {
-      alert("Selected creator does not have a valid user account");
-      return;
-    }
-
-    const payload = {
+    // Prepare payload - created_by will be set automatically by the backend
+    const payload: CreateInventoryDistributionInput = {
       class_id: formData.class_id,
       inventory_item_id: formData.inventory_item_id,
       session_term_id: formData.session_term_id,
@@ -118,7 +148,7 @@ export default function DistributionForm({
       received_by: formData.received_by,
       receiver_name: formData.receiver_name.trim(),
       notes: formData.notes?.trim() || "",
-      created_by: formData.created_by,
+      created_by: "", // Backend will set this from authenticated user
     };
 
     await onSubmit(payload);
@@ -137,7 +167,7 @@ export default function DistributionForm({
             {/* Class */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Class <span className="text-gray-500">*</span>
+                Class <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.class_id}
@@ -154,18 +184,20 @@ export default function DistributionForm({
                 disabled={isSubmitting}
               >
                 <option value="">Select Class</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {classes
+                  .filter((c) => c.status === "active")
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
               </select>
             </div>
 
             {/* Inventory Item */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Inventory Item <span className="text-gray-500">*</span>
+                Inventory Item <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.inventory_item_id}
@@ -182,16 +214,21 @@ export default function DistributionForm({
                 <option value="">Select Item</option>
                 {inventoryItems.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.name}
+                    {item.name} (Available: {item.current_stock})
                   </option>
                 ))}
               </select>
+              {selectedItem && (
+                <p className="text-xs text-gray-600 mt-1">
+                  Available quantity: <span className="font-medium">{selectedItem.current_stock}</span>
+                </p>
+              )}
             </div>
 
             {/* Session Term */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Session Term <span className="text-gray-500">*</span>
+                Session Term <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.session_term_id}
@@ -203,11 +240,13 @@ export default function DistributionForm({
                 disabled={isSubmitting}
               >
                 <option value="">Select Term</option>
-                {academicSessions.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
+                {academicSessions
+                  .filter((s) => s.status === "active")
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -216,12 +255,12 @@ export default function DistributionForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Distributed Quantity <span className="text-gray-500">*</span>
+                Distributed Quantity <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 min="1"
-                value={formData.distributed_quantity}
+                value={formData.distributed_quantity || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -231,12 +270,18 @@ export default function DistributionForm({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                 required
                 disabled={isSubmitting}
+                placeholder="Enter quantity"
               />
+              {selectedItem && formData.distributed_quantity > selectedItem.current_stock && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ Warning: Quantity exceeds available stock
+                </p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Distribution Date <span className="text-gray-500">*</span>
+                Distribution Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -244,6 +289,7 @@ export default function DistributionForm({
                 onChange={(e) =>
                   setFormData({ ...formData, distribution_date: e.target.value })
                 }
+                max={new Date().toISOString().split("T")[0]}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                 required
                 disabled={isSubmitting}
@@ -256,7 +302,7 @@ export default function DistributionForm({
             {/* Class Teacher */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Class Teacher <span className="text-gray-500">*</span>
+                Class Teacher <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.received_by}
@@ -290,8 +336,7 @@ export default function DistributionForm({
 
               {formData.class_id && filteredTeachers.length === 0 && (
                 <p className="text-xs text-amber-600 mt-1">
-                  No active teachers with valid user accounts assigned to this
-                  class
+                  ⚠️ No active teachers assigned to this class
                 </p>
               )}
             </div>
@@ -299,7 +344,7 @@ export default function DistributionForm({
             {/* Receiver Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Receiver Name <span className="text-gray-500">*</span>
+                Receiver Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -312,36 +357,16 @@ export default function DistributionForm({
                 disabled={isSubmitting}
                 placeholder="e.g., Mrs. Johnson"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Auto-filled when selecting a teacher
+              </p>
             </div>
-          </div>
-
-          {/* Created By */}
-           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Created By <span className="text-gray-500">*</span>
-            </label>
-            <select
-              value={formData.created_by}
-              onChange={(e) =>
-                setFormData({ ...formData, created_by: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-              required
-              disabled={isSubmitting || !!distribution}
-            >
-              <option value="">Select User</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} ({user.email})
-                </option>
-              ))}
-            </select>
           </div>
 
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
+              Notes <span className="text-gray-500">(Optional)</span>
             </label>
             <textarea
               value={formData.notes}
@@ -351,8 +376,15 @@ export default function DistributionForm({
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
               disabled={isSubmitting}
-              placeholder="Additional distribution notes..."
+              placeholder="Add any additional notes about this distribution..."
             />
+          </div>
+
+          {/* Info Banner */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs text-blue-800">
+              <strong>Note:</strong> The distribution will be recorded under your account automatically.
+            </p>
           </div>
 
           {/* Actions */}
@@ -361,14 +393,14 @@ export default function DistributionForm({
               type="button"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-[#3D4C63] text-white rounded-sm hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-[#3D4C63] text-white rounded-sm hover:bg-[#495C79] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>

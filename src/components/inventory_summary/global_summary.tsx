@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -26,6 +28,7 @@ export function InventoryReportTable({
   const [filteredData, setFilteredData] = useState<CombinedInventory[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const rowsPerPage = 15;
 
   useEffect(() => {
@@ -49,6 +52,18 @@ export function InventoryReportTable({
 
     setFilteredData(filtered);
     setCurrentPage(1);
+  }
+
+  function toggleRowExpansion(itemId: string) {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
   }
 
   function exportSpreadsheet() {
@@ -201,6 +216,9 @@ export function InventoryReportTable({
               <thead className="bg-white">
                 <tr>
                   <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                    {/* Expand column */}
+                  </th>
+                  <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
                     ITEM ID
                   </th>
                   <th className="px-6 py-8 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
@@ -260,147 +278,414 @@ export function InventoryReportTable({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {currentData.map((item, index) => (
-                  <tr
-                    key={item.id}
-                    className={`transition-colors duration-150 hover:bg-gray-50 ${
-                      index % 2 === 0 ? "bg-white" : "bg-white"
-                    }`}
-                  >
-                    <td className="px-6 py-4 text-sm text-gray-900 font-mono">
-                      {item.id.substring(0, 8)}...
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.supplier_names}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.name}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.brand}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-900 text-xs">
-                        {item.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-sm px-3 py-1.5 rounded-full text-gray-900">
-                        {item.total_purchases}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-sm px-3 py-1.5 rounded-full text-gray-900">
-                        {item.total_distributed}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-sm text-gray-900">
-                        {item.current_stock}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-sm text-gray-900">
-                        ₦
-                        {item.total_cost.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-sm  text-gray-900">
-                        ₦
-                        {item.total_amount_paid.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right text-sm text-gray-900">
-                      ₦
-                      {item.cost_price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-right text-sm text-gray-900">
-                      ₦
-                      {item.selling_price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span
-                        className={`text-sm ${
-                          item.profit >= 0 ? "text-green-700" : "text-red-700"
+                {currentData.map((item, index) => {
+                  const isExpanded = expandedRows.has(item.id);
+                  return (
+                    <>
+                      <tr
+                        key={item.id}
+                        className={`transition-colors duration-150 hover:bg-gray-50 ${
+                          index % 2 === 0 ? "bg-white" : "bg-white"
                         }`}
                       >
-                        ₦
-                        {item.profit.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span
-                        className={`text-sm ${
-                          item.margin >= 0 ? "text-green-700" : "text-red-700"
-                        }`}
-                      >
-                        {item.margin.toFixed(2)}%
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-900 text-sm">
-                        {item.class_count}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {item.class_names &&
-                      item.class_names !== "No Distribution" ? (
-                        <div className="flex flex-wrap gap-1">
-                          {item.class_names
-                            .split(",")
-                            .map((cls) => cls.trim())
-                            .map((cls, idx) => (
-                              <span
-                                key={idx}
-                                className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold"
-                              >
-                                {cls}
-                              </span>
-                            ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-xs italic">
-                          No Distribution
-                        </span>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => toggleRowExpansion(item.id)}
+                            className="text-gray-500 hover:text-gray-700 transition-colors"
+                            title={isExpanded ? "Collapse" : "Expand"}
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="w-5 h-5" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5" />
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 font-mono">
+                          {item.id.substring(0, 8)}...
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {item.supplier_names}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {item.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {item.brand}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-900 text-xs">
+                            {item.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm px-3 py-1.5 rounded-full text-gray-900">
+                            {item.total_purchases}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm px-3 py-1.5 rounded-full text-gray-900">
+                            {item.total_distributed}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm text-gray-900">
+                            {item.current_stock}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm text-gray-900">
+                            ₦
+                            {item.total_cost.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm  text-gray-900">
+                            ₦
+                            {item.total_amount_paid.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm text-gray-900">
+                          ₦
+                          {item.cost_price.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm text-gray-900">
+                          ₦
+                          {item.selling_price.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span
+                            className={`text-sm ${
+                              item.profit >= 0 ? "text-green-700" : "text-red-700"
+                            }`}
+                          >
+                            ₦
+                            {item.profit.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span
+                            className={`text-sm ${
+                              item.margin >= 0 ? "text-green-700" : "text-red-700"
+                            }`}
+                          >
+                            {item.margin.toFixed(2)}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-900 text-sm">
+                            {item.class_count}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {item.class_names &&
+                          item.class_names !== "No Distribution" ? (
+                            <div className="flex flex-wrap gap-1">
+                              {item.class_names
+                                .split(",")
+                                .map((cls) => cls.trim())
+                                .map((cls, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold"
+                                  >
+                                    {cls}
+                                  </span>
+                                ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs italic">
+                              No Distribution
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {item.receiver_names}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-xs font-medium text-gray-900 uppercase">
+                            {item.uom}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {item.is_low_stock ? (
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+                              Low Stock
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-bold">
+                              In Stock
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Expanded Row Details */}
+                      {isExpanded && (
+                        <tr key={`${item.id}-expanded`} className="bg-gray-50">
+                          <td colSpan={20} className="px-6 py-6">
+                            <div className="bg-white rounded-lg border border-gray-200 p-6">
+                              <h3 className="text-lg font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+                                Complete Item Details
+                              </h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {/* Identification Section */}
+                                <div className="space-y-3">
+                                  <h4 className="text-sm font-bold text-gray-700 uppercase mb-2">
+                                    Identification
+                                  </h4>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Full SKU/ID
+                                    </span>
+                                    <span className="text-sm text-gray-900 font-mono break-all">
+                                      {item.id}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Item Name
+                                    </span>
+                                    <span className="text-sm text-gray-900 font-semibold">
+                                      {item.name}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Brand
+                                    </span>
+                                    <span className="text-sm text-gray-900">
+                                      {item.brand}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Category
+                                    </span>
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-100 text-gray-900 text-xs">
+                                      {item.category}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Unit of Measure
+                                    </span>
+                                    <span className="text-sm text-gray-900 font-medium uppercase">
+                                      {item.uom}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Inventory Section */}
+                                <div className="space-y-3">
+                                  <h4 className="text-sm font-bold text-gray-700 uppercase mb-2">
+                                    Inventory
+                                  </h4>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Total Purchases
+                                    </span>
+                                    <span className="text-sm text-gray-900 font-semibold">
+                                      {item.total_purchases}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Total Distributed
+                                    </span>
+                                    <span className="text-sm text-gray-900 font-semibold">
+                                      {item.total_distributed}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Current Stock
+                                    </span>
+                                    <span className="text-sm text-gray-900 font-bold">
+                                      {item.current_stock}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Stock Status
+                                    </span>
+                                    {item.is_low_stock ? (
+                                      <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+                                        Low Stock
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-bold">
+                                        In Stock
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Financial Section */}
+                                <div className="space-y-3">
+                                  <h4 className="text-sm font-bold text-gray-700 uppercase mb-2">
+                                    Financial
+                                  </h4>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Total Cost
+                                    </span>
+                                    <span className="text-sm text-gray-900 font-semibold">
+                                      ₦
+                                      {item.total_cost.toLocaleString(undefined, {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Amount Paid
+                                    </span>
+                                    <span className="text-sm text-gray-900 font-semibold">
+                                      ₦
+                                      {item.total_amount_paid.toLocaleString(
+                                        undefined,
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        }
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Cost Price (per unit)
+                                    </span>
+                                    <span className="text-sm text-gray-900">
+                                      ₦
+                                      {item.cost_price.toLocaleString(undefined, {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Selling Price (per unit)
+                                    </span>
+                                    <span className="text-sm text-gray-900">
+                                      ₦
+                                      {item.selling_price.toLocaleString(
+                                        undefined,
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        }
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Profit (per unit)
+                                    </span>
+                                    <span
+                                      className={`text-sm font-bold ${
+                                        item.profit >= 0
+                                          ? "text-green-700"
+                                          : "text-red-700"
+                                      }`}
+                                    >
+                                      ₦
+                                      {item.profit.toLocaleString(undefined, {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-1">
+                                      Margin
+                                    </span>
+                                    <span
+                                      className={`text-sm font-bold ${
+                                        item.margin >= 0
+                                          ? "text-green-700"
+                                          : "text-red-700"
+                                      }`}
+                                    >
+                                      {item.margin.toFixed(2)}%
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Distribution Section */}
+                                <div className="space-y-3 md:col-span-2 lg:col-span-3">
+                                  <h4 className="text-sm font-bold text-gray-700 uppercase mb-2">
+                                    Distribution
+                                  </h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <span className="text-xs text-gray-500 block mb-1">
+                                        Suppliers
+                                      </span>
+                                      <span className="text-sm text-gray-900">
+                                        {item.supplier_names}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-xs text-gray-500 block mb-1">
+                                        Receivers
+                                      </span>
+                                      <span className="text-sm text-gray-900">
+                                        {item.receiver_names}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 block mb-2">
+                                      Classes Distributed To ({item.class_count})
+                                    </span>
+                                    {item.class_names &&
+                                    item.class_names !== "No Distribution" ? (
+                                      <div className="flex flex-wrap gap-2">
+                                        {item.class_names
+                                          .split(",")
+                                          .map((cls) => cls.trim())
+                                          .map((cls, idx) => (
+                                            <span
+                                              key={idx}
+                                              className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold"
+                                            >
+                                              {cls}
+                                            </span>
+                                          ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400 text-sm italic">
+                                        No Distribution
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {item.receiver_names}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-xs font-medium text-gray-900 uppercase">
-                        {item.uom}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {item.is_low_stock ? (
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
-                          Low Stock
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-bold">
-                          In Stock
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                    </>
+                  );
+                })}
               </tbody>
             </table>
           </div>

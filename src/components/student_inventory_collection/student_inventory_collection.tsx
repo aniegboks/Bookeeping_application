@@ -28,13 +28,11 @@ import { SchoolClass } from "@/lib/types/classes";
 // --- Components ---
 import Container from "@/components/ui/container";
 import Loader from "@/components/ui/loading_spinner";
-import StatsCards from "@/components/student_inventory_collection/stats_card";
 import Controls from "@/components/student_inventory_collection/controls";
 import CollectionTable from "@/components/student_inventory_collection/table";
 import CollectionForm from "@/components/student_inventory_collection/form";
 import BulkUploadForm from "@/components/student_inventory_collection/bulk_upsert";
 import DeleteModal from "@/components/student_inventory_collection/delete_modal";
-import Trends from "@/components/student_inventory_collection/trends";
 
 // --- Permissions ---
 import { useUser } from "@/contexts/UserContext";
@@ -81,9 +79,17 @@ export default function StudentInventoryCollectionPage() {
   // fetch classes
   useEffect(() => {
     async function fetchClasses() {
-      const res = await fetch("/api/classes");
-      const data = await res.json();
-      setClasses(data);
+      try {
+        const res = await fetch("/api/classes");
+        if (!res.ok) {
+          throw new Error(`Failed to fetch classes: ${res.status}`);
+        }
+        const data = await res.json();
+        setClasses(data);
+      } catch (err) {
+        console.error("Failed to load classes:", err);
+        toast.error("Failed to load classes. Some features may not work correctly.", { duration: 5000 });
+      }
     }
     fetchClasses();
   }, []);
@@ -106,8 +112,9 @@ export default function StudentInventoryCollectionPage() {
       setAcademicSessions(sessionData);
       setUsers(userData);
     } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to load initial data. Please refresh the page and try again.";
       console.error("Failed to load initial data:", err);
-      toast.error("Failed to load initial data");
+      toast.error(message, { duration: 5000 });
     } finally {
       setLoading(false);
       setInitialLoading(false);
@@ -125,8 +132,9 @@ export default function StudentInventoryCollectionPage() {
       const data = await studentInventoryCollectionApi.getAll();
       setCollections(data);
     } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to reload collections. Please try again.";
       console.error("Failed to reload collections:", err);
-      toast.error("Failed to reload data");
+      toast.error(message, { duration: 5000 });
     } finally {
       setLoading(false);
     }
@@ -162,60 +170,63 @@ export default function StudentInventoryCollectionPage() {
   // --- Export to Excel ---
   const handleExport = () => {
     if (filteredCollections.length === 0) {
-      toast.error("No data to export!");
+      toast.error("No inventory collections available to export. Please create collections first.", { duration: 4000 });
       return;
     }
 
-    const dataToExport = filteredCollections.map((c) => {
-      const student = students.find((s) => s.id === c.student_id);
-      const studentName = student
-        ? `${student.first_name} ${student.middle_name ? student.middle_name + " " : ""}${student.last_name}`
-        : "Unknown";
+    try {
+      const dataToExport = filteredCollections.map((c) => {
+        const student = students.find((s) => s.id === c.student_id);
+        const studentName = student
+          ? `${student.first_name} ${student.middle_name ? student.middle_name + " " : ""}${student.last_name}`
+          : "Unknown";
 
-      const itemName = inventoryItems.find((i) => i.id === c.inventory_item_id)?.name || "";
-      const sessionName = academicSessions.find((s) => s.id === c.session_term_id)?.name || "";
-      const className = classes.find((cls) => cls.id === c.class_id)?.name || "";
+        const itemName = inventoryItems.find((i) => i.id === c.inventory_item_id)?.name || "";
+        const sessionName = academicSessions.find((s) => s.id === c.session_term_id)?.name || "";
+        const className = classes.find((cls) => cls.id === c.class_id)?.name || "";
 
-      const givenByUser = users.find((u) => u.id === c.given_by);
-      const givenBy = givenByUser?.name || "N/A";
+        const givenByUser = users.find((u) => u.id === c.given_by);
+        const givenBy = givenByUser?.name || "N/A";
 
-      return {
-        "Student Name": studentName,
-        "Class": className,
-        "Inventory Item": itemName,
-        "Session Term": sessionName,
-        Quantity: c.qty,
-        Eligible: c.eligible ? "Yes" : "No",
-        Received: c.received ? "Yes" : "No",
-        "Received Date": c.received_date ? new Date(c.received_date).toLocaleDateString() : "",
-        "Given By": givenBy,
-        Notes: c.notes || "",
-        "Created At": new Date(c.created_at).toLocaleString(),
-        "Updated At": new Date(c.updated_at).toLocaleString(),
-      };
-    });
+        return {
+          "Student Name": studentName,
+          "Class": className,
+          "Inventory Item": itemName,
+          "Session Term": sessionName,
+          Quantity: c.qty,
+          Eligible: c.eligible ? "Yes" : "No",
+          Received: c.received ? "Yes" : "No",
+          "Received Date": c.received_date ? new Date(c.received_date).toLocaleDateString() : "",
+          "Given By": givenBy,
+          Notes: c.notes || "",
+          "Created At": new Date(c.created_at).toLocaleString(),
+          "Updated At": new Date(c.updated_at).toLocaleString(),
+        };
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Student Inventory");
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Student Inventory");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
 
-    saveAs(
-      blob,
-      `student_inventory_collection_${new Date().toISOString().slice(0, 10)}.xlsx`
-    );
-    toast.success("Spreadsheet exported successfully!");
+      const fileName = `student_inventory_collection_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      saveAs(blob, fileName);
+      
+      toast.success(`Successfully exported ${filteredCollections.length} inventory collections to ${fileName}`, { duration: 4000 });
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export data. Please try again or contact support if the problem persists.", { duration: 5000 });
+    }
   };
 
   // --- Form Handlers ---
   const handleAddClick = () => {
-    // Check permission before opening form
     if (!canCreate) {
-      toast.error("You don't have permission to create inventory collections");
+      toast.error("Access denied. You do not have permission to create inventory collections. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setEditingCollection(null);
@@ -223,18 +234,16 @@ export default function StudentInventoryCollectionPage() {
   };
 
   const handleBulkAddClick = () => {
-    // Check permission before opening bulk form
     if (!canCreate) {
-      toast.error("You don't have permission to create inventory collections");
+      toast.error("Access denied. You do not have permission to create inventory collections. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setShowBulkForm(true);
   };
 
   const handleEdit = (collection: StudentInventoryCollection) => {
-    // Check permission before opening edit form
     if (!canUpdate) {
-      toast.error("You don't have permission to update inventory collections");
+      toast.error("Access denied. You do not have permission to update inventory collections. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setEditingCollection(collection);
@@ -243,34 +252,46 @@ export default function StudentInventoryCollectionPage() {
 
   // --- Form Submission ---
   const handleFormSubmit = async (data: CollectionFormData) => {
-    // Double-check permissions before submitting
     if (editingCollection && !canUpdate) {
-      toast.error("You don't have permission to update inventory collections");
+      toast.error("Access denied. You do not have permission to update inventory collections.", { duration: 5000 });
       return;
     }
     if (!editingCollection && !canCreate) {
-      toast.error("You don't have permission to create inventory collections");
+      toast.error("Access denied. You do not have permission to create inventory collections.", { duration: 5000 });
       return;
     }
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading(editingCollection ? "Updating record..." : "Creating record...");
+    const loadingToast = toast.loading(
+      editingCollection ? "Updating inventory collection..." : "Creating inventory collection..."
+    );
 
     try {
       if (editingCollection) {
         await studentInventoryCollectionApi.update(editingCollection.id, data as UpdateStudentInventoryCollectionInput);
-        toast.success("Collection updated successfully!");
+        const student = students.find(s => s.id === editingCollection.student_id);
+        const studentName = student ? `${student.first_name} ${student.last_name}` : "student";
+        toast.success(`Successfully updated inventory collection for ${studentName}. Changes are now in effect.`, { duration: 4000 });
       } else {
         await studentInventoryCollectionApi.create(data as CreateStudentInventoryCollectionInput);
-        toast.success("Collection created successfully!");
+        const student = students.find(s => s.id === data.student_id);
+        const item = inventoryItems.find(i => i.id === data.inventory_item_id);
+        const studentName = student ? `${student.first_name} ${student.last_name}` : "student";
+        const itemName = item?.name || "item";
+        toast.success(`Successfully assigned ${itemName} to ${studentName}. Inventory record created.`, { duration: 4000 });
       }
 
       setShowForm(false);
       setEditingCollection(null);
       await loadCollections();
     } catch (err: unknown) {
+      const message = err instanceof Error 
+        ? err.message 
+        : editingCollection 
+          ? "Failed to update inventory collection. Please verify your changes and available stock, then try again."
+          : "Failed to create inventory collection. Please check your input and available stock, then try again.";
       console.error("Form submission failed:", err);
-      toast.error("Failed to save collection");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsSubmitting(false);
@@ -279,24 +300,26 @@ export default function StudentInventoryCollectionPage() {
 
   // --- Bulk Submission ---
   const handleBulkSubmit = async (data: CreateStudentInventoryCollectionInput[]) => {
-    // Double-check permission
     if (!canCreate) {
-      toast.error("You don't have permission to create inventory collections");
+      toast.error("Access denied. You do not have permission to create inventory collections.", { duration: 5000 });
       return;
     }
 
     setIsSubmitting(true);
-    const loadingToast = toast.loading(`Uploading ${data.length} records...`);
+    const loadingToast = toast.loading(`Uploading ${data.length} inventory collections...`);
 
     try {
       await studentInventoryCollectionApi.bulkUpsert(data);
-      toast.success(`${data.length} records uploaded successfully!`);
+      toast.success(`Successfully uploaded ${data.length} inventory collections. All records are now active.`, { duration: 5000 });
 
       setShowBulkForm(false);
       await loadCollections();
     } catch (err: unknown) {
+      const message = err instanceof Error 
+        ? err.message 
+        : `Failed to bulk upload inventory collections. Some items may have insufficient stock or duplicate records. Please review your data and try again.`;
       console.error("Bulk submission failed:", err);
-      toast.error("Failed to upload data");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsSubmitting(false);
@@ -305,9 +328,8 @@ export default function StudentInventoryCollectionPage() {
 
   // --- Delete Handlers ---
   const handleDeleteRequest = (collection: StudentInventoryCollection) => {
-    // Check permission before opening delete modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete inventory collections");
+      toast.error("Access denied. You do not have permission to delete inventory collections. Please contact your administrator for access.", { duration: 5000 });
       return;
     }
     setDeletingCollection(collection);
@@ -317,25 +339,32 @@ export default function StudentInventoryCollectionPage() {
   const confirmDelete = async () => {
     if (!deletingCollection) return;
     
-    // Double-check permission before deleting
     if (!canDelete) {
-      toast.error("You don't have permission to delete inventory collections");
+      toast.error("Access denied. You do not have permission to delete inventory collections.", { duration: 5000 });
       return;
     }
 
     setIsDeleting(true);
-    const loadingToast = toast.loading("Deleting record...");
+    const loadingToast = toast.loading("Removing inventory collection...");
 
     try {
       await studentInventoryCollectionApi.delete(deletingCollection.id);
-      toast.success("Collection deleted successfully!");
+      const student = students.find(s => s.id === deletingCollection.student_id);
+      const item = inventoryItems.find(i => i.id === deletingCollection.inventory_item_id);
+      const studentName = student ? `${student.first_name} ${student.last_name}` : "student";
+      const itemName = item?.name || "item";
+      
+      toast.success(`Successfully removed ${itemName} from ${studentName}. The inventory has been updated.`, { duration: 4000 });
 
       setShowDeleteModal(false);
       setDeletingCollection(null);
       await loadCollections();
     } catch (err: unknown) {
+      const message = err instanceof Error 
+        ? err.message 
+        : "Failed to delete collection record. The record may have already been removed. Please refresh the page.";
       console.error("Delete failed:", err);
-      toast.error("Failed to delete record");
+      toast.error(message, { duration: 6000 });
     } finally {
       toast.dismiss(loadingToast);
       setIsDeleting(false);
@@ -346,7 +375,7 @@ export default function StudentInventoryCollectionPage() {
     setShowForm(false);
     setShowBulkForm(false);
     setEditingCollection(null);
-    toast("Action canceled", { icon: "ℹ️" });
+    toast("Operation canceled. No changes were made.", { duration: 3000 });
   };
 
   if (initialLoading) {
@@ -376,7 +405,6 @@ export default function StudentInventoryCollectionPage() {
             onFilterEligibleChange={setFilterEligible}
             onAdd={handleAddClick}
             onBulkAdd={handleBulkAddClick}
-            // Pass permissions to controls
             canCreate={canCreate}
           />
 
@@ -416,7 +444,6 @@ export default function StudentInventoryCollectionPage() {
             students={students}
             academicSessions={academicSessions}
             users={users}
-            // Pass permissions to table
             canUpdate={canUpdate}
             canDelete={canDelete}
           />
@@ -424,11 +451,12 @@ export default function StudentInventoryCollectionPage() {
           <div className="my-4 flex justify-start">
             <button
               onClick={handleExport}
-              className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-5 py-2 rounded-sm transition"
+              disabled={filteredCollections.length === 0}
+              className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-5 py-2 rounded-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="flex gap-2">
+              <span className="flex gap-2 items-center">
                 <Download className="w-5 h-5" />
-                <span>Export</span>
+                <span>Export to Excel</span>
               </span>
             </button>
           </div>
@@ -440,7 +468,7 @@ export default function StudentInventoryCollectionPage() {
               onCancel={() => {
                 setShowDeleteModal(false);
                 setDeletingCollection(null);
-                toast("Delete canceled", { icon: "ℹ️" });
+                toast("Delete operation canceled. No changes were made.", { duration: 3000 });
               }}
               isDeleting={isDeleting}
             />

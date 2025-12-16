@@ -8,7 +8,7 @@ import {
   CreateClassInventoryEntitlementInput,
 } from "@/lib/types/class_inventory_entitlement";
 
-// --- Interface Definitions (Matching the data passed from the parent) ---
+// --- Interface Definitions ---
 
 interface ClassOption {
   id: string;
@@ -37,7 +37,6 @@ interface EntitlementFormProps {
   onCancel: () => void;
   isSubmitting: boolean;
   
-  // 💡 NEW PROPS: Receive pre-loaded data from the parent
   classes: ClassOption[];
   inventoryItems: InventoryItemOption[];
   sessionTerms: SessionTermOption[];
@@ -49,7 +48,6 @@ export default function EntitlementForm({
   onSubmit,
   onCancel,
   isSubmitting,
-  // Destructure the new props
   classes,
   inventoryItems,
   sessionTerms,
@@ -61,11 +59,7 @@ export default function EntitlementForm({
     session_term_id: "",
     quantity: 0,
     notes: "",
-    created_by: "",
   });
-
-  // State is no longer needed for classes, inventoryItems, sessionTerms, or users,
-  // as they are passed in via props.
 
   useEffect(() => {
     if (entitlement) {
@@ -75,32 +69,33 @@ export default function EntitlementForm({
         session_term_id: entitlement.session_term_id,
         quantity: entitlement.quantity,
         notes: entitlement.notes || "",
-        created_by: entitlement.created_by,
       });
     }
   }, [entitlement]);
 
-  // ❌ REMOVED: The problematic 'fetchData' useEffect is gone!
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation
+    // Basic validation - removed created_by check
     if (
       !formData.class_id ||
       !formData.inventory_item_id ||
-      !formData.session_term_id ||
-      !formData.created_by
+      !formData.session_term_id
     ) {
-      toast.error("Please fill all required fields.");
+      toast.error("Please fill all required fields (Class, Inventory Item, and Session Term).");
+      return;
+    }
+
+    if (formData.quantity < 0) {
+      toast.error("Quantity cannot be negative. Please enter a valid number.");
       return;
     }
 
     await onSubmit(formData);
   };
 
-  // Check if dropdown data is missing (only relevant if the parent load failed)
-  const isDataMissing = classes.length === 0 || inventoryItems.length === 0 || sessionTerms.length === 0 || users.length === 0;
+  // Check if dropdown data is missing
+  const isDataMissing = classes.length === 0 || inventoryItems.length === 0 || sessionTerms.length === 0;
 
   return (
     <div
@@ -117,7 +112,7 @@ export default function EntitlementForm({
 
         {isDataMissing && (
             <div className="text-red-600 p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-                ⚠️ **Error:** Dropdown data failed to load. Please refresh the page.
+                ⚠️ <strong>Error:</strong> Required dropdown data failed to load. Please refresh the page and try again.
             </div>
         )}
 
@@ -129,7 +124,7 @@ export default function EntitlementForm({
                 htmlFor="class_id"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Class <span className="text-gray-500">*</span>
+                Class <span className="text-red-500">*</span>
               </label>
               <select
                 id="class_id"
@@ -156,7 +151,7 @@ export default function EntitlementForm({
                 htmlFor="inventory_item_id"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Inventory Item <span className="text-gray-500">*</span>
+                Inventory Item <span className="text-red-500">*</span>
               </label>
               <select
                 id="inventory_item_id"
@@ -183,7 +178,7 @@ export default function EntitlementForm({
                 htmlFor="session_term_id"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Session Term <span className="text-gray-500">*</span>
+                Session Term <span className="text-red-500">*</span>
               </label>
               <select
                 id="session_term_id"
@@ -210,7 +205,7 @@ export default function EntitlementForm({
                 htmlFor="quantity"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Quantity <span className="text-gray-500">*</span>
+                Quantity <span className="text-red-500">*</span>
               </label>
               <input
                 id="quantity"
@@ -227,45 +222,18 @@ export default function EntitlementForm({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                 required
                 disabled={isSubmitting}
+                placeholder="Enter quantity"
               />
             </div>
-
-            {/* Created By */}
-            <div className="pb-4 md:col-span-2">
-              <label
-                htmlFor="created_by"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Created By (User) <span className="text-gray-500">*</span>
-              </label>
-              <select
-                id="created_by"
-                value={formData.created_by}
-                onChange={(e) =>
-                  setFormData({ ...formData, created_by: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-                required
-                disabled={isSubmitting || isDataMissing}
-              >
-                <option value="">Select User</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name || user.email || user.id}
-                  </option>
-                ))}
-              </select>
-            </div>
-           
           </div>
 
-          {/* Notes */}
+          {/* Notes - Full Width */}
           <div>
             <label
               htmlFor="notes"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Notes
+              Notes <span className="text-gray-400">(Optional)</span>
             </label>
             <textarea
               id="notes"
@@ -276,6 +244,7 @@ export default function EntitlementForm({
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
               disabled={isSubmitting}
+              placeholder="Add any additional notes or comments..."
             />
           </div>
 
@@ -297,12 +266,12 @@ export default function EntitlementForm({
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Saving...
+                  {entitlement ? "Updating..." : "Creating..."}
                 </>
               ) : entitlement ? (
-                "Update"
+                "Update Entitlement"
               ) : (
-                "Create"
+                "Create Entitlement"
               )}
             </button>
           </div>

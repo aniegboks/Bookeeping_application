@@ -81,13 +81,15 @@ export default function ClassInventoryEntitlementsPage() {
       setInventoryItems(items);
       setAcademicSessions(sessions);
       setUsers(userData);
+      
+      toast.success("Data loaded successfully!");
     } catch (err: unknown) {
+      console.error("Failed to load initial data:", err);
+      
       if (err instanceof Error) {
-        console.error("Failed to load initial data:", err);
-        toast.error("Failed to load initial data: " + err.message);
+        toast.error(err.message);
       } else {
-        console.error("Failed to load initial data:", err);
-        toast.error("Failed to load initial data");
+        toast.error("Unable to load page data. Please refresh the page or contact support if the problem continues.");
       }
     } finally {
       setLoading(false);
@@ -106,18 +108,13 @@ export default function ClassInventoryEntitlementsPage() {
       const data = await classInventoryEntitlementApi.getAll();
       setEntitlements(data);
     } catch (err: unknown) {
-      let message: string;
-      if (err instanceof Error) message = err.message;
-      else if (typeof err === "string") message = err;
-      else {
-        try {
-          message = JSON.stringify(err);
-        } catch {
-          message = "An unknown error occurred";
-        }
-      }
       console.error("Failed to reload entitlements:", err);
-      toast.error("Failed to reload entitlements: " + message);
+      
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Unable to refresh entitlements. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -145,51 +142,58 @@ export default function ClassInventoryEntitlementsPage() {
   // --- Export to Excel ---
   const handleExport = () => {
     if (filteredEntitlements.length === 0) {
-      toast.error("No data to export!");
+      toast.error("No entitlements to export. Try adjusting your filters or adding new entitlements.");
       return;
     }
 
-    const dataToExport = filteredEntitlements.map((e) => {
-      const className = classes.find((c) => c.id === e.class_id)?.name || "";
-      const itemName = inventoryItems.find((i) => i.id === e.inventory_item_id)?.name || "";
-      const sessionName = academicSessions.find((s) => s.id === e.session_term_id)?.name || "";
-      const user = users.find((u) => u.id === e.created_by);
-      const createdBy = user?.name || user?.username || user?.email || "Unknown";
+    try {
+      const dataToExport = filteredEntitlements.map((e) => {
+        const className = classes.find((c) => c.id === e.class_id)?.name || "Unknown Class";
+        const itemName = inventoryItems.find((i) => i.id === e.inventory_item_id)?.name || "Unknown Item";
+        const sessionName = academicSessions.find((s) => s.id === e.session_term_id)?.name || "Unknown Session";
+        const user = users.find((u) => u.id === e.created_by);
+        const createdBy = user?.name || user?.username || user?.email || "Unknown User";
 
-      return {
-        "Class Name": className,
-        "Inventory Item": itemName,
-        "Session Term": sessionName,
-        Quantity: e.quantity,
-        Notes: e.notes || "",
-        "Created By": createdBy,
-        "Created At": new Date(e.created_at).toLocaleString(),
-        "Updated At": new Date(e.updated_at).toLocaleString(),
-      };
-    });
+        return {
+          "Class Name": className,
+          "Inventory Item": itemName,
+          "Session Term": sessionName,
+          Quantity: e.quantity,
+          Notes: e.notes || "",
+          "Created By": createdBy,
+          "Created At": new Date(e.created_at).toLocaleString(),
+          "Updated At": new Date(e.updated_at).toLocaleString(),
+        };
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Entitlements");
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Entitlements");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
 
-    saveAs(blob, `class_inventory_entitlements_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success("Spreadsheet exported successfully!");
+      const fileName = `class_inventory_entitlements_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      saveAs(blob, fileName);
+      
+      toast.success(`Successfully exported ${filteredEntitlements.length} entitlements to ${fileName}`);
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export spreadsheet. Please try again or contact support if the problem persists.");
+    }
   };
 
   // --- Form Submission ---
   const handleFormSubmit = async (data: CreateClassInventoryEntitlementInput | UpdateClassInventoryEntitlementInput) => {
     // Double-check permissions
     if (editingEntitlement && !canUpdate) {
-      toast.error("You don't have permission to update entitlements");
+      toast.error("You don't have permission to update entitlements. Please contact your administrator.");
       return;
     }
     if (!editingEntitlement && !canCreate) {
-      toast.error("You don't have permission to create entitlements");
+      toast.error("You don't have permission to create entitlements. Please contact your administrator.");
       return;
     }
 
@@ -209,12 +213,14 @@ export default function ClassInventoryEntitlementsPage() {
       setEditingEntitlement(null);
       await loadEntitlements();
     } catch (err: unknown) {
+      console.error("Form submission failed:", err);
+      
       if (err instanceof Error) {
-        console.error("Form submission failed:", err);
-        toast.error("Failed to save entitlement: " + err.message);
+        toast.error(err.message);
       } else {
-        console.error("Form submission failed:", err);
-        toast.error("Failed to save entitlement");
+        toast.error(editingEntitlement 
+          ? "Failed to update entitlement. Please verify your data and try again." 
+          : "Failed to create entitlement. Please check all required fields and try again.");
       }
     } finally {
       toast.dismiss(loadingToast);
@@ -226,7 +232,12 @@ export default function ClassInventoryEntitlementsPage() {
   const handleBulkSubmit = async (data: CreateClassInventoryEntitlementInput[]) => {
     // Check permission
     if (!canCreate) {
-      toast.error("You don't have permission to create entitlements");
+      toast.error("You don't have permission to create entitlements. Please contact your administrator.");
+      return;
+    }
+
+    if (data.length === 0) {
+      toast.error("No valid entitlements found in your upload. Please check your file format and try again.");
       return;
     }
 
@@ -235,17 +246,17 @@ export default function ClassInventoryEntitlementsPage() {
 
     try {
       await classInventoryEntitlementApi.bulkUpsert(data);
-      toast.success(`${data.length} entitlements created successfully!`);
+      toast.success(`Successfully created ${data.length} entitlements!`);
 
       setShowBulkForm(false);
       await loadEntitlements();
     } catch (err: unknown) {
+      console.error("Bulk submission failed:", err);
+      
       if (err instanceof Error) {
-        console.error("Bulk submission failed:", err);
-        toast.error("Failed to create entitlements: " + err.message);
+        toast.error(err.message);
       } else {
-        console.error("Bulk submission failed:", err);
-        toast.error("Failed to create entitlements");
+        toast.error(`Failed to create ${data.length} entitlements. Please verify your data format and try again.`);
       }
     } finally {
       toast.dismiss(loadingToast);
@@ -257,7 +268,7 @@ export default function ClassInventoryEntitlementsPage() {
   const handleEdit = (entitlement: ClassInventoryEntitlement) => {
     // Check permission before opening form
     if (!canUpdate) {
-      toast.error("You don't have permission to update entitlements");
+      toast.error("You don't have permission to update entitlements. Please contact your administrator.");
       return;
     }
     setEditingEntitlement(entitlement);
@@ -267,7 +278,7 @@ export default function ClassInventoryEntitlementsPage() {
   const handleDeleteRequest = (entitlement: ClassInventoryEntitlement) => {
     // Check permission before opening modal
     if (!canDelete) {
-      toast.error("You don't have permission to delete entitlements");
+      toast.error("You don't have permission to delete entitlements. Please contact your administrator.");
       return;
     }
     setDeletingEntitlement(entitlement);
@@ -279,7 +290,7 @@ export default function ClassInventoryEntitlementsPage() {
     
     // Double-check permission before deleting
     if (!canDelete) {
-      toast.error("You don't have permission to delete entitlements");
+      toast.error("You don't have permission to delete entitlements. Please contact your administrator.");
       return;
     }
 
@@ -294,12 +305,12 @@ export default function ClassInventoryEntitlementsPage() {
       setDeletingEntitlement(null);
       await loadEntitlements();
     } catch (err: unknown) {
+      console.error("Delete failed:", err);
+      
       if (err instanceof Error) {
-        console.error("Delete failed:", err);
-        toast.error("Failed to delete entitlement: " + err.message);
+        toast.error(err.message);
       } else {
-        console.error("Delete failed:", err);
-        toast.error("Failed to delete entitlement");
+        toast.error("Failed to delete entitlement. Please try again or contact support if the issue continues.");
       }
     } finally {
       toast.dismiss(loadingToast);
@@ -317,7 +328,7 @@ export default function ClassInventoryEntitlementsPage() {
   const handleAdd = () => {
     // Check permission before opening form
     if (!canCreate) {
-      toast.error("You don't have permission to create entitlements");
+      toast.error("You don't have permission to create entitlements. Please contact your administrator.");
       return;
     }
     setShowForm(true);
@@ -326,7 +337,7 @@ export default function ClassInventoryEntitlementsPage() {
   const handleBulkAdd = () => {
     // Check permission before opening bulk form
     if (!canCreate) {
-      toast.error("You don't have permission to create entitlements");
+      toast.error("You don't have permission to create entitlements. Please contact your administrator.");
       return;
     }
     setShowBulkForm(true);
@@ -404,14 +415,18 @@ export default function ClassInventoryEntitlementsPage() {
           <div className="mt-6 flex justify-start">
             <button
               onClick={handleExport}
-              className="bg-[#3D4C63] hover:bg-[#495C79] text-white px-5 py-2 rounded-sm transition"
+              disabled={filteredEntitlements.length === 0}
+              className={`px-5 py-2 rounded-sm transition flex gap-2 items-center ${
+                filteredEntitlements.length === 0
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-[#3D4C63] hover:bg-[#495C79] text-white"
+              }`}
             >
-              <span className="flex gap-2">
-                <Download className="w-5 h-5" />
-                <span>Export</span>
-              </span>
+              <Download className="w-5 h-5" />
+              <span>Export {filteredEntitlements.length > 0 ? `(${filteredEntitlements.length})` : ""}</span>
             </button>
           </div>
+          
           {/* Delete Modal */}
           {showDeleteModal && deletingEntitlement && (
             <DeleteModal

@@ -9,6 +9,13 @@ import { Student } from "@/lib/types/students";
 import { InventoryItem } from "@/lib/types/inventory_item";
 import { AcademicSession } from "@/lib/types/academic_session";
 import { User } from "@/lib/types/user";
+import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { 
+  getAvailableQuantity, 
+  hasSufficientStock, 
+  getStockStatus,
+  formatInventoryItemDisplay 
+} from "@/lib/utils/inventory_helper";
 
 interface Class {
   id: string;
@@ -77,9 +84,31 @@ export default function CollectionForm({
     return students.filter((s) => s.class_id === formData.class_id);
   }, [students, formData.class_id]);
 
+  // Get selected inventory item details
+  const selectedItem = useMemo(() => {
+    return inventoryItems.find(item => item.id === formData.inventory_item_id);
+  }, [inventoryItems, formData.inventory_item_id]);
+
+  // Get stock status using helper
+  const stockStatus = useMemo(() => {
+    if (!selectedItem) return null;
+    return getStockStatus(selectedItem);
+  }, [selectedItem]);
+
+  // Check if quantity is valid using helper
+  const isQuantityValid = useMemo(() => {
+    if (!formData.qty || !selectedItem) return true;
+    return hasSufficientStock(selectedItem, formData.qty);
+  }, [formData.qty, selectedItem]);
+
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isQuantityValid) {
+      return;
+    }
+    
     await onSubmit(formData);
   };
 
@@ -95,7 +124,7 @@ export default function CollectionForm({
             {/* Class Select (first) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Class <span className="text-gray-500">*</span>
+                Class <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.class_id}
@@ -122,7 +151,7 @@ export default function CollectionForm({
             {/* Student Select (depends on class) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Student <span className="text-gray-500">*</span>
+                Student <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.student_id}
@@ -149,7 +178,7 @@ export default function CollectionForm({
             {/* Session Term */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Session Term <span className="text-gray-500">*</span>
+                Session Term <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.session_term_id}
@@ -172,7 +201,7 @@ export default function CollectionForm({
             {/* Inventory Item */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Inventory Item <span className="text-gray-500">*</span>
+                Inventory Item <span className="text-red-500">*</span>
               </label>
               <select
                 value={formData.inventory_item_id}
@@ -189,16 +218,16 @@ export default function CollectionForm({
                 <option value="">Select item</option>
                 {inventoryItems.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.name}
+                    {formatInventoryItemDisplay(item)}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Quantity */}
+            {/* Quantity with Stock Display */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Quantity <span className="text-gray-500">*</span>
+                Quantity <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -207,37 +236,36 @@ export default function CollectionForm({
                 onChange={(e) =>
                   setFormData({ ...formData, qty: parseInt(e.target.value) || 0 })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                  !isQuantityValid 
+                    ? "border-red-500 focus:ring-red-500" 
+                    : "border-gray-300 focus:ring-[#3D4C63]"
+                }`}
                 required
                 disabled={isSubmitting}
               />
+              {stockStatus && (
+                <div className="mt-1 flex items-center gap-2 text-sm">
+                  {stockStatus.isOutOfStock ? (
+                    <>
+                      <AlertCircle className="w-4 h-4 text-orange-600" />
+                      <span className="text-orange-600">Out of stock</span>
+                    </>
+                  ) : (
+                    <>
+                      {isQuantityValid ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-600" />
+                      )}
+                      <span className={isQuantityValid ? "text-green-600" : "text-red-600"}>
+                        {stockStatus.available} available in stock
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
-
-            {/* Given By */}
-            {/** <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Given By (User)
-              </label>
-              <select
-                value={formData.given_by || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    given_by: e.target.value || null,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-                disabled={isSubmitting}
-              >
-                <option value="">Select user</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            </div>*/}
-          
 
             {/* Received Date */}
             <div>
@@ -300,6 +328,20 @@ export default function CollectionForm({
             </div>
           </div>
 
+          {/* Stock Warning */}
+          {!isQuantityValid && formData.qty > 0 && stockStatus && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-red-800">
+                <p className="font-medium">Insufficient stock available</p>
+                <p>
+                  You requested {formData.qty} items, but only {stockStatus.available} are available. 
+                  Please reduce the quantity or contact inventory management.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
@@ -312,7 +354,7 @@ export default function CollectionForm({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isQuantityValid}
               className="px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isSubmitting ? (

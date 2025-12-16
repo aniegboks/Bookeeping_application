@@ -58,7 +58,9 @@ export default function DeleteModal({
               <div>
                 <p className="text-xs text-gray-500">Assigned At:</p>
                 <p className="text-sm text-gray-900">
-                  {new Date(teacher.assigned_at).toLocaleString()}
+                  {teacher.assigned_at 
+                    ? new Date(teacher.assigned_at).toLocaleString()
+                    : 'N/A'}
                 </p>
               </div>
             </div>

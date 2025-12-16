@@ -16,7 +16,6 @@ import StatsCards from "@/components/inventory_items_ui/stats_card";
 import DeleteItemModal from "@/components/inventory_items_ui/delete_modal";
 import Loader from "@/components/ui/loading_spinner";
 import Container from "@/components/ui/container";
-import Trends from "@/components/inventory_items_ui/trends";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Download } from "lucide-react";

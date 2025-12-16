@@ -126,7 +126,9 @@ export default function TeacherTable({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex items-center gap-1">
                     <Calendar size={14} />
-                    {new Date(teacher.assigned_at).toLocaleDateString()}
+                    {teacher.assigned_at 
+                      ? new Date(teacher.assigned_at).toLocaleDateString()
+                      : 'N/A'}
                   </div>
                 </td>
 

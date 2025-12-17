@@ -94,15 +94,17 @@ export default function ChatLoader() {
       }
     };
 
-    // Add custom CSS for positioning
+    // Add custom CSS for positioning and sizing
     const style = document.createElement("style");
     style.id = "fw-custom-styles";
     style.textContent = `
-      /* Position Freshworks chat widget at bottom left, moved upward */
+      /* Position and size Freshworks chat widget */
       .custom_fc_frame {
         right: auto !important;
         left: 20px !important;
         bottom: 100px !important;
+        transform: scale(0.85) !important;
+        transform-origin: bottom left !important;
       }
       
       /* Additional targeting for any other elements */
@@ -113,6 +115,15 @@ export default function ChatLoader() {
         right: auto !important;
         left: 20px !important;
         bottom: 100px !important;
+        transform: scale(0.85) !important;
+        transform-origin: bottom left !important;
+      }
+      
+      /* Scale the launcher button as well */
+      div[id^="fc_frame"],
+      div[class*="fc-widget"] {
+        transform: scale(0.85) !important;
+        transform-origin: bottom left !important;
       }
     `;
     document.head.appendChild(style);

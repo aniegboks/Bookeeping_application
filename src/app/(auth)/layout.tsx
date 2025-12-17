@@ -1,10 +1,16 @@
 "use client";
 
 import { useUser } from "@/contexts/UserContext";
+import { usePathname } from "next/navigation";
 import Nav from "@/components/ui/nav";
+import ChatLoader from "@/components/ui/chat_loader";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { loading } = useUser();
+  const { user, loading } = useUser();
+  const pathname = usePathname();
+  
+  // Check if we're on a public page where we shouldn't show Nav or ChatLoader
+  const isPublicPage = pathname === "/login" || pathname === "/signup";
 
   if (loading) {
     return (
@@ -18,27 +24,34 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <div className="h-screen flex-shrink-0">
-        <Nav />
+    <>
+      {/* Only show ChatLoader when user is logged in AND not on public pages */}
+      {user && !isPublicPage && <ChatLoader />}
+      
+      <div className="flex min-h-screen bg-gray-50">
+        {/* Left Sidebar - only show when not on public pages */}
+        {!isPublicPage && (
+          <div className="h-screen flex-shrink-0">
+            <Nav />
+          </div>
+        )}
+
+        {/* Main Content with independent scroll */}
+        <main className={`flex-1 h-screen overflow-y-auto ${!isPublicPage ? 'p-10' : ''} scrollbar-none`}>
+          {children}
+        </main>
+
+        {/* Hide scrollbar */}
+        <style jsx>{`
+          .scrollbar-none::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-none {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}</style>
       </div>
-
-      {/* Main Content with independent scroll */}
-      <main className="flex-1 h-screen overflow-y-auto p-10 scrollbar-none">
-        {children}
-      </main>
-
-      {/* Hide scrollbar */}
-      <style jsx>{`
-        .scrollbar-none::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-none {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-    </div>
+    </>
   );
 }

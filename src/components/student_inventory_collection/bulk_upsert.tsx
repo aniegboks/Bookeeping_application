@@ -1,12 +1,29 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Trash2, Users, AlertCircle, CheckCircle } from "lucide-react";
-import { CreateStudentInventoryCollectionInput } from "@/lib/types/student_inventory_collection";
+import {
+  Plus,
+  Trash2,
+  Users,
+  AlertCircle,
+  CheckCircle,
+  Package,
+  Info,
+} from "lucide-react";
+import {
+  CreateStudentInventoryCollectionInput,
+  StudentInventoryCollection,
+} from "@/lib/types/student_inventory_collection";
 import { Student } from "@/lib/types/students";
 import { InventoryItem } from "@/lib/types/inventory_item";
 import { AcademicSession } from "@/lib/types/academic_session";
 import { User } from "@/lib/types/user";
+import { InventoryDistribution } from "@/lib/types/inventory_distribution";
+import {
+  getFilteredInventoryItems,
+  formatDistributedItemDisplay,
+  getStockStatus,
+} from "@/lib/utils/inventory_distribution_helper";
 
 interface Class {
   id: string;
@@ -21,6 +38,8 @@ interface BulkUploadFormProps {
   inventoryItems: InventoryItem[];
   sessionTerms: AcademicSession[];
   users: User[];
+  distributions: InventoryDistribution[];
+  collections: StudentInventoryCollection[]; // ADD THIS
   classes: Class[];
 }
 
@@ -37,6 +56,8 @@ export default function BulkUploadForm({
   inventoryItems,
   sessionTerms,
   users,
+  distributions,
+  collections, // ADD THIS
   classes,
 }: BulkUploadFormProps) {
   const [rows, setRows] = useState<CollectionRow[]>([createEmptyRow()]);
@@ -79,7 +100,26 @@ export default function BulkUploadForm({
     setRows((prev) =>
       prev.map((r) =>
         r.tempId === tempId
-          ? { ...r, class_id: classId, selectedStudents: allStudentIds }
+          ? {
+              ...r,
+              class_id: classId,
+              selectedStudents: allStudentIds,
+              inventory_item_id: "", // Reset item when class changes
+            }
+          : r
+      )
+    );
+  };
+
+  const handleSessionSelect = (tempId: string, sessionId: string) => {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.tempId === tempId
+          ? {
+              ...r,
+              session_term_id: sessionId,
+              inventory_item_id: "", // Reset item when session changes
+            }
           : r
       )
     );
@@ -97,45 +137,113 @@ export default function BulkUploadForm({
     );
   };
 
-  // Calculate total stock requirements and validation
-  const stockValidation = useMemo(() => {
-    const stockNeeded: Record<string, number> = {};
-    
-    rows.forEach(row => {
-      if (row.inventory_item_id && row.selectedStudents.length > 0) {
-        const key = row.inventory_item_id;
-        const totalQty = row.qty * row.selectedStudents.length;
-        stockNeeded[key] = (stockNeeded[key] || 0) + totalQty;
+  // Get available items for each row based on class/session distributions
+  const getRowAvailableItems = (row: CollectionRow) => {
+    if (!row.class_id || !row.session_term_id) {
+      return [];
+    }
+    return getFilteredInventoryItems(
+      inventoryItems,
+      distributions,
+      collections,
+      row.class_id,
+      row.session_term_id
+    );
+  };
+
+  // Validate all assignments - group by item/class/session to check totals
+  const validationIssues = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        itemId: string;
+        classId: string;
+        sessionTermId: string;
+        totalRequested: number;
+      }
+    >();
+
+    // Group all requests by item/class/session
+    rows.forEach((row) => {
+      if (
+        !row.inventory_item_id ||
+        !row.class_id ||
+        !row.session_term_id ||
+        row.selectedStudents.length === 0
+      ) {
+        return;
+      }
+
+      const key = `${row.inventory_item_id}-${row.class_id}-${row.session_term_id}`;
+      const totalNeeded = row.qty * row.selectedStudents.length;
+
+      if (grouped.has(key)) {
+        const existing = grouped.get(key)!;
+        existing.totalRequested += totalNeeded;
+      } else {
+        grouped.set(key, {
+          itemId: row.inventory_item_id,
+          classId: row.class_id,
+          sessionTermId: row.session_term_id,
+          totalRequested: totalNeeded,
+        });
       }
     });
 
-    const validation: Record<string, { needed: number; available: number; valid: boolean; itemName: string }> = {};
-    
-    Object.entries(stockNeeded).forEach(([itemId, needed]) => {
-      const item = inventoryItems.find(i => i.id === itemId);
-      const available = item?.current_stock ?? 0;
-      validation[itemId] = {
-        needed,
-        available,
-        valid: needed <= available,
-        itemName: item?.name || 'Unknown Item'
-      };
+    // Check each group against available stock
+    const issues: Array<{
+      itemId: string;
+      classId: string;
+      sessionTermId: string;
+      requested: number;
+      available: number;
+      issue: string;
+    }> = [];
+
+    grouped.forEach((group) => {
+      const stockStatus = getStockStatus(
+        distributions,
+        collections,
+        group.itemId,
+        group.classId,
+        group.sessionTermId
+      );
+
+      // Debug logging
+      console.log("Bulk Validation Check:", {
+        itemId: group.itemId,
+        classId: group.classId,
+        sessionTermId: group.sessionTermId,
+        itemName: inventoryItems.find((i) => i.id === group.itemId)?.name,
+        className: classes.find((c) => c.id === group.classId)?.name,
+        totalRequested: group.totalRequested,
+        stockStatus,
+      });
+
+      if (group.totalRequested > stockStatus.available) {
+        issues.push({
+          itemId: group.itemId,
+          classId: group.classId,
+          sessionTermId: group.sessionTermId,
+          requested: group.totalRequested,
+          available: stockStatus.available,
+          issue: `Need ${group.totalRequested}, only ${stockStatus.available} available`,
+        });
+      }
     });
 
-    return validation;
-  }, [rows, inventoryItems]);
+    return issues;
+  }, [rows, distributions, collections, inventoryItems, classes]);
 
-  const hasStockIssues = useMemo(() => {
-    return Object.values(stockValidation).some(v => !v.valid);
-  }, [stockValidation]);
+  const hasValidationIssues = validationIssues.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (hasStockIssues) {
+
+    if (hasValidationIssues) {
       return;
     }
-    
+
     const submitData = rows.flatMap(({ tempId, selectedStudents, ...rest }) =>
       selectedStudents.map((sid) => ({ ...rest, student_id: sid }))
     );
@@ -146,14 +254,33 @@ export default function BulkUploadForm({
     [s.first_name, s.middle_name, s.last_name].filter(Boolean).join(" ");
 
   const getRowStockInfo = (row: CollectionRow) => {
-    if (!row.inventory_item_id || row.selectedStudents.length === 0) return null;
-    
-    const item = inventoryItems.find(i => i.id === row.inventory_item_id);
-    const available = item?.current_stock ?? 0;
-    const needed = row.qty * row.selectedStudents.length;
-    const isValid = needed <= available;
-    
-    return { available, needed, isValid, itemName: item?.name || 'Unknown' };
+    if (
+      !row.inventory_item_id ||
+      row.selectedStudents.length === 0 ||
+      !row.class_id ||
+      !row.session_term_id
+    ) {
+      return null;
+    }
+
+    const stockStatus = getStockStatus(
+      distributions,
+      collections,
+      row.inventory_item_id,
+      row.class_id,
+      row.session_term_id
+    );
+
+    const totalNeeded = row.qty * row.selectedStudents.length;
+    const isValid = totalNeeded <= stockStatus.available;
+    const item = inventoryItems.find((i) => i.id === row.inventory_item_id);
+
+    return {
+      ...stockStatus,
+      totalNeeded,
+      isValid,
+      itemName: item?.name || "Unknown",
+    };
   };
 
   return (
@@ -178,27 +305,81 @@ export default function BulkUploadForm({
           </button>
         </div>
 
-        {/* Stock Warning Summary */}
-        {hasStockIssues && (
+        {/* Validation Issues Summary */}
+        {hasValidationIssues && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-medium text-red-900 mb-2">Insufficient Stock Detected</h3>
-                <div className="space-y-1 text-sm text-red-800">
-                  {Object.entries(stockValidation)
-                    .filter(([_, v]) => !v.valid)
-                    .map(([itemId, info]) => (
-                      <div key={itemId} className="flex justify-between">
-                        <span>{info.itemName}:</span>
-                        <span className="font-medium">
-                          Need {info.needed}, only {info.available} available
-                        </span>
+                <h3 className="font-medium text-red-900 mb-2">
+                  Insufficient Available Stock
+                </h3>
+                <div className="space-y-2 text-sm text-red-800">
+                  {validationIssues.map((issue, idx) => {
+                    const item = inventoryItems.find(
+                      (i) => i.id === issue.itemId
+                    );
+                    const cls = classes.find((c) => c.id === issue.classId);
+                    const session = sessionTerms.find(
+                      (s) => s.id === issue.sessionTermId
+                    );
+
+                    // Get detailed stock info for display
+                    const stockStatus = getStockStatus(
+                      distributions,
+                      collections,
+                      issue.itemId,
+                      issue.classId,
+                      issue.sessionTermId
+                    );
+
+                    return (
+                      <div
+                        key={idx}
+                        className="bg-white/50 rounded p-3 border border-red-300"
+                      >
+                        <div className="font-medium text-base mb-1">
+                          {item?.name || "Unknown Item"} →{" "}
+                          {cls?.name || "Unknown Class"} (
+                          {session?.name || "Unknown Session"})
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span>Total distributed:</span>
+                            <span className="font-medium">
+                              {stockStatus.totalDistributed}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Already assigned:</span>
+                            <span className="font-medium">
+                              {stockStatus.totalAssigned}
+                            </span>
+                          </div>
+                          <div className="flex justify-between border-t border-red-200 pt-1">
+                            <span>Available:</span>
+                            <span className="font-medium">
+                              {stockStatus.available}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-red-900 font-semibold border-t border-red-300 pt-1 mt-1">
+                            <span>{"You're trying to assign:"}</span>
+                            <span>{issue.requested}</span>
+                          </div>
+                          <div className="flex justify-between text-red-900 font-semibold">
+                            <span>Short by:</span>
+                            <span>
+                              {issue.requested - stockStatus.available}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    ))}
+                    );
+                  })}
                 </div>
-                <p className="mt-2 text-sm text-red-700">
-                  Please reduce quantities or remove items before submitting.
+                <p className="mt-3 text-sm text-red-700 font-medium">
+                  Please reduce quantities, deselect some students, or
+                  distribute more items to the classes first.
                 </p>
               </div>
             </div>
@@ -210,6 +391,7 @@ export default function BulkUploadForm({
             const filteredStudents = students.filter(
               (s) => s.class_id === row.class_id
             );
+            const availableItems = getRowAvailableItems(row);
             const stockInfo = getRowStockInfo(row);
 
             return (
@@ -218,9 +400,7 @@ export default function BulkUploadForm({
                 className="border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition p-4 space-y-3"
               >
                 <div className="flex justify-between items-center">
-                  <h3 className="font-medium text-gray-700">
-                    Row {index + 1}
-                  </h3>
+                  <h3 className="font-medium text-gray-700">Row {index + 1}</h3>
                   <button
                     type="button"
                     onClick={() => handleRemoveRow(row.tempId)}
@@ -230,6 +410,19 @@ export default function BulkUploadForm({
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
+
+                {/* Distribution status banner */}
+                {row.class_id &&
+                  row.session_term_id &&
+                  availableItems.length === 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 flex items-center gap-2">
+                      <Package className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span className="text-sm text-amber-800">
+                        No items available - either not distributed or fully
+                        assigned
+                      </span>
+                    </div>
+                  )}
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   {/* Class */}
@@ -250,29 +443,11 @@ export default function BulkUploadForm({
                     ))}
                   </select>
 
-                  {/* Inventory Item */}
-                  <select
-                    value={row.inventory_item_id}
-                    onChange={(e) =>
-                      handleChange(row.tempId, "inventory_item_id", e.target.value)
-                    }
-                    className="p-2 border border-gray-300 rounded-lg text-sm"
-                    required
-                    disabled={isSubmitting}
-                  >
-                    <option value="">Select Item</option>
-                    {inventoryItems.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} ({item.current_stock ?? 0} available)
-                      </option>
-                    ))}
-                  </select>
-
                   {/* Term */}
                   <select
                     value={row.session_term_id}
                     onChange={(e) =>
-                      handleChange(row.tempId, "session_term_id", e.target.value)
+                      handleSessionSelect(row.tempId, e.target.value)
                     }
                     className="p-2 border border-gray-300 rounded-lg text-sm"
                     required
@@ -282,6 +457,36 @@ export default function BulkUploadForm({
                     {sessionTerms.map((term) => (
                       <option key={term.id} value={term.id}>
                         {term.name} ({term.session})
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Inventory Item - Filtered */}
+                  <select
+                    value={row.inventory_item_id}
+                    onChange={(e) =>
+                      handleChange(
+                        row.tempId,
+                        "inventory_item_id",
+                        e.target.value
+                      )
+                    }
+                    className="p-2 border border-gray-300 rounded-lg text-sm"
+                    required
+                    disabled={
+                      isSubmitting || !row.class_id || !row.session_term_id
+                    }
+                  >
+                    <option value="">
+                      {!row.class_id || !row.session_term_id
+                        ? "Select class & term first"
+                        : availableItems.length === 0
+                        ? "No items available"
+                        : "Select Item"}
+                    </option>
+                    {availableItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {formatDistributedItemDisplay(item)}
                       </option>
                     ))}
                   </select>
@@ -306,20 +511,35 @@ export default function BulkUploadForm({
 
                 {/* Stock Info for this row */}
                 {stockInfo && (
-                  <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${
-                    stockInfo.isValid 
-                      ? "bg-green-50 text-green-800 border border-green-200" 
-                      : "bg-red-50 text-red-800 border border-red-200"
-                  }`}>
-                    {stockInfo.isValid ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4" />
-                    )}
-                    <span>
-                      {stockInfo.needed} {stockInfo.itemName} needed for {row.selectedStudents.length} students
-                      {!stockInfo.isValid && ` (only ${stockInfo.available} available)`}
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-600 bg-white rounded px-2 py-1">
+                      <Info className="w-3 h-3" />
+                      <span>
+                        {stockInfo.totalDistributed} distributed,{" "}
+                        {stockInfo.totalAssigned} assigned to others,{" "}
+                        {stockInfo.available} available
+                      </span>
+                    </div>
+
+                    <div
+                      className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${
+                        stockInfo.isValid
+                          ? "bg-green-50 text-green-800 border border-green-200"
+                          : "bg-red-50 text-red-800 border border-red-200"
+                      }`}
+                    >
+                      {stockInfo.isValid ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
+                      <span>
+                        Need {stockInfo.totalNeeded} {stockInfo.itemName} for{" "}
+                        {row.selectedStudents.length} students
+                        {!stockInfo.isValid &&
+                          ` (only ${stockInfo.available} available)`}
+                      </span>
+                    </div>
                   </div>
                 )}
 
@@ -375,10 +595,11 @@ export default function BulkUploadForm({
                       {filteredStudents.map((student) => (
                         <label
                           key={student.id}
-                          className={`flex items-center gap-1 px-2 py-1 border rounded-lg text-xs cursor-pointer transition ${row.selectedStudents.includes(student.id)
+                          className={`flex items-center gap-1 px-2 py-1 border rounded-lg text-xs cursor-pointer transition ${
+                            row.selectedStudents.includes(student.id)
                               ? "bg-[#3D4C63] text-white border-[#3D4C63]"
                               : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
-                            }`}
+                          }`}
                         >
                           <input
                             type="checkbox"
@@ -414,7 +635,7 @@ export default function BulkUploadForm({
 
             <button
               type="submit"
-              disabled={isSubmitting || hasStockIssues}
+              disabled={isSubmitting || hasValidationIssues}
               className="px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isSubmitting ? (

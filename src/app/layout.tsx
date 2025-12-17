@@ -3,7 +3,6 @@ import { Jost } from "next/font/google";
 import "./globals.css";
 import ToasterClient from "@/components/ui/toaster";
 import { UserProvider } from "@/contexts/UserContext";
-
 const jost = Jost({
   variable: "--font-jost",
   subsets: ["latin"],

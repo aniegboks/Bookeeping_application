@@ -7,6 +7,7 @@ import { inventoryItemApi } from "@/lib/inventory_item";
 import { inventoryDistributionApi } from "@/lib/inventory_distrbution";
 import { inventoryTransactionApi } from "@/lib/inventory_transactions";
 import { schoolClassApi } from "@/lib/classes";
+import { academicSessionsApi } from "@/lib/academic_session";
 import { InventoryReportTable } from "./global_summary";
 
 interface Supplier {
@@ -20,6 +21,7 @@ interface TransactionWithSupplier {
   in_cost: number;
   amount_paid: number;
   suppliers?: Supplier | null;
+  session_term_id?: string | null;
 }
 
 interface Distribution {
@@ -27,6 +29,7 @@ interface Distribution {
   distributed_quantity: number;
   class_id?: string | null;
   receiver_name?: string | null;
+  session_term_id?: string | null;
 }
 
 interface DistributionResponse {
@@ -34,6 +37,11 @@ interface DistributionResponse {
 }
 
 interface SchoolClass {
+  id: string;
+  name: string;
+}
+
+interface AcademicSession {
   id: string;
   name: string;
 }
@@ -81,10 +89,31 @@ interface DistributionTotal {
 export function InventoryReportContainer() {
   const [data, setData] = useState<CombinedInventory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<AcademicSession[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
 
   useEffect(() => {
-    fetchReportData();
+    fetchInitialData();
   }, []);
+
+  useEffect(() => {
+    if (sessions.length > 0) {
+      fetchReportData();
+    }
+  }, [selectedSessionId, sessions]);
+
+  async function fetchInitialData() {
+    try {
+      setLoading(true);
+      const sessionsData = await academicSessionsApi.getAll();
+      setSessions(sessionsData as AcademicSession[]);
+      await fetchReportData();
+    } catch (err) {
+      console.error("Error fetching initial data:", err);
+      toast.error("Failed to load initial data");
+      setLoading(false);
+    }
+  }
 
   async function fetchReportData() {
     try {
@@ -101,19 +130,35 @@ export function InventoryReportContainer() {
         (classes as SchoolClass[]).map((cls) => [cls.id, cls.name])
       );
 
+      // Filter transactions by session if selected
+      const filteredTransactions = selectedSessionId
+        ? (transactions as TransactionWithSupplier[]).filter(
+            (tx) => tx.session_term_id === selectedSessionId
+          )
+        : (transactions as TransactionWithSupplier[]);
+
+      // Filter distributions by session if selected
+      const distributionsData = distributions as DistributionResponse;
+      const filteredDistributions = selectedSessionId
+        ? distributionsData.data.filter(
+            (dist) => dist.session_term_id === selectedSessionId
+          )
+        : distributionsData.data;
+
       const transactionTotals: Record<string, number> = {};
       const transactionCosts: Record<string, number> = {};
       const transactionAmountPaid: Record<string, number> = {};
       const transactionSuppliers: Record<string, Set<string>> = {};
       const distributionTotals: Record<string, DistributionTotal> = {};
 
-      for (const tx of transactions as TransactionWithSupplier[]) {
+      for (const tx of filteredTransactions) {
         if (tx.transaction_type === "purchase") {
           const invId = tx.item_id;
           if (!transactionTotals[invId]) transactionTotals[invId] = 0;
           if (!transactionCosts[invId]) transactionCosts[invId] = 0;
           if (!transactionAmountPaid[invId]) transactionAmountPaid[invId] = 0;
-          if (!transactionSuppliers[invId]) transactionSuppliers[invId] = new Set();
+          if (!transactionSuppliers[invId])
+            transactionSuppliers[invId] = new Set();
 
           transactionTotals[invId] += tx.qty_in ?? 0;
           transactionCosts[invId] += tx.in_cost ?? 0;
@@ -125,8 +170,7 @@ export function InventoryReportContainer() {
         }
       }
 
-      const distributionsData = distributions as DistributionResponse;
-      for (const dist of distributionsData.data) {
+      for (const dist of filteredDistributions) {
         const invId = dist.inventory_item_id;
         if (!distributionTotals[invId]) {
           distributionTotals[invId] = {
@@ -138,7 +182,8 @@ export function InventoryReportContainer() {
 
         distributionTotals[invId].qty += dist.distributed_quantity ?? 0;
 
-        if (dist.class_id) distributionTotals[invId].classIds.add(dist.class_id);
+        if (dist.class_id)
+          distributionTotals[invId].classIds.add(dist.class_id);
         if (dist.receiver_name)
           distributionTotals[invId].receivers.add(dist.receiver_name);
       }
@@ -149,16 +194,20 @@ export function InventoryReportContainer() {
         const tAmountPaid = transactionAmountPaid[item.id] ?? 0;
         const suppliers = Array.from(transactionSuppliers[item.id] ?? []);
         const dOut = distributionTotals[item.id]?.qty ?? 0;
-        const classIds = Array.from(distributionTotals[item.id]?.classIds ?? []);
+        const classIds = Array.from(
+          distributionTotals[item.id]?.classIds ?? []
+        );
         const classNames = classIds
           .map((id) => classMap.get(id))
           .filter((name): name is string => Boolean(name));
-        const receivers = Array.from(distributionTotals[item.id]?.receivers ?? []);
+        const receivers = Array.from(
+          distributionTotals[item.id]?.receivers ?? []
+        );
 
         const costPrice = item.cost_price ?? 0;
         const sellingPrice = item.selling_price ?? 0;
         const profit = sellingPrice - costPrice;
-        const margin = costPrice > 0 ? ((profit / sellingPrice) * 100) : 0;
+        const margin = costPrice > 0 ? (profit / sellingPrice) * 100 : 0;
 
         return {
           id: item.id,
@@ -193,5 +242,13 @@ export function InventoryReportContainer() {
     }
   }
 
-  return <InventoryReportTable data={data} loading={loading} />;
+  return (
+    <InventoryReportTable
+      data={data}
+      loading={loading}
+      sessions={sessions}
+      selectedSessionId={selectedSessionId}
+      onSessionChange={setSelectedSessionId}
+    />
+  );
 }

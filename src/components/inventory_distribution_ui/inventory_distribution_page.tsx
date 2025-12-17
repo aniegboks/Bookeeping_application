@@ -53,23 +53,28 @@ export default function ClassInventoryDistributionsPage() {
   const [editingDistribution, setEditingDistribution] = useState<InventoryDistribution | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter distributions by search term
+  // Filter distributions by general search term
   const filteredDistributions = distributions.filter((distribution) => {
     const searchLower = searchTerm.toLowerCase();
     
     // Get related information for better search
     const classInfo = classes.find((c) => c.id === distribution.class_id);
     const itemInfo = inventoryItems.find((i) => i.id === distribution.inventory_item_id);
+    const sessionInfo = academicSessions.find((s) => s.id === distribution.session_term_id);
+    const teacherInfo = classTeachers.find((t) => t.id === distribution.received_by);
+    
     const className = classInfo?.name || "";
     const itemName = itemInfo?.name || "";
+    const sessionName = sessionInfo?.name || "";
+    const teacherName = teacherInfo?.name || "";
     
     return (
-      distribution.class_id.toLowerCase().includes(searchLower) ||
-      distribution.inventory_item_id.toLowerCase().includes(searchLower) ||
-      distribution.receiver_name.toLowerCase().includes(searchLower) ||
-      distribution.notes?.toLowerCase().includes(searchLower) ||
       className.toLowerCase().includes(searchLower) ||
-      itemName.toLowerCase().includes(searchLower)
+      itemName.toLowerCase().includes(searchLower) ||
+      sessionName.toLowerCase().includes(searchLower) ||
+      distribution.receiver_name.toLowerCase().includes(searchLower) ||
+      teacherName.toLowerCase().includes(searchLower) ||
+      distribution.notes?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -259,12 +264,12 @@ export default function ClassInventoryDistributionsPage() {
         return {
           "Class": classInfo?.name || "N/A",
           "Item": itemInfo?.name || "N/A",
+          "Academic Session": sessionInfo?.name || "N/A",
           "Quantity Distributed": d.distributed_quantity,
           "Receiver": d.receiver_name || teacherInfo?.name || "N/A",
           "Distribution Date": d.distribution_date 
             ? new Date(d.distribution_date).toLocaleDateString() 
             : "Not specified",
-          "Academic Session": sessionInfo?.name || "N/A",
           "Notes": d.notes || "No notes",
           "Created At": new Date(d.created_at).toLocaleString(),
         };
@@ -353,6 +358,7 @@ export default function ClassInventoryDistributionsPage() {
             classes={classes}
             inventoryItems={inventoryItems}
             classTeachers={classTeachers}
+            academicSessions={academicSessions}
             canUpdate={canUpdate}
           />
 

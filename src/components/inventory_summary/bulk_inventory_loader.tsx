@@ -14,7 +14,11 @@ interface BulkInventoryLoaderProps {
   onClose: () => void;
 }
 
-export function BulkInventoryLoader({ onLoad, isOpen, onClose }: BulkInventoryLoaderProps) {
+export function BulkInventoryLoader({
+  onLoad,
+  isOpen,
+  onClose,
+}: BulkInventoryLoaderProps) {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,7 +54,7 @@ export function BulkInventoryLoader({ onLoad, isOpen, onClose }: BulkInventoryLo
     if (selectedIds.length === items.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(items.map(item => item.id));
+      setSelectedIds(items.map((item) => item.id));
     }
   };
 
@@ -71,7 +75,9 @@ export function BulkInventoryLoader({ onLoad, isOpen, onClose }: BulkInventoryLo
       onClose();
     } catch (err) {
       console.error("Error loading bulk inventories:", err);
-      setError(err instanceof Error ? err.message : "Failed to load inventories");
+      setError(
+        err instanceof Error ? err.message : "Failed to load inventories"
+      );
     } finally {
       setLoading(false);
     }
@@ -137,14 +143,18 @@ export function BulkInventoryLoader({ onLoad, isOpen, onClose }: BulkInventoryLo
                     onClick={toggleSelectAll}
                     className="text-sm text-[#495C79] hover:text-[#3D4C63] font-medium"
                   >
-                    {selectedIds.length === items.length ? "Deselect All" : "Select All"}
+                    {selectedIds.length === items.length
+                      ? "Deselect All"
+                      : "Select All"}
                   </button>
                 </div>
 
                 <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
                   {items.length === 0 ? (
                     <div className="p-8 text-center">
-                      <p className="text-gray-500 text-sm">No inventory items found</p>
+                      <p className="text-gray-500 text-sm">
+                        No inventory items found
+                      </p>
                     </div>
                   ) : (
                     items.map((item) => (
@@ -163,7 +173,9 @@ export function BulkInventoryLoader({ onLoad, isOpen, onClose }: BulkInventoryLo
                             {item.name}
                           </p>
                           {item.sku && (
-                            <p className="text-xs text-gray-500">SKU: {item.sku}</p>
+                            <p className="text-xs text-gray-500">
+                              SKU: {item.sku}
+                            </p>
                           )}
                         </div>
                       </label>
@@ -173,7 +185,8 @@ export function BulkInventoryLoader({ onLoad, isOpen, onClose }: BulkInventoryLo
 
                 {selectedIds.length > 0 && (
                   <p className="text-xs text-gray-600 mt-2">
-                    {selectedIds.length} item{selectedIds.length !== 1 ? 's' : ''} selected
+                    {selectedIds.length} item
+                    {selectedIds.length !== 1 ? "s" : ""} selected
                   </p>
                 )}
               </div>
@@ -191,27 +204,29 @@ export function BulkInventoryLoader({ onLoad, isOpen, onClose }: BulkInventoryLo
             >
               Cancel
             </button>
+
             <button
               onClick={handleSubmit}
               disabled={loading || selectedIds.length === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#495C79] rounded-sm hover:bg-[#495C79] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#495C79] rounded-sm hover:bg-[#3f5069] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <span className="flex gap-2">
-                  <SmallLoader /> Loading...
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  <span>Loading…</span>
                 </span>
               ) : (
-                <span className="flex gap-2 items-center">
+                <span className="flex items-center gap-2">
                   <Upload className="w-4 h-4" />
-                  {`Load ${selectedIds.length} Item${selectedIds.length !== 1 ? 's' : ''}`}
+                  {`Load ${selectedIds.length} Item${
+                    selectedIds.length !== 1 ? "s" : ""
+                  }`}
                 </span>
               )}
             </button>
-
           </div>
         </div>
       </div>
     </div>
   );
 }
-

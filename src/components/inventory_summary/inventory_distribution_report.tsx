@@ -447,36 +447,9 @@ export default function DistributionCollectionReport({
 
       {/* Loading State */}
       {loading && (
-        <div className="p-12 border-t border-gray-200">
-          <div className="flex flex-col items-center justify-center">
-            <div className="flex items-center justify-center py-20">
-              <div className="flex flex-col items-center gap-4">
-                <svg
-                  className="animate-spin h-10 w-10 text-gray-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                  />
-                </svg>
-              </div>
-            </div>
-            <span className="text-gray-700 font-medium">
-              Loading distribution data...
-            </span>
-          </div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4" />
+          <p className="text-gray-600">Loading your workspace...</p>
         </div>
       )}
 

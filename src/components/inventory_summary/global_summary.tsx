@@ -10,20 +10,32 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  Filter,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import { CombinedInventory } from "./inventory_report_container";
-import SmallLoader from "../ui/small_loader";
+
+interface AcademicSession {
+  id: string;
+  name: string;
+}
 
 interface InventoryReportTableProps {
   data: CombinedInventory[];
   loading: boolean;
+  sessions: AcademicSession[];
+  selectedSessionId: string;
+  onSessionChange: (sessionId: string) => void;
 }
 
 export function InventoryReportTable({
   data,
   loading,
+  sessions,
+  selectedSessionId,
+  onSessionChange,
 }: InventoryReportTableProps) {
   const [filteredData, setFilteredData] = useState<CombinedInventory[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,7 +84,9 @@ export function InventoryReportTable({
       return;
     }
 
-    // Prepare data for Excel
+    const selectedSession = sessions.find((s) => s.id === selectedSessionId);
+    const sessionName = selectedSession ? selectedSession.name : "All Sessions";
+
     const worksheetData = filteredData.map((r) => ({
       SKU: r.id,
       Suppliers: r.supplier_names,
@@ -95,39 +109,37 @@ export function InventoryReportTable({
       Status: r.is_low_stock ? "Low" : "OK",
     }));
 
-    // Create workbook and worksheet
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory Report");
 
-    // Set column widths for better readability
     const columnWidths = [
-      { wch: 35 }, // SKU
-      { wch: 25 }, // Suppliers
-      { wch: 30 }, // Item Name
-      { wch: 20 }, // Brand
-      { wch: 20 }, // Category
-      { wch: 12 }, // Purchases
-      { wch: 12 }, // Distributed
-      { wch: 10 }, // Stock
-      { wch: 15 }, // Total Cost
-      { wch: 15 }, // Amount Paid
-      { wch: 15 }, // Cost Price
-      { wch: 15 }, // Selling Price
-      { wch: 15 }, // Profit
-      { wch: 12 }, // Margin (%)
-      { wch: 15 }, // Classes Count
-      { wch: 30 }, // Classes Distributed To
-      { wch: 25 }, // Receivers
-      { wch: 10 }, // UOM
-      { wch: 12 }, // Status
+      { wch: 35 },
+      { wch: 25 },
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 30 },
+      { wch: 25 },
+      { wch: 10 },
+      { wch: 12 },
     ];
     worksheet["!cols"] = columnWidths;
 
-    // Generate filename with timestamp
-    const filename = `inventory_enhanced_report_${Date.now()}.xlsx`;
-
-    // Write and download the file
+    const filename = `inventory_report_${sessionName.replace(
+      /\s+/g,
+      "_"
+    )}_${Date.now()}.xlsx`;
     XLSX.writeFile(workbook, filename);
 
     toast.success("Excel file exported successfully!");
@@ -136,6 +148,8 @@ export function InventoryReportTable({
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentData = filteredData.slice(startIndex, startIndex + rowsPerPage);
+
+  const selectedSession = sessions.find((s) => s.id === selectedSessionId);
 
   return (
     <div className="p-8 bg-white rounded-sm border border-gray-200 my-8">
@@ -163,12 +177,49 @@ export function InventoryReportTable({
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
-          <div>
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+      {/* Filters Section */}
+      <div className="mb-6 space-y-4">
+        {/* Session Filter */}
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="w-4 h-4 text-gray-600" />
+            <label className="text-sm font-semibold text-gray-700">
+              Filter by Academic Session
+            </label>
           </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <select
+              value={selectedSessionId}
+              onChange={(e) => onSessionChange(e.target.value)}
+              className="flex-1 min-w-[250px] border border-gray-300 rounded-md px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Sessions</option>
+              {sessions.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {session.name}
+                </option>
+              ))}
+            </select>
+            {selectedSessionId && (
+              <button
+                onClick={() => onSessionChange("")}
+                className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
+            {selectedSession && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-md text-sm font-medium">
+                <span>Showing: {selectedSession.name}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Search by name, category, brand, supplier or class..."
@@ -181,31 +232,22 @@ export function InventoryReportTable({
 
       {/* Table */}
       {loading ? (
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4" />
+          <p className="text-gray-600">Loading your workspace...</p>
+        </div>
+      ) : filteredData.length === 0 ? (
         <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-4">
-            <svg
-              className="animate-spin h-10 w-10 text-gray-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v8H4z"
-              />
-            </svg>
-
-            <p className="text-gray-600 font-medium text-sm">
-              Loading inventory data...
+          <div className="text-center">
+            <p className="text-gray-500 text-lg font-medium mb-2">
+              No inventory items found
+            </p>
+            <p className="text-gray-400 text-sm">
+              {selectedSessionId
+                ? "Try selecting a different session or clearing the filter"
+                : searchTerm
+                ? "Try adjusting your search criteria"
+                : "No inventory data available"}
             </p>
           </div>
         </div>
@@ -284,9 +326,7 @@ export function InventoryReportTable({
                     <>
                       <tr
                         key={item.id}
-                        className={`transition-colors duration-150 hover:bg-gray-50 ${
-                          index % 2 === 0 ? "bg-white" : "bg-white"
-                        }`}
+                        className="transition-colors duration-150 hover:bg-gray-50"
                       >
                         <td className="px-6 py-4">
                           <button
@@ -343,7 +383,7 @@ export function InventoryReportTable({
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span className="text-sm  text-gray-900">
+                          <span className="text-sm text-gray-900">
                             ₦
                             {item.total_amount_paid.toLocaleString(undefined, {
                               minimumFractionDigits: 2,
@@ -368,7 +408,9 @@ export function InventoryReportTable({
                         <td className="px-6 py-4 text-right">
                           <span
                             className={`text-sm ${
-                              item.profit >= 0 ? "text-green-700" : "text-red-700"
+                              item.profit >= 0
+                                ? "text-green-700"
+                                : "text-red-700"
                             }`}
                           >
                             ₦
@@ -381,7 +423,9 @@ export function InventoryReportTable({
                         <td className="px-6 py-4 text-right">
                           <span
                             className={`text-sm ${
-                              item.margin >= 0 ? "text-green-700" : "text-red-700"
+                              item.margin >= 0
+                                ? "text-green-700"
+                                : "text-red-700"
                             }`}
                           >
                             {item.margin.toFixed(2)}%
@@ -547,10 +591,13 @@ export function InventoryReportTable({
                                     </span>
                                     <span className="text-sm text-gray-900 font-semibold">
                                       ₦
-                                      {item.total_cost.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                      })}
+                                      {item.total_cost.toLocaleString(
+                                        undefined,
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        }
+                                      )}
                                     </span>
                                   </div>
                                   <div>
@@ -574,10 +621,13 @@ export function InventoryReportTable({
                                     </span>
                                     <span className="text-sm text-gray-900">
                                       ₦
-                                      {item.cost_price.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                      })}
+                                      {item.cost_price.toLocaleString(
+                                        undefined,
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        }
+                                      )}
                                     </span>
                                   </div>
                                   <div>
@@ -654,7 +704,8 @@ export function InventoryReportTable({
                                   </div>
                                   <div>
                                     <span className="text-xs text-gray-500 block mb-2">
-                                      Classes Distributed To ({item.class_count})
+                                      Classes Distributed To ({item.class_count}
+                                      )
                                     </span>
                                     {item.class_names &&
                                     item.class_names !== "No Distribution" ? (

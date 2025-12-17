@@ -1,21 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { Edit, Trash2, XCircle, CircleCheck, RefreshCw } from "lucide-react";
 import { StudentInventoryCollection } from "@/lib/types/student_inventory_collection";
 import { Student } from "@/lib/types/students";
 import { InventoryItem } from "@/lib/types/inventory_item";
 import { AcademicSession } from "@/lib/types/academic_session";
 import { User } from "@/lib/types/user";
-
-//  Mock API (replace with your actual fetch endpoint)
-const inventoryApi = {
-  async fetchAll(): Promise<StudentInventoryCollection[]> {
-    const res = await fetch("/api/proxy/student_inventory_collection");
-    if (!res.ok) throw new Error("Failed to fetch inventory collections");
-    return res.json();
-  },
-};
 
 interface CollectionTableProps {
   collections: StudentInventoryCollection[];
@@ -27,41 +18,24 @@ interface CollectionTableProps {
   academicSessions?: AcademicSession[];
   users?: User[];
   rowsPerPage?: number;
-  refreshTrigger?: number;
+  onRefresh?: () => void;
   canUpdate?: boolean;
   canDelete?: boolean;
 }
 
 export default function CollectionTable({
+  collections,
   onEdit,
   onDelete,
+  loading = false,
   students,
+  academicSessions = [],
   rowsPerPage = 10,
-  refreshTrigger,
+  onRefresh,
   canUpdate = true,
   canDelete = true,
 }: CollectionTableProps) {
-  const [collections, setCollections] = useState<StudentInventoryCollection[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Fetch inventory data
-  const fetchCollections = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await inventoryApi.fetchAll();
-      setCollections(data);
-    } catch (err) {
-      console.error("Error fetching collections:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch data on mount + whenever `refreshTrigger` changes (after bulk upload)
-  useEffect(() => {
-    fetchCollections();
-  }, [fetchCollections, refreshTrigger]);
 
   // Pagination
   const totalPages = Math.ceil(collections.length / rowsPerPage);
@@ -81,6 +55,9 @@ export default function CollectionTable({
   const getAdmissionNumber = (id: string) =>
     students.find((s) => s.id === id)?.admission_number || "—";
 
+  const getSessionName = (id: string) =>
+    academicSessions.find((s) => s.id === id)?.name || "—";
+
   // Check if user has any action permissions
   const hasAnyActionPermission = canUpdate || canDelete;
 
@@ -98,12 +75,14 @@ export default function CollectionTable({
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
         <p className="text-gray-500">No inventory collections found</p>
-        <button
-          onClick={fetchCollections}
-          className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-[#E8EBF0] hover:bg-[#D8DCE3] rounded-lg transition-colors mx-auto"
-        >
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-[#E8EBF0] hover:bg-[#D8DCE3] rounded-lg transition-colors mx-auto"
+          >
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        )}
       </div>
     );
   }
@@ -111,14 +90,18 @@ export default function CollectionTable({
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="flex justify-between items-center p-4 border-b bg-gray-50">
-        <h2 className="font-semibold text-[#171D26] text-lg">Student Inventory Collections</h2>
-        <button
-          onClick={fetchCollections}
-          className="flex items-center gap-2 text-sm px-3 py-1.5 bg-[#E8EBF0] hover:bg-[#D8DCE3] rounded-lg transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
+        <h2 className="font-semibold text-[#171D26] text-lg">
+          Student Inventory Collections ({collections.length})
+        </h2>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-2 text-sm px-3 py-1.5 bg-[#E8EBF0] hover:bg-[#D8DCE3] rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -127,12 +110,12 @@ export default function CollectionTable({
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Session</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Eligible</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Received</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              {/* Only show Actions column if user has any action permission */}
               {hasAnyActionPermission && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               )}
@@ -151,6 +134,10 @@ export default function CollectionTable({
 
                 <td className="px-6 py-4 text-sm text-gray-900">
                   {c.school_classes?.name || "—"}
+                </td>
+
+                <td className="px-6 py-4 text-sm text-gray-900">
+                  {getSessionName(c.session_term_id)}
                 </td>
 
                 <td className="px-6 py-4 text-sm text-gray-900">
@@ -206,11 +193,9 @@ export default function CollectionTable({
                   {c.received_date ? new Date(c.received_date).toLocaleDateString() : "—"}
                 </td>
 
-                {/* Only show action buttons if user has permissions */}
                 {hasAnyActionPermission && (
                   <td className="px-6 py-4 text-sm">
                     <div className="flex items-center gap-2">
-                      {/* Only show Edit button if user can update */}
                       {canUpdate && (
                         <button
                           onClick={() => onEdit(c)}
@@ -220,7 +205,6 @@ export default function CollectionTable({
                           <Edit className="w-4 h-4" />
                         </button>
                       )}
-                      {/* Only show Delete button if user can delete */}
                       {canDelete && (
                         <button
                           onClick={() => onDelete(c)}
@@ -240,27 +224,29 @@ export default function CollectionTable({
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4 p-4 border-t">
-        <span className="text-sm text-gray-600">
-          Page {currentPage} of {totalPages}
-        </span>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
-          >
-            Next
-          </button>
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-4 p-4 border-t">
+          <span className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages} ({collections.length} total)
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

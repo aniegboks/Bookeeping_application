@@ -8,14 +8,15 @@ import {
 import { Student } from "@/lib/types/students";
 import { InventoryItem } from "@/lib/types/inventory_item";
 import { AcademicSession } from "@/lib/types/academic_session";
+import { InventoryDistribution } from "@/lib/types/inventory_distribution";
 import { User } from "@/lib/types/user";
-import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, Package, Info } from "lucide-react";
 import { 
-  getAvailableQuantity, 
-  hasSufficientStock, 
-  getStockStatus,
-  formatInventoryItemDisplay 
-} from "@/lib/utils/inventory_helper";
+  getFilteredInventoryItems,
+  formatDistributedItemDisplay,
+  hasSufficientStock,
+  getStockStatus
+} from "@/lib/utils/inventory_distribution_helper";
 
 interface Class {
   id: string;
@@ -30,6 +31,8 @@ interface CollectionFormProps {
   students: Student[];
   inventoryItems: InventoryItem[];
   sessionTerms: AcademicSession[];
+  distributions: InventoryDistribution[];
+  collections: StudentInventoryCollection[]; // ADD THIS
   users: User[];
   classes: Class[];
 }
@@ -42,6 +45,8 @@ export default function CollectionForm({
   students,
   inventoryItems,
   sessionTerms,
+  distributions,
+  collections, // ADD THIS
   users,
   classes,
 }: CollectionFormProps) {
@@ -84,22 +89,54 @@ export default function CollectionForm({
     return students.filter((s) => s.class_id === formData.class_id);
   }, [students, formData.class_id]);
 
-  // Get selected inventory item details
-  const selectedItem = useMemo(() => {
-    return inventoryItems.find(item => item.id === formData.inventory_item_id);
-  }, [inventoryItems, formData.inventory_item_id]);
+  // Get available items based on distributions AND remaining stock
+  const availableItems = useMemo(() => {
+    if (!formData.class_id || !formData.session_term_id) {
+      return [];
+    }
+    
+    return getFilteredInventoryItems(
+      inventoryItems,
+      distributions,
+      collections,
+      formData.class_id,
+      formData.session_term_id,
+      collection?.id // Exclude current record when editing
+    );
+  }, [inventoryItems, distributions, collections, formData.class_id, formData.session_term_id, collection]);
 
-  // Get stock status using helper
+  // Get stock status for selected item
   const stockStatus = useMemo(() => {
-    if (!selectedItem) return null;
-    return getStockStatus(selectedItem);
-  }, [selectedItem]);
+    if (!formData.inventory_item_id || !formData.class_id || !formData.session_term_id) {
+      return null;
+    }
+    
+    return getStockStatus(
+      distributions,
+      collections,
+      formData.inventory_item_id,
+      formData.class_id,
+      formData.session_term_id,
+      collection?.id // Exclude current record when editing
+    );
+  }, [distributions, collections, formData.inventory_item_id, formData.class_id, formData.session_term_id, collection]);
 
-  // Check if quantity is valid using helper
+  // Check if quantity is valid
   const isQuantityValid = useMemo(() => {
-    if (!formData.qty || !selectedItem) return true;
-    return hasSufficientStock(selectedItem, formData.qty);
-  }, [formData.qty, selectedItem]);
+    if (!formData.qty || !formData.inventory_item_id || !formData.class_id || !formData.session_term_id) {
+      return true;
+    }
+    
+    return hasSufficientStock(
+      distributions,
+      collections,
+      formData.inventory_item_id,
+      formData.class_id,
+      formData.session_term_id,
+      formData.qty,
+      collection?.id // Exclude current record when editing
+    );
+  }, [distributions, collections, formData.qty, formData.inventory_item_id, formData.class_id, formData.session_term_id, collection]);
 
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,6 +149,9 @@ export default function CollectionForm({
     await onSubmit(formData);
   };
 
+  // Show distribution info banner
+  const showDistributionInfo = formData.class_id && formData.session_term_id;
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 overflow-y-auto">
       <div className="bg-white rounded-lg max-w-2xl w-full p-6 my-8">
@@ -120,6 +160,33 @@ export default function CollectionForm({
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Distribution Info Banner */}
+          {showDistributionInfo && availableItems.length === 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-800">
+                <p className="font-medium">No items available</p>
+                <p>
+                  Either no items have been distributed to this class for the selected session, 
+                  or all distributed items have already been assigned to students.
+                  Please distribute more items before creating student collections.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {showDistributionInfo && availableItems.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+              <Package className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium">{availableItems.length} item(s) available for assignment</p>
+                <p>
+                  These items have remaining stock and are ready for student assignment.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Class Select (first) */}
             <div>
@@ -132,7 +199,8 @@ export default function CollectionForm({
                   setFormData({
                     ...formData,
                     class_id: e.target.value,
-                    student_id: "", // reset student when class changes
+                    student_id: "",
+                    inventory_item_id: "", // Reset item when class changes
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
@@ -143,6 +211,33 @@ export default function CollectionForm({
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Session Term */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Session Term <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.session_term_id}
+                onChange={(e) =>
+                  setFormData({ 
+                    ...formData, 
+                    session_term_id: e.target.value,
+                    inventory_item_id: "", // Reset item when session changes
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
+                required
+                disabled={isSubmitting}
+              >
+                <option value="">Select term</option>
+                {sessionTerms.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
                   </option>
                 ))}
               </select>
@@ -175,30 +270,7 @@ export default function CollectionForm({
               </select>
             </div>
 
-            {/* Session Term */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Session Term <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.session_term_id}
-                onChange={(e) =>
-                  setFormData({ ...formData, session_term_id: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
-                required
-                disabled={isSubmitting}
-              >
-                <option value="">Select term</option>
-                {sessionTerms.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Inventory Item */}
+            {/* Inventory Item - Filtered by distribution and remaining stock */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Inventory Item <span className="text-red-500">*</span>
@@ -213,12 +285,18 @@ export default function CollectionForm({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3D4C63]"
                 required
-                disabled={isSubmitting}
+                disabled={isSubmitting || !formData.class_id || !formData.session_term_id}
               >
-                <option value="">Select item</option>
-                {inventoryItems.map((item) => (
+                <option value="">
+                  {!formData.class_id || !formData.session_term_id
+                    ? "Select class and session first"
+                    : availableItems.length === 0
+                    ? "No items available"
+                    : "Select item"}
+                </option>
+                {availableItems.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {formatInventoryItemDisplay(item)}
+                    {formatDistributedItemDisplay(item)}
                   </option>
                 ))}
               </select>
@@ -244,25 +322,24 @@ export default function CollectionForm({
                 required
                 disabled={isSubmitting}
               />
-              {stockStatus && (
-                <div className="mt-1 flex items-center gap-2 text-sm">
-                  {stockStatus.isOutOfStock ? (
-                    <>
-                      <AlertCircle className="w-4 h-4 text-orange-600" />
-                      <span className="text-orange-600">Out of stock</span>
-                    </>
-                  ) : (
-                    <>
-                      {isQuantityValid ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-600" />
-                      )}
-                      <span className={isQuantityValid ? "text-green-600" : "text-red-600"}>
-                        {stockStatus.available} available in stock
-                      </span>
-                    </>
-                  )}
+              {formData.inventory_item_id && stockStatus && (
+                <div className="mt-1 space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <Info className="w-3 h-3" />
+                    <span>
+                      {stockStatus.totalDistributed} distributed, {stockStatus.totalAssigned} assigned
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    {isQuantityValid ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className={isQuantityValid ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                      {stockStatus.available} available
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -328,15 +405,20 @@ export default function CollectionForm({
             </div>
           </div>
 
-          {/* Stock Warning */}
+          {/* Insufficient Stock Warning */}
           {!isQuantityValid && formData.qty > 0 && stockStatus && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-red-800">
-                <p className="font-medium">Insufficient stock available</p>
+                <p className="font-medium">Insufficient available stock</p>
                 <p>
-                  You requested {formData.qty} items, but only {stockStatus.available} are available. 
-                  Please reduce the quantity or contact inventory management.
+                  You requested <strong>{formData.qty}</strong> items, but only <strong>{stockStatus.available}</strong> are available.
+                </p>
+                <p className="mt-1 text-xs">
+                  Breakdown: {stockStatus.totalDistributed} distributed - {stockStatus.totalAssigned} already assigned = {stockStatus.available} available
+                </p>
+                <p className="mt-1">
+                  Please reduce the quantity to {stockStatus.available} or less, or distribute more items to this class first.
                 </p>
               </div>
             </div>
@@ -354,7 +436,7 @@ export default function CollectionForm({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !isQuantityValid}
+              disabled={isSubmitting || !isQuantityValid || availableItems.length === 0}
               className="px-4 py-2 bg-[#3D4C63] text-white rounded-lg hover:bg-[#495C79] transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isSubmitting ? (
